@@ -2,7 +2,6 @@ import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'fire
 import React, { useState } from 'react';
 import {
     ActivityIndicator,
-    Alert,
     Button,
     KeyboardAvoidingView,
     Platform,
@@ -12,6 +11,7 @@ import {
     View
 } from 'react-native';
 import { auth } from "../src/firebaseConfig";
+import { showAlert } from '../src/util';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -22,9 +22,9 @@ export default function Login() {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      Alert.alert('Success', 'Logged in successfully!');
+      showAlert('Success', 'Logged in successfully!');
     } catch (error: any) {
-      Alert.alert('Login Error', error.message);
+      showAlert('Login Error', error.message);
     } finally {
       setLoading(false);
     }
@@ -34,9 +34,9 @@ export default function Login() {
     setLoading(true);
     try {
       await createUserWithEmailAndPassword(auth, email, password);
-      Alert.alert('Success', 'Account created!');
+      showAlert('Success', 'Account created!');
     } catch (error: any) {
-      Alert.alert('Sign Up Error', error.message);
+      showAlert('Sign Up Error', error.message);
     } finally {
       setLoading(false);
     }
@@ -57,6 +57,7 @@ export default function Login() {
           onChangeText={setEmail} 
           autoCapitalize="none" 
           keyboardType="email-address"
+          placeholderTextColor="#a0a0a0"
         />
         
         <TextInput 
@@ -64,7 +65,8 @@ export default function Login() {
           placeholder="Password" 
           value={password} 
           onChangeText={setPassword} 
-          secureTextEntry 
+          secureTextEntry
+          placeholderTextColor="#a0a0a0"
         />
         
         {loading ? (
