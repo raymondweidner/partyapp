@@ -32,7 +32,6 @@ export default function CreateParty() {
   const [guests, setGuests] = useState<Guest[]>([]);
   const [selectedGuestIds, setSelectedGuestIds] = useState<string[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
 
   const fetchGuests = useCallback(async () => {
@@ -74,7 +73,6 @@ export default function CreateParty() {
       return;
     }
 
-    setLoading(true);
     setFormLoading(true);
     try {
       const token = await user?.getIdToken();
@@ -103,7 +101,6 @@ export default function CreateParty() {
     } catch (error: any) {
       showAlert("Error", error.message);
     } finally {
-      setLoading(false);
       setFormLoading(false);
     }
   };
