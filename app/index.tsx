@@ -9,10 +9,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useAuth } from "../lib/auth";
 import { deleteUserDevice } from "../lib/data/service";
 import { auth } from "../lib/firebaseConfig";
 import { useUserDevice } from "./_layout";
-import { useAuth } from "./auth";
 
 type MenuSection = {
   title: string;
@@ -22,16 +22,16 @@ type MenuSection = {
 
 const MENU_DATA: MenuSection[] = [
   {
-    title: "Parties",
-    items: ["Create party", "Edit party"],
+    title: "Tribes",
+    items: ["Create tribe", "Edit tribe"],
   },
   {
-    title: "Invitations",
-    route: "/invitations",
+    title: "Fams",
+    items: ["Create fam", "Edit fam"],
   },
   {
-    title: "Guests",
-    items: ["Create guest", "Edit guest"],
+    title: "Availabilities",
+    route: "/availabilities",
   },
 ];
 
@@ -54,9 +54,10 @@ export default function Home() {
 
   const handleSignOut = async () => {
     try {
-      if (user && userDevice) {
+      const deviceId = userDevice?.id;
+      if (user && deviceId) {
         const token = await user.getIdToken();
-        await deleteUserDevice(userDevice.id, token);
+        await deleteUserDevice(deviceId, token);
       }
       await signOut(auth);
     } catch (e: any) {
@@ -67,7 +68,7 @@ export default function Home() {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.header}>PartyParty! Hosting Helper</Text>
+        <Text style={styles.header}>TribeVibe - Gatherings</Text>
 
         {MENU_DATA.map((section) => (
           <View key={section.title} style={styles.sectionContainer}>

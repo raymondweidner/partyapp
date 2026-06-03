@@ -13,18 +13,14 @@ import {
   TextInput,
   View,
 } from "react-native";
-import {
-  createHost,
-  getHostByEmail,
-  getHostByUserId,
-  updateHost,
-} from "../lib/data/service";
+import { createFam, getFams, updateFam } from "../lib/data/service";
 import { auth } from "../lib/firebaseConfig";
 import { showAlert } from "../lib/util";
 
 export default function Login() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
@@ -42,8 +38,8 @@ export default function Login() {
   };
 
   const onSignUp = async () => {
-    if (!name) {
-      showAlert("Validation Error", "Please enter your name.");
+    if (!name || !phone) {
+      showAlert("Validation Error", "Please enter your name and phone number.");
       return;
     }
     setLoading(true);
@@ -57,20 +53,29 @@ export default function Login() {
       const token = await user.getIdToken();
 
       try {
-        // 1. Try fetching by user_id
-        let host = await getHostByUserId(user.uid, token);
+        // 1. Fetch all fams
+        const fams = await getFams(token);
 
-        if (!host) {
-          // 2. Try fetching by email
-          host = await getHostByEmail(email, token);
+        // 2. Try fetching by user_id
+        let fam = fams.find((f: any) => f.user_id === user.uid);
+
+        if (!fam) {
+          // 3. Try fetching by email
+          fam = fams.find((f: any) => f.email === email);
         }
 
-        if (host) {
-          // 3. Update user_id, name, and email (Link existing host or update details)
-          await updateHost({ ...host, user_id: user.uid, name, email }, token);
+        if (fam) {
+          if (!fam.id) {
+            throw new Error("Existing fam record is missing an id.");
+          }
+          // 4. Update user_id, name, and email (Link existing fam or update details)
+          await updateFam(
+            { ...fam, id: fam.id, user_id: user.uid, name, email },
+            token,
+          );
         } else {
-          // 4. Create new host
-          await createHost({ name, email, user_id: user.uid }, token);
+          // 5. Create new fam
+          await createFam({ name, email, user_id: user.uid }, token);
         }
       } catch (error: any) {
         await user.delete();
@@ -94,17 +99,27 @@ export default function Login() {
     >
       <View style={styles.inner}>
         <Text style={styles.title}>
-          PartyParty! Event Manager - {isSignUp ? "Sign Up" : "Login"}
+          TribeVibe - {isSignUp ? "Sign Up" : "Login"}
         </Text>
 
         {isSignUp && (
-          <TextInput
-            style={styles.input}
-            placeholder="Name"
-            value={name}
-            onChangeText={setName}
-            placeholderTextColor="#a0a0a0"
-          />
+          <>
+            <TextInput
+              style={styles.input}
+              placeholder="Name"
+              value={name}
+              onChangeText={setName}
+              placeholderTextColor="#a0a0a0"
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Phone Number"
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+              placeholderTextColor="#a0a0a0"
+            />
+          </>
         )}
 
         <TextInput

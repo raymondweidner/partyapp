@@ -1,3 +1,4 @@
+// NOTE: Please rename this file to create-fam.tsx
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -8,25 +9,20 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { createGuest } from "../lib/data/service";
+import { useAuth } from "../lib/auth";
+import { createFam } from "../lib/data/service";
 import { showAlert } from "../lib/util";
-import { useAuth } from "./auth";
+import { CustomHeaderLeft } from "./_layout";
 
-export default function CreateGuest() {
+export default function CreateFam() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
 
   const validateEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
-
-  const validatePhone = (phone: string) => {
-    // Basic validation for length and allowed characters
-    return /^\+?[\d\s-]{7,}$/.test(phone);
   };
 
   useEffect(() => {
@@ -35,18 +31,13 @@ export default function CreateGuest() {
   }, [user, authLoading, router]);
 
   const handleCreate = async () => {
-    if (!name || !email || !phone) {
-      showAlert("Validation Error", "All fields are required.");
+    if (!name || !email) {
+      showAlert("Validation Error", "Name and email are required.");
       return;
     }
 
     if (!validateEmail(email)) {
       showAlert("Validation Error", "Please enter a valid email address.");
-      return;
-    }
-
-    if (!validatePhone(phone)) {
-      showAlert("Validation Error", "Please enter a valid phone number.");
       return;
     }
 
@@ -57,15 +48,15 @@ export default function CreateGuest() {
         throw new Error("User is not authenticated.");
       }
 
-      await createGuest({ name, email, phone }, token);
+      await createFam({ name, email, user_id: user?.uid }, token);
 
-      showAlert("Success", "Guest created successfully!", [
+      showAlert("Success", "Fam added successfully!", [
         { text: "OK", onPress: () => router.back() },
       ]);
     } catch (error: any) {
       showAlert(
         "Error",
-        error.message || "An error occurred while creating the guest.",
+        error.message || "An error occurred while adding Fam.",
       );
     } finally {
       setLoading(false);
@@ -74,14 +65,21 @@ export default function CreateGuest() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: "Create guest" }} />
+      <Stack.Screen
+        options={{
+          title: "Add Fam",
+          headerLeft: () => (
+            <CustomHeaderLeft onBack={() => router.navigate("/")} />
+          ),
+        }}
+      />
 
       <Text style={styles.label}>Name</Text>
       <TextInput
         style={styles.input}
         value={name}
         onChangeText={setName}
-        placeholder="Guest Name"
+        placeholder="Fam Name"
         placeholderTextColor="#a0a0a0"
       />
 
@@ -96,21 +94,11 @@ export default function CreateGuest() {
         placeholderTextColor="#a0a0a0"
       />
 
-      <Text style={styles.label}>Phone</Text>
-      <TextInput
-        style={styles.input}
-        value={phone}
-        onChangeText={setPhone}
-        placeholder="Phone Number"
-        keyboardType="phone-pad"
-        placeholderTextColor="#a0a0a0"
-      />
-
       <View style={styles.buttonContainer}>
         {loading ? (
           <ActivityIndicator size="large" />
         ) : (
-          <Button title="Create Guest" onPress={handleCreate} />
+          <Button title="Add Fam" onPress={handleCreate} />
         )}
       </View>
     </View>

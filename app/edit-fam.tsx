@@ -1,3 +1,4 @@
+// NOTE: Please rename this file to edit-fam.tsx
 import { Stack, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -10,31 +11,32 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Guest } from "../lib/data/Guest";
-import { getGuests, updateGuest } from "../lib/data/service";
-import { showAlert } from "../lib/util";
-import { useAuth } from "./auth";
+import { Fam } from "../lib/data/Fam";
+import { getFams, updateFam } from "../lib/data/service";
 
-export default function EditGuest() {
+import { useAuth } from "../lib/auth";
+import { showAlert } from "../lib/util";
+import { CustomHeaderLeft } from "./_layout";
+
+export default function EditFam() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const [guests, setGuests] = useState<Guest[]>([]);
+  const [fams, setFams] = useState<Fam[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
+  const [selectedFam, setSelectedFam] = useState<Fam | null>(null);
 
   // Form state
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [updating, setUpdating] = useState(false);
 
-  const fetchGuests = useCallback(async () => {
+  const fetchFams = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
       const token = await user.getIdToken();
-      const data = await getGuests(token);
-      setGuests(data);
+      const data = await getFams(token);
+      setFams(data);
     } catch (error: any) {
       showAlert("Error", error.message);
     } finally {
@@ -43,34 +45,29 @@ export default function EditGuest() {
   }, [user]);
 
   useEffect(() => {
-    fetchGuests();
-  }, [fetchGuests]);
+    fetchFams();
+  }, [fetchFams]);
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) router.replace("/login");
   }, [user, authLoading, router]);
 
-  const handleSelectGuest = (guest: Guest) => {
-    setSelectedGuest(guest);
-    setName(guest.name);
-    setEmail(guest.email);
-    setPhone(guest.phone);
+  const handleSelectFam = (fam: Fam) => {
+    setSelectedFam(fam);
+    setName(fam.name);
+    setEmail(fam.email);
   };
 
   const validateEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
 
-  const validatePhone = (phone: string) => {
-    return /^\+?[\d\s-]{7,}$/.test(phone);
-  };
-
   const handleUpdate = async () => {
-    if (!selectedGuest || !user) return;
+    if (!selectedFam || !user) return;
 
-    if (!name || !email || !phone) {
-      showAlert("Validation Error", "All fields are required.");
+    if (!name || !email) {
+      showAlert("Validation Error", "Name and email are required.");
       return;
     }
 
@@ -79,58 +76,58 @@ export default function EditGuest() {
       return;
     }
 
-    if (!validatePhone(phone)) {
-      showAlert("Validation Error", "Please enter a valid phone number.");
-      return;
-    }
-
     setUpdating(true);
     try {
       const token = await user.getIdToken();
-      await updateGuest({ ...selectedGuest, name, email, phone }, token);
+      // @ts-ignore
+      await updateFam({ ...selectedFam, name, email }, token);
 
-      showAlert("Success", "Guest updated successfully!", [
+      showAlert("Success", "Fam updated successfully!", [
         {
           text: "OK",
           onPress: () => {
-            setSelectedGuest(null);
-            fetchGuests();
+            setSelectedFam(null);
+            fetchFams();
           },
         },
       ]);
     } catch (error: any) {
       showAlert(
         "Error",
-        error.message || "An error occurred while updating the guest.",
+        error.message || "An error occurred while updating the fam.",
       );
     } finally {
       setUpdating(false);
     }
   };
 
-  const renderGuestItem = ({ item }: { item: Guest }) => (
-    <TouchableOpacity
-      style={styles.item}
-      onPress={() => handleSelectGuest(item)}
-    >
-      <Text style={styles.itemTitle}>{item.name}</Text>
-      <Text style={styles.itemSubtitle}>{item.email}</Text>
-      <Text style={styles.itemSubtitle}>{item.phone}</Text>
+  const renderFamItem = ({ item }: { item: Fam }) => (
+    <TouchableOpacity style={styles.item} onPress={() => handleSelectFam(item)}>
+      <Text style={styles.itemTitle}>{item.name || "Unnamed Fam"}</Text>
+      <Text style={styles.itemSubtitle}>
+        {item.email || "No email provided"}
+      </Text>
     </TouchableOpacity>
   );
 
-  if (selectedGuest) {
+  if (selectedFam) {
     return (
       <View style={styles.container}>
-        <Stack.Screen options={{ title: "Edit Guest Details" }} />
-        <Button title="Back to List" onPress={() => setSelectedGuest(null)} />
+        <Stack.Screen
+          options={{
+            title: "Edit Fam Details",
+            headerLeft: () => (
+              <CustomHeaderLeft onBack={() => setSelectedFam(null)} />
+            ),
+          }}
+        />
 
         <Text style={styles.label}>Name</Text>
         <TextInput
           style={styles.input}
           value={name}
           onChangeText={setName}
-          placeholder="Guest Name"
+          placeholder="Fam Name"
           placeholderTextColor="#a0a0a0"
         />
 
@@ -145,21 +142,11 @@ export default function EditGuest() {
           placeholderTextColor="#a0a0a0"
         />
 
-        <Text style={styles.label}>Phone</Text>
-        <TextInput
-          style={styles.input}
-          value={phone}
-          onChangeText={setPhone}
-          placeholder="Phone Number"
-          keyboardType="phone-pad"
-          placeholderTextColor="#a0a0a0"
-        />
-
         <View style={styles.buttonContainer}>
           {updating ? (
             <ActivityIndicator size="large" />
           ) : (
-            <Button title="Update Guest" onPress={handleUpdate} />
+            <Button title="Update Fam" onPress={handleUpdate} />
           )}
         </View>
       </View>
@@ -168,16 +155,23 @@ export default function EditGuest() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: "Select Guest to Edit" }} />
+      <Stack.Screen
+        options={{
+          title: "Select Fam to Edit",
+          headerLeft: () => (
+            <CustomHeaderLeft onBack={() => router.navigate("/")} />
+          ),
+        }}
+      />
       {loading ? (
         <ActivityIndicator size="large" style={{ marginTop: 20 }} />
       ) : (
         <FlatList
-          data={guests}
-          keyExtractor={(item) => item.id || Math.random().toString()}
-          renderItem={renderGuestItem}
+          data={fams}
+          keyExtractor={(item: any) => item.id || Math.random().toString()}
+          renderItem={renderFamItem}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>No guests found.</Text>
+            <Text style={styles.emptyText}>No fams found.</Text>
           }
         />
       )}

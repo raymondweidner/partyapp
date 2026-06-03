@@ -1,7 +1,11 @@
 import messaging from "@react-native-firebase/messaging";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { getApp } from "firebase/app";
-import { getMessaging, getToken as getWebToken } from "firebase/messaging";
+import {
+  getMessaging,
+  getToken as getWebToken,
+  onMessage,
+} from "firebase/messaging";
 import React, {
   createContext,
   useCallback,
@@ -9,18 +13,25 @@ import React, {
   useEffect,
   useState,
 } from "react";
-import { ActivityIndicator, Platform, Text, View } from "react-native";
-import { Host } from "../lib/data/Host";
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { AuthProvider, useAuth } from "../lib/auth";
+import { Fam } from "../lib/data/Fam";
+import { UserDevice } from "../lib/data/UserDevice";
 import {
   createUserDevice,
-  getHostByEmail,
+  getFams,
   getUserDeviceByToken,
-  updateHost,
+  updateFam,
   updateUserDevice,
 } from "../lib/data/service";
-import { UserDevice } from "../lib/data/UserDevice";
 import "../lib/firebaseConfig";
-import { AuthProvider, useAuth } from "./auth";
 
 const UserDeviceContext = createContext<{
   userDevice: UserDevice | null;
@@ -52,6 +63,18 @@ function UserDeviceProvider({ children }: { children: React.ReactNode }) {
       let fcmToken: string | undefined;
 
       if (Platform.OS === "web") {
+        if (typeof window === "undefined" || !("Notification" in window)) {
+          console.warn("This browser does not support desktop notification");
+          return;
+        }
+
+        if (!("serviceWorker" in navigator)) {
+          console.warn(
+            "This browser does not support service workers (Check if you are on HTTPS or localhost)",
+          );
+          return;
+        }
+
         console.log("Requesting notification permission...");
         const messagingWeb = getMessaging(getApp());
         const permission = await Notification.requestPermission();
@@ -60,12 +83,27 @@ function UserDeviceProvider({ children }: { children: React.ReactNode }) {
           const registration = await navigator.serviceWorker.register(
             "/firebase-messaging-sw.js",
           );
+          await navigator.serviceWorker.ready;
+
+          if (navigator.serviceWorker.controller) {
+            console.log("[SW] Service Worker is controlling this page.");
+          } else {
+            console.log(
+              "[SW] Service Worker is registered but NOT controlling this page yet. A reload is usually required.",
+            );
+          }
+
           fcmToken = await getWebToken(messagingWeb, {
             vapidKey:
               "BD1Se4bOz-TfdOpF24iXQIEMBzYXAmxhx1l6L1o1gx7I4B13i__koLzFjwnRwJbpVBZWI9cAqdT9EOmO2pWqbt8",
             serviceWorkerRegistration: registration,
           });
           console.log("Web FCM Token:", fcmToken);
+        } else {
+          console.warn(
+            "Notification permission NOT granted. Status:",
+            permission,
+          );
         }
       } else {
         const authStatus = await messaging().requestPermission();
@@ -81,6 +119,7 @@ function UserDeviceProvider({ children }: { children: React.ReactNode }) {
 
       if (fcmToken) {
         console.log("FCM Token", fcmToken);
+        console.log("🔥 FCM Token (Use this to test):", fcmToken);
         setLoading(true);
         const token = await user.getIdToken();
         let foundDevice = await getUserDeviceByToken(fcmToken, token);
@@ -88,9 +127,9 @@ function UserDeviceProvider({ children }: { children: React.ReactNode }) {
         if (foundDevice) {
           console.log("Existing user ID for token", foundDevice);
 
-          // 2. Update userId if found but userId is different
+          // 2. Update user_id if found but user_id is different
           if (foundDevice.user_id !== user.uid) {
-            console.log("Different userId!", "Updating device");
+            console.log("Different user_id!", "Updating device");
             foundDevice = await updateUserDevice(
               {
                 ...foundDevice,
@@ -130,6 +169,46 @@ function UserDeviceProvider({ children }: { children: React.ReactNode }) {
     fetchUserDevice();
   }, [fetchUserDevice]);
 
+  useEffect(() => {
+    let unsubscribe: () => void;
+    let channel: BroadcastChannel | null = null;
+
+    if (Platform.OS === "web") {
+      const messagingWeb = getMessaging(getApp());
+      console.log("Initializing Web FCM Listeners");
+
+      unsubscribe = onMessage(messagingWeb, (payload) => {
+        console.log("Foreground Message:", payload);
+        const title =
+          payload.notification?.title || payload.data?.title || "New Message";
+        const body =
+          payload.notification?.body ||
+          payload.data?.body ||
+          "You have a new message";
+        alert(`${title}: ${body}`);
+      });
+
+      if (typeof BroadcastChannel !== "undefined") {
+        channel = new BroadcastChannel("fcm_channel");
+        channel.onmessage = (event) => {
+          console.log("Background Message (via BroadcastChannel):", event.data);
+        };
+      }
+    } else {
+      unsubscribe = messaging().onMessage(async (remoteMessage) => {
+        Alert.alert(
+          remoteMessage.notification?.title || "New Message",
+          remoteMessage.notification?.body,
+        );
+      });
+    }
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+      if (channel) channel.close();
+    };
+  }, []);
+
   return (
     <UserDeviceContext.Provider
       value={{ userDevice, loading, refreshUserDevice: fetchUserDevice }}
@@ -139,68 +218,89 @@ function UserDeviceProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-const HostContext = createContext<{
-  host: Host | null;
+const CurrentFamContext = createContext<{
+  fam: Fam | null;
   loading: boolean;
-  refreshHost: () => Promise<void>;
+  refreshFam: () => Promise<void>;
 }>({
-  host: null,
+  fam: null,
   loading: false,
-  refreshHost: async () => {},
+  refreshFam: async () => {},
 });
 
-export const useHost = () => useContext(HostContext);
+export const useCurrentFam = () => useContext(CurrentFamContext);
 
-function HostProvider({ children }: { children: React.ReactNode }) {
+function CurrentFamProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [host, setHost] = useState<Host | null>(null);
+  const [fam, setFam] = useState<Fam | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const fetchHost = useCallback(async () => {
+  const fetchFam = useCallback(async () => {
     if (!user || !user.email) {
-      setHost(null);
+      setFam(null);
       return;
     }
     try {
       const token = await user.getIdToken();
-      let foundHost = await getHostByEmail(user.email, token);
+      const fams = await getFams(token);
+      let foundFam = fams.find((f: any) => f.email === user.email);
 
-      if (foundHost) {
-        if (foundHost.user_id !== user.uid) {
-          foundHost = await updateHost(
-            { ...foundHost, user_id: user.uid },
+      if (foundFam) {
+        if (foundFam.user_id !== user.uid) {
+          foundFam = await updateFam(
+            { ...foundFam, user_id: user.uid } as Fam & { id: string },
             token,
           );
         }
-        setHost(foundHost);
+        setFam(foundFam);
       } else {
-        setHost(null);
+        setFam(null);
       }
     } catch (error) {
-      console.error("Failed to fetch host", error);
+      console.error("Failed to fetch fam", error);
     } finally {
       setLoading(false);
     }
   }, [user]);
 
   useEffect(() => {
-    fetchHost();
-  }, [fetchHost]);
+    fetchFam();
+  }, [fetchFam]);
 
   return (
-    <HostContext.Provider value={{ host, loading, refreshHost: fetchHost }}>
+    <CurrentFamContext.Provider value={{ fam, loading, refreshFam: fetchFam }}>
       {children}
-    </HostContext.Provider>
+    </CurrentFamContext.Provider>
   );
 }
 
 function Header() {
-  const { host } = useHost();
-  return host?.name ? (
+  const { fam } = useCurrentFam();
+  return fam?.name ? (
     <Text style={{ marginRight: 15, fontWeight: "bold", fontSize: 16 }}>
-      {host.name}
+      {fam.name}
     </Text>
   ) : null;
+}
+
+export function CustomHeaderLeft({ onBack }: { onBack?: () => void }) {
+  const router = useRouter();
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center" }}>
+      <TouchableOpacity
+        onPress={() => (onBack ? onBack() : router.back())}
+        style={{ paddingHorizontal: 10 }}
+      >
+        <Text style={{ fontSize: 32, color: "#007bff", marginTop: -4 }}>‹</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => router.replace("/")}
+        style={{ paddingHorizontal: 10 }}
+      >
+        <Text style={{ fontSize: 20 }}>🏠</Text>
+      </TouchableOpacity>
+    </View>
+  );
 }
 
 function RootLayoutNav() {
@@ -232,6 +332,8 @@ function RootLayoutNav() {
     <Stack
       screenOptions={{
         headerRight: () => <Header />,
+        headerLeft: ({ canGoBack }) =>
+          canGoBack ? <CustomHeaderLeft /> : null,
       }}
     >
       <Stack.Screen name="index" options={{ title: "Home" }} />
@@ -247,9 +349,9 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <UserDeviceProvider>
-        <HostProvider>
+        <CurrentFamProvider>
           <RootLayoutNav />
-        </HostProvider>
+        </CurrentFamProvider>
       </UserDeviceProvider>
     </AuthProvider>
   );
