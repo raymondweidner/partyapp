@@ -1,4 +1,4 @@
-import { Alert, AlertButton, Platform } from "react-native";
+import { Alert, AlertButton, Linking, Platform } from "react-native";
 
 export const showAlert = (
   title: string,
@@ -20,4 +20,25 @@ export const showAlert = (
 
 export const getResourceEndpoint = () => {
   return "http://localhost:5008";
+};
+
+export const openWhatsAppDM = async (phone: string) => {
+  if (!phone) {
+    showAlert("Error", "No phone number available for this member.");
+    return;
+  }
+  const cleanPhone = phone.replace(/\D/g, "");
+  const url = `whatsapp://send?phone=${cleanPhone}`;
+  const fallbackUrl = `https://wa.me/${cleanPhone}`;
+
+  try {
+    const canOpen = await Linking.canOpenURL(url);
+    if (canOpen) {
+      await Linking.openURL(url);
+    } else {
+      await Linking.openURL(fallbackUrl);
+    }
+  } catch (error) {
+    showAlert("Error", "Could not open WhatsApp.");
+  }
 };

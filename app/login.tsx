@@ -1,34 +1,77 @@
+import { useLocalSearchParams } from "expo-router";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from "firebase/auth";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Button,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
-import { createFam, getFams, updateFam } from "../lib/data/service";
+import {
+  checkInvite,
+  createMember,
+  getMemberContacts,
+  getMembers,
+  updateMember,
+  updateMemberContact,
+} from "../lib/data/service";
 import { auth } from "../lib/firebaseConfig";
 import { showAlert } from "../lib/util";
+import { useCurrentMember } from "./_layout";
 
 export default function Login() {
+  const { invite } = useLocalSearchParams<{ invite?: string }>();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
+  const [invitedMember, setInvitedMember] = useState<any>(null);
+  const { setMember } = useCurrentMember();
+
+  useEffect(() => {
+    if (invite) {
+      checkInvite(invite)
+        .then((member) => {
+          if (member) {
+            setInvitedMember(member);
+            setName(member.name || "");
+            setEmail(member.email || "");
+            setIsSignUp(true);
+          }
+        })
+        .catch((error) => console.error("Failed to check invite", error));
+    }
+  }, [invite]);
 
   const onSignIn = async () => {
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password,
+      );
+      const token = await userCredential.user.getIdToken();
+
+      // Immediately fetch the actual member record
+      const members = await getMembers(token);
+      const member = members.find(
+        (f: any) =>
+          f.user_id === userCredential.user.uid ||
+          f.email?.toLowerCase() === email.toLowerCase(),
+      );
+      if (member) setMember(member);
+
       showAlert("Success", "Logged in successfully!");
     } catch (error: any) {
       showAlert("Login Error", error.message);
@@ -53,29 +96,88 @@ export default function Login() {
       const token = await user.getIdToken();
 
       try {
-        // 1. Fetch all fams
-        const fams = await getFams(token);
+        // 1. Fetch all members to get the complete database record
+        const members = await getMembers(token);
 
         // 2. Try fetching by user_id
-        let fam = fams.find((f: any) => f.user_id === user.uid);
+        let member = members.find((f: any) => f.user_id === user.uid);
 
-        if (!fam) {
+        if (!member) {
           // 3. Try fetching by email
-          fam = fams.find((f: any) => f.email === email);
+          member = members.find((f: any) => f.email === email);
         }
 
-        if (fam) {
-          if (!fam.id) {
-            throw new Error("Existing fam record is missing an id.");
+        // 4. Fallback to invitedMember ONLY if the backend returned an ID
+        if (!member && invitedMember?.id) {
+          member = invitedMember;
+        }
+
+        if (member) {
+          if (!member.id) {
+            throw new Error("Existing member record is missing an id.");
           }
-          // 4. Update user_id, name, and email (Link existing fam or update details)
-          await updateFam(
-            { ...fam, id: fam.id, user_id: user.uid, name, email },
+          // 4. Update user_id, name, and email (Link existing member or update details)
+          await updateMember(
+            {
+              ...member,
+              id: member.id,
+              user_id: user.uid,
+              name,
+              email,
+              phone,
+              status: "active",
+            },
             token,
           );
         } else {
-          // 5. Create new fam
-          await createFam({ name, email, user_id: user.uid }, token);
+          // 5. Create new member
+          await createMember(
+            { name, email, phone, user_id: user.uid, status: "active" } as any,
+            token,
+          );
+        }
+
+        // IMMEDIATELY GET THE ACTUAL MEMBER RECORD (LIKE REFRESHING DOES)
+        const latestMembers = await getMembers(token);
+        const finalMember = latestMembers.find(
+          (f: any) =>
+            f.user_id === user.uid ||
+            f.email?.toLowerCase() === email.toLowerCase(),
+        );
+
+        if (finalMember) {
+          setMember(finalMember);
+
+          if (finalMember.id) {
+            // 4b. Accept any pending invitations for this member
+            try {
+              const contacts = await getMemberContacts(token, finalMember.id);
+              const pendingInvites = contacts.invitedSubjects;
+
+              const validInvites = pendingInvites.filter(
+                (contact) => !!contact.id,
+              );
+              if (pendingInvites.length > 0 && validInvites.length === 0) {
+                console.error(
+                  "Backend Error: GET /member_contact is missing the 'id' field in its response. Cannot accept invites.",
+                );
+              }
+
+              await Promise.all(
+                validInvites.map((contact) =>
+                  updateMemberContact(
+                    { ...contact, status: "accepted" },
+                    token,
+                  ),
+                ),
+              );
+            } catch (contactsError) {
+              console.error(
+                "Failed to automatically accept invites:",
+                contactsError,
+              );
+            }
+          }
         }
       } catch (error: any) {
         await user.delete();
@@ -97,103 +199,186 @@ export default function Login() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
-      <View style={styles.inner}>
-        <Text style={styles.title}>
-          TribeVibe - {isSignUp ? "Sign Up" : "Login"}
-        </Text>
+      <ScrollView
+        contentContainerStyle={styles.inner}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.headerContainer}>
+          <Text style={styles.logoText}>TribeVibe</Text>
+          <Text style={styles.subtitle}>
+            {invitedMember
+              ? "You've been invited to join the Fam!"
+              : isSignUp
+                ? "Create your account to get started"
+                : "Welcome back, sign in to continue"}
+          </Text>
+        </View>
 
-        {isSignUp && (
-          <>
-            <TextInput
-              style={styles.input}
-              placeholder="Name"
-              value={name}
-              onChangeText={setName}
-              placeholderTextColor="#a0a0a0"
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Phone Number"
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              placeholderTextColor="#a0a0a0"
-            />
-          </>
-        )}
+        <View style={styles.formCard}>
+          {isSignUp && (
+            <>
+              <TextInput
+                style={styles.input}
+                placeholder="Name"
+                value={name}
+                onChangeText={setName}
+                placeholderTextColor="#a0a0a0"
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Phone Number"
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                placeholderTextColor="#a0a0a0"
+              />
+            </>
+          )}
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          autoCapitalize="none"
-          keyboardType="email-address"
-          placeholderTextColor="#a0a0a0"
-        />
+          <TextInput
+            style={[
+              styles.input,
+              invitedMember && { backgroundColor: "#f0f0f0", color: "#888" },
+            ]}
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            placeholderTextColor="#a0a0a0"
+            editable={!invitedMember}
+          />
 
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          placeholderTextColor="#a0a0a0"
-        />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            placeholderTextColor="#a0a0a0"
+          />
 
-        {loading ? (
-          <ActivityIndicator size="large" color="#0000ff" />
-        ) : (
-          <View style={styles.buttonContainer}>
-            {isSignUp ? (
-              <>
-                <Button
-                  title="Create Account"
-                  onPress={onSignUp}
-                  color="#841584"
-                />
-                <View style={styles.spacer} />
-                <Button
-                  title="Back to Login"
-                  onPress={() => setIsSignUp(false)}
-                  color="#666"
-                />
-              </>
-            ) : (
-              <>
-                <Button title="Sign In" onPress={onSignIn} />
-                <View style={styles.spacer} />
-                <Button
-                  title="Create Account"
-                  onPress={() => setIsSignUp(true)}
-                  color="#841584"
-                />
-              </>
-            )}
-          </View>
-        )}
-      </View>
+          {loading ? (
+            <ActivityIndicator size="large" color="#0000ff" />
+          ) : (
+            <View style={styles.buttonContainer}>
+              {isSignUp ? (
+                <>
+                  <TouchableOpacity
+                    style={styles.primaryButton}
+                    onPress={onSignUp}
+                  >
+                    <Text style={styles.primaryButtonText}>
+                      {invitedMember ? "Join the Fam!" : "Create Account"}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.secondaryButton}
+                    onPress={() => {
+                      setIsSignUp(false);
+                      setInvitedMember(null);
+                    }}
+                  >
+                    <Text style={styles.secondaryButtonText}>
+                      Back to Login
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={styles.primaryButton}
+                    onPress={onSignIn}
+                  >
+                    <Text style={styles.primaryButtonText}>Sign In</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.secondaryButton}
+                    onPress={() => setIsSignUp(true)}
+                  >
+                    <Text style={styles.secondaryButtonText}>
+                      Create Account
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          )}
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
-  inner: { flex: 1, justifyContent: "center", padding: 20 },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 20,
+  container: { flex: 1, backgroundColor: "#F7F9FC" },
+  inner: { flexGrow: 1, justifyContent: "center", padding: 24 },
+  headerContainer: {
+    alignItems: "center",
+    marginBottom: 32,
+  },
+  logoText: {
+    fontSize: 36,
+    fontWeight: "900",
+    color: "#007bff",
+    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: "#666",
     textAlign: "center",
   },
-  input: {
-    height: 50,
-    borderColor: "#ccc",
-    borderWidth: 1,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    borderRadius: 5,
+  formCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
   },
-  buttonContainer: { marginTop: 10 },
-  spacer: { height: 10 },
+  input: {
+    height: 52,
+    backgroundColor: "#F8F9FA",
+    borderColor: "#E4E7EB",
+    borderWidth: 1,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    fontSize: 16,
+    color: "#333",
+  },
+  buttonContainer: { marginTop: 8, gap: 12 },
+  primaryButton: {
+    backgroundColor: "#007bff",
+    height: 52,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#007bff",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  primaryButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  secondaryButton: {
+    height: 52,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  secondaryButtonText: {
+    color: "#007bff",
+    fontSize: 16,
+    fontWeight: "600",
+  },
 });

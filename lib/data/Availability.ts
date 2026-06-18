@@ -1,8 +1,8 @@
 export interface Availability {
   id?: string;
-  fam_id: string;
-  meetup_id: string;
-  date: string;
-  location: string;
+  member_id: string;
+  proposal_id: string;
+  status: string;
   note?: string;
+  vote?: boolean;
 }

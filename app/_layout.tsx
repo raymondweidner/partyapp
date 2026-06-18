@@ -15,23 +15,24 @@ import React, {
 } from "react";
 import {
   ActivityIndicator,
-  Alert,
+  Modal,
   Platform,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { AuthProvider, useAuth } from "../lib/auth";
-import { Fam } from "../lib/data/Fam";
+import { Member } from "../lib/data/Member";
 import { UserDevice } from "../lib/data/UserDevice";
 import {
   createUserDevice,
-  getFams,
+  getMembers,
   getUserDeviceByToken,
-  updateFam,
   updateUserDevice,
 } from "../lib/data/service";
 import "../lib/firebaseConfig";
+import { openWhatsAppDM, showAlert } from "../lib/util";
 
 const UserDeviceContext = createContext<{
   userDevice: UserDevice | null;
@@ -196,9 +197,9 @@ function UserDeviceProvider({ children }: { children: React.ReactNode }) {
       }
     } else {
       unsubscribe = messaging().onMessage(async (remoteMessage) => {
-        Alert.alert(
+        showAlert(
           remoteMessage.notification?.title || "New Message",
-          remoteMessage.notification?.body,
+          remoteMessage.notification?.body || "",
         );
       });
     }
@@ -218,68 +219,77 @@ function UserDeviceProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-const CurrentFamContext = createContext<{
-  fam: Fam | null;
+export const CurrentMemberContext = createContext<{
+  member: Member | null;
   loading: boolean;
-  refreshFam: () => Promise<void>;
+  refreshMember: () => Promise<void>;
+  setMember: (member: Member | null) => void;
 }>({
-  fam: null,
+  member: null,
   loading: false,
-  refreshFam: async () => {},
+  refreshMember: async () => {},
+  setMember: () => {},
 });
 
-export const useCurrentFam = () => useContext(CurrentFamContext);
+export const useCurrentMember = () => useContext(CurrentMemberContext);
 
-function CurrentFamProvider({ children }: { children: React.ReactNode }) {
+function CurrentMemberProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const [fam, setFam] = useState<Fam | null>(null);
+  const [member, setMember] = useState<Member | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const fetchFam = useCallback(async () => {
+  const fetchMember = useCallback(async () => {
     if (!user || !user.email) {
-      setFam(null);
+      setMember(null);
       return;
     }
     try {
       const token = await user.getIdToken();
-      const fams = await getFams(token);
-      let foundFam = fams.find((f: any) => f.email === user.email);
+      const members = await getMembers(token);
+      let foundMember = members.find((f: any) => f.email === user.email);
 
-      if (foundFam) {
-        if (foundFam.user_id !== user.uid) {
-          foundFam = await updateFam(
-            { ...foundFam, user_id: user.uid } as Fam & { id: string },
-            token,
-          );
-        }
-        setFam(foundFam);
+      if (foundMember) {
+        setMember(foundMember);
       } else {
-        setFam(null);
+        setMember(null);
       }
     } catch (error) {
-      console.error("Failed to fetch fam", error);
+      console.error("Failed to fetch member", error);
     } finally {
       setLoading(false);
     }
   }, [user]);
 
   useEffect(() => {
-    fetchFam();
-  }, [fetchFam]);
+    fetchMember();
+  }, [fetchMember]);
 
   return (
-    <CurrentFamContext.Provider value={{ fam, loading, refreshFam: fetchFam }}>
+    <CurrentMemberContext.Provider
+      value={{ member, loading, refreshMember: fetchMember, setMember }}
+    >
       {children}
-    </CurrentFamContext.Provider>
+    </CurrentMemberContext.Provider>
   );
 }
 
 function Header() {
-  const { fam } = useCurrentFam();
-  return fam?.name ? (
-    <Text style={{ marginRight: 15, fontWeight: "bold", fontSize: 16 }}>
-      {fam.name}
-    </Text>
+  const { member } = useCurrentMember();
+  const router = useRouter();
+
+  return member?.name ? (
+    <TouchableOpacity
+      onPress={() =>
+        router.push({
+          pathname: "/edit-member",
+          params: { id: member.id, profile: "true" },
+        })
+      }
+      style={{ flexDirection: "row", alignItems: "center", marginRight: 15 }}
+    >
+      <Text style={{ fontSize: 24, marginRight: 8 }}>👤</Text>
+      <Text style={{ fontWeight: "bold", fontSize: 16 }}>{member.name}</Text>
+    </TouchableOpacity>
   ) : null;
 }
 
@@ -345,14 +355,133 @@ function RootLayoutNav() {
   );
 }
 
+export const InfoModalContext = createContext<{
+  showInfoModal: (
+    title: string,
+    content: string,
+    options?: { phone?: string | null },
+  ) => void;
+}>({ showInfoModal: () => {} });
+
+export const useInfoModal = () => useContext(InfoModalContext);
+
+function InfoModalProvider({ children }: { children: React.ReactNode }) {
+  const [modalConfig, setModalConfig] = useState({
+    visible: false,
+    title: "",
+    content: "",
+    options: undefined as { phone?: string | null } | undefined,
+  });
+
+  const showInfoModal = useCallback(
+    (title: string, content: string, options?: { phone?: string | null }) => {
+      setModalConfig({ visible: true, title, content, options });
+    },
+    [],
+  );
+
+  const closeModal = useCallback(() => {
+    setModalConfig((prev) => ({ ...prev, visible: false }));
+  }, []);
+
+  const phone = modalConfig.options?.phone;
+
+  return (
+    <InfoModalContext.Provider value={{ showInfoModal }}>
+      {children}
+      <Modal
+        visible={modalConfig.visible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={closeModal}
+      >
+        <View style={layoutStyles.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={closeModal}
+          />
+          <View style={layoutStyles.modalContent}>
+            {!!modalConfig.title && (
+              <Text style={layoutStyles.modalTitle}>{modalConfig.title}</Text>
+            )}
+            <Text style={layoutStyles.modalText}>{modalConfig.content}</Text>
+            {modalConfig.options && (
+              <TouchableOpacity
+                style={[
+                  layoutStyles.dmButton,
+                  !phone && layoutStyles.dmButtonDisabled,
+                ]}
+                disabled={!phone}
+                onPress={() => {
+                  if (phone) {
+                    closeModal();
+                    openWhatsAppDM(phone);
+                  }
+                }}
+              >
+                <Text style={layoutStyles.dmButtonText}>💬 WhatsApp DM</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+      </Modal>
+    </InfoModalContext.Provider>
+  );
+}
+
 export default function RootLayout() {
   return (
     <AuthProvider>
       <UserDeviceProvider>
-        <CurrentFamProvider>
-          <RootLayoutNav />
-        </CurrentFamProvider>
+        <CurrentMemberProvider>
+          <InfoModalProvider>
+            <RootLayoutNav />
+          </InfoModalProvider>
+        </CurrentMemberProvider>
       </UserDeviceProvider>
     </AuthProvider>
   );
 }
+
+const layoutStyles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  modalContent: {
+    width: "80%",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 20,
+    maxHeight: "80%",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  modalText: {
+    fontSize: 16,
+    color: "#333",
+    lineHeight: 22,
+  },
+  dmButton: {
+    marginTop: 20,
+    backgroundColor: "#25D366",
+    padding: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  dmButtonDisabled: {
+    backgroundColor: "#ccc",
+  },
+  dmButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+});
