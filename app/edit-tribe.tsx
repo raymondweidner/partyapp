@@ -34,7 +34,7 @@ import {
   GroupedMemberContacts,
   updateTribe,
 } from "../lib/data/service";
-import { openEmailThread, openWhatsAppDM, showAlert } from "../lib/util";
+import { openEmailThread, openWhatsAppDM, showAlert, safeBack } from "../lib/util";
 import { CustomHeaderLeft, useCurrentMember, useInfoModal } from "./_layout";
 
 export default function EditTribe() {
@@ -240,7 +240,7 @@ export default function EditTribe() {
 
   const handleBack = () => {
     if (paramTribeId) {
-      router.back();
+      safeBack(router, "/");
     } else {
       setSelectedTribe(null);
     }
@@ -301,7 +301,7 @@ export default function EditTribe() {
           onPress: () => {
             setIsEditing(false);
             if (paramTribeId) {
-              router.back();
+              safeBack(router, "/");
             } else {
               setSelectedTribe(null);
               fetchTribes();

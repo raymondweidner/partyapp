@@ -6,6 +6,14 @@ export const setPendingRedirect = (val: any) => {
   pendingRedirect = val;
 };
 
+export const safeBack = (router: any, fallbackRoute: string = "/") => {
+  if (router.canGoBack()) {
+    router.back();
+  } else {
+    router.replace(fallbackRoute);
+  }
+};
+
 export const showAlert = (
   title: string,
   message: string,

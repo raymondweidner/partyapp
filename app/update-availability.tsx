@@ -17,7 +17,7 @@ import {
   getProposals,
   updateAvailability,
 } from "../lib/data/service";
-import { showAlert } from "../lib/util";
+import { showAlert, safeBack } from "../lib/util";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
 
 export default function UpdateAvailability() {
@@ -122,7 +122,7 @@ export default function UpdateAvailability() {
         );
       }
       showAlert("Success", "Availability updated!", [
-        { text: "OK", onPress: () => router.back() },
+        { text: "OK", onPress: () => safeBack(router, "/") },
       ]);
     } catch (e: any) {
       showAlert("Error", e.message);

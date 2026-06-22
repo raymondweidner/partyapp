@@ -18,7 +18,7 @@ import {
   createTribeMember,
   getMembers,
 } from "../lib/data/service";
-import { showAlert } from "../lib/util";
+import { showAlert, safeBack } from "../lib/util";
 import {
   CurrentMemberContext,
   CustomHeaderLeft,
@@ -123,7 +123,7 @@ export default function CreateTribe() {
       }
 
       setIsModalVisible(false);
-      router.back();
+      safeBack(router, "/");
     } catch (error: any) {
       showAlert("Error", error.message || "Failed to add members.");
     } finally {
@@ -193,7 +193,7 @@ export default function CreateTribe() {
         transparent={true}
         onRequestClose={() => {
           setIsModalVisible(false);
-          router.back();
+          safeBack(router, "/");
         }}
       >
         <View style={styles.modalOverlay}>
@@ -301,7 +301,7 @@ export default function CreateTribe() {
                     ]}
                     onPress={() => {
                       setIsModalVisible(false);
-                      router.back();
+                      safeBack(router, "/");
                     }}
                   >
                     <Text style={[styles.primaryButtonText, { color: "#333" }]}>

@@ -46,6 +46,7 @@ export default function Login() {
             setInvitedMember(member);
             setName(member.name || "");
             setEmail(member.email || "");
+            setPhone(member?.phone || "");
             setIsSignUp(true);
           }
         })

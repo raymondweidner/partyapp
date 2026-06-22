@@ -19,7 +19,7 @@ import {
   getTribes,
 } from "../lib/data/service";
 import { Tribe } from "../lib/data/Tribe";
-import { showAlert } from "../lib/util";
+import { showAlert, safeBack } from "../lib/util";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
 
 export default function CreateMeetup() {
@@ -144,7 +144,7 @@ export default function CreateMeetup() {
       );
 
       showAlert("Success", "Planning Event Meetup created!", [
-        { text: "OK", onPress: () => router.back() },
+        { text: "OK", onPress: () => safeBack(router, "/") },
       ]);
     } catch (error: any) {
       showAlert("Error", error.message);
@@ -162,7 +162,7 @@ export default function CreateMeetup() {
             <CustomHeaderLeft
               onBack={() => {
                 if (paramTribeId) {
-                  router.back();
+                  safeBack(router, "/");
                 } else {
                   router.navigate("/");
                 }

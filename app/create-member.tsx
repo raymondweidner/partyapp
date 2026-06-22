@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { useAuth } from "../lib/auth";
 import { createMember, createMemberContact } from "../lib/data/service";
-import { showAlert } from "../lib/util";
+import { showAlert, safeBack } from "../lib/util";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
 
 export default function CreateMember() {
@@ -68,7 +68,7 @@ export default function CreateMember() {
       );
 
       showAlert("Success", "Invitation sent successfully!", [
-        { text: "OK", onPress: () => router.back() },
+        { text: "OK", onPress: () => safeBack(router, "/") },
       ]);
     } catch (error: any) {
       showAlert(

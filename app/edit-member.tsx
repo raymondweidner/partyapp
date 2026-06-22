@@ -16,7 +16,7 @@ import { Member } from "../lib/data/Member";
 import { getMembers, updateMember } from "../lib/data/service";
 
 import { useAuth } from "../lib/auth";
-import { showAlert } from "../lib/util";
+import { showAlert, safeBack } from "../lib/util";
 import { CustomHeaderLeft, useInfoModal } from "./_layout";
 
 export default function EditMember() {
@@ -78,7 +78,7 @@ export default function EditMember() {
 
   const handleBack = () => {
     if (paramMemberId) {
-      router.back();
+      safeBack(router, "/");
     } else {
       setSelectedMember(null);
     }
@@ -122,7 +122,7 @@ export default function EditMember() {
           text: "OK",
           onPress: () => {
             if (paramMemberId) {
-              router.back();
+              safeBack(router, "/");
             } else {
               setSelectedMember(null);
               fetchMembers();

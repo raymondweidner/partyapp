@@ -35,7 +35,7 @@ import { useAuth } from "../lib/auth";
 import { CheckboxToggle } from "../lib/components/CheckboxToggle";
 import { DropdownSelect } from "../lib/components/DropdownSelect";
 import { NumberStepper } from "../lib/components/NumberStepper";
-import { showAlert } from "../lib/util";
+import { showAlert, safeBack } from "../lib/util";
 import { CustomHeaderLeft, useCurrentMember, useInfoModal } from "./_layout";
 
 export default function EditMeetup() {
@@ -190,7 +190,7 @@ export default function EditMeetup() {
 
   const handleBack = () => {
     if (paramMeetupId) {
-      router.back();
+      safeBack(router, `/edit-tribe?id=${paramTribeId}`);
     } else {
       setSelectedMeetup(null);
     }

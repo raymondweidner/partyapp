@@ -12,7 +12,7 @@ import {
 import { useAuth } from "../lib/auth";
 import { DateTimePickerField } from "../lib/components/DateTimePickerField";
 import { createProposal } from "../lib/data/service";
-import { showAlert } from "../lib/util";
+import { showAlert, safeBack } from "../lib/util";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
 
 export default function CreateProposal() {
@@ -51,7 +51,7 @@ export default function CreateProposal() {
         token!,
       );
       showAlert("Success", "Proposal created!", [
-        { text: "OK", onPress: () => router.back() },
+        { text: "OK", onPress: () => safeBack(router, "/") },
       ]);
     } catch (e: any) {
       showAlert("Error", e.message);

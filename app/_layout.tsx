@@ -37,7 +37,7 @@ import {
   updateUserDevice,
 } from "../lib/data/service";
 import "../lib/firebaseConfig";
-import { handleNotificationPress, openEmailThread, openWhatsAppDM, pendingRedirect, setPendingRedirect, showAlert } from "../lib/util";
+import { handleNotificationPress, openEmailThread, openWhatsAppDM, pendingRedirect, setPendingRedirect, showAlert, safeBack } from "../lib/util";
 
 const UserDeviceContext = createContext<{
   userDevice: UserDevice | null;
@@ -370,7 +370,10 @@ export function CustomHeaderLeft({ onBack }: { onBack?: () => void }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center" }}>
       <TouchableOpacity
-        onPress={() => (onBack ? onBack() : router.back())}
+        onPress={() => {
+          if (onBack) onBack();
+          else safeBack(router, "/");
+        }}
         style={{ paddingHorizontal: 10 }}
       >
         <Text style={{ fontSize: 32, color: "#007bff", marginTop: -4 }}>‹</Text>
