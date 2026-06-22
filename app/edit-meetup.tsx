@@ -15,6 +15,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  DeviceEventEmitter,
 } from "react-native";
 import { Availability } from "../lib/data/Availability";
 import { Meetup } from "../lib/data/Meetup";
@@ -125,6 +126,13 @@ export default function EditMeetup() {
       fetchMeetups();
     }, [fetchMeetups]),
   );
+
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener("refreshView", () => {
+      fetchMeetups();
+    });
+    return () => sub.remove();
+  }, [fetchMeetups]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -306,7 +314,7 @@ export default function EditMeetup() {
       <View style={styles.container}>
         <Stack.Screen
           options={{
-            title: "Edit Meetup Details",
+            title: isEditing ? `Edit ${selectedMeetup.title || ""} Meetup`.trim() : `Meetup ${selectedMeetup.title || ""}`.trim(),
             headerLeft: () => <CustomHeaderLeft onBack={handleBack} />,
           }}
         />

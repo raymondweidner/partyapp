@@ -243,6 +243,8 @@ export default function CreateTribe() {
                         if (hasInfo)
                           showInfoModal(item.name || "Member", infoText, {
                             phone: cleanPhone,
+                            email: cleanEmail,
+                            memberId: item.id,
                           });
                       }}
                       {...(Platform.OS === "web" && hasInfo
@@ -257,31 +259,6 @@ export default function CreateTribe() {
                       <View
                         style={{ flexDirection: "row", alignItems: "center" }}
                       >
-                        <TouchableOpacity
-                          onPress={(e) => {
-                            e?.stopPropagation?.();
-                            e?.preventDefault?.();
-                            if (hasInfo)
-                              showInfoModal(item.name || "Member", infoText, {
-                                phone: cleanPhone,
-                              });
-                          }}
-                          style={{
-                            paddingLeft: 10,
-                            paddingRight: isSelected ? 10 : 0,
-                          }}
-                          disabled={!hasInfo}
-                        >
-                          <Text
-                            style={{
-                              color: hasInfo ? "#007bff" : "#ccc",
-                              fontSize: 18,
-                              fontWeight: "bold",
-                            }}
-                          >
-                            ⓘ
-                          </Text>
-                        </TouchableOpacity>
                         {isSelected && (
                           <TouchableOpacity
                             onPress={(e) => {

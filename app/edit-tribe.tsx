@@ -1,9 +1,8 @@
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Linking,
   Modal,
   Platform,
   ScrollView,
@@ -12,8 +11,11 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  DeviceEventEmitter,
 } from "react-native";
 import { useAuth } from "../lib/auth";
+import { EmailModal } from "../lib/components/EmailModal";
+import { GroupChatModal } from "../lib/components/GroupChatModal";
 import { Meetup } from "../lib/data/Meetup";
 import { Member } from "../lib/data/Member";
 import { Tribe } from "../lib/data/Tribe";
@@ -32,7 +34,7 @@ import {
   GroupedMemberContacts,
   updateTribe,
 } from "../lib/data/service";
-import { openWhatsAppDM, showAlert } from "../lib/util";
+import { openEmailThread, openWhatsAppDM, showAlert } from "../lib/util";
 import { CustomHeaderLeft, useCurrentMember, useInfoModal } from "./_layout";
 
 export default function EditTribe() {
@@ -41,6 +43,9 @@ export default function EditTribe() {
   const { user, loading: authLoading } = useAuth();
   const { member } = useCurrentMember();
   const { showInfoModal } = useInfoModal();
+
+  const [isEditing, setIsEditing] = useState(false);
+
   const [tribes, setTribes] = useState<Tribe[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedTribe, setSelectedTribe] = useState<Tribe | null>(null);
@@ -63,44 +68,24 @@ export default function EditTribe() {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const [isGroupChatModalVisible, setIsGroupChatModalVisible] = useState(false);
-  const [groupChatSearch, setGroupChatSearch] = useState("");
-  const [groupChatSelectedIds, setGroupChatSelectedIds] = useState<string[]>(
-    [],
-  );
-  const [newChatName, setNewChatName] = useState("");
-  const [newChatUrl, setNewChatUrl] = useState("");
   const [creatingChat, setCreatingChat] = useState(false);
 
+  const [isEmailModalVisible, setIsEmailModalVisible] = useState(false);
+
   const openGroupChatModal = () => {
-    const validMemberIds = currentMembers
-      .filter((m) => {
-        const cleanPhone = (m as any).phone
-          ? String((m as any).phone).trim()
-          : "";
-        return cleanPhone.length > 0;
-      })
-      .map((m) => m.id!);
-    setGroupChatSelectedIds(validMemberIds); // Selected by default for tribes if they have a phone
-    setGroupChatSearch("");
-    setNewChatName(`${name} Chat`);
-    setNewChatUrl("");
     setIsGroupChatModalVisible(true);
   };
 
-  const toggleGroupChatSelection = (memberId: string) => {
-    setGroupChatSelectedIds((prev) =>
-      prev.includes(memberId)
-        ? prev.filter((id) => id !== memberId)
-        : [...prev, memberId],
-    );
-  };
-
-  const handleCreateGroupChat = async () => {
-    if (!newChatName || !newChatUrl) {
+  const handleCreateGroupChat = async (
+    name: string,
+    url: string,
+    selectedIds: string[],
+  ) => {
+    if (!name || !url) {
       showAlert("Validation Error", "Chat Name and Invite URL are required.");
       return;
     }
-    if (groupChatSelectedIds.length === 0) {
+    if (selectedIds.length === 0) {
       showAlert(
         "No members selected",
         "Please select at least one member to start a chat.",
@@ -111,12 +96,9 @@ export default function EditTribe() {
     setCreatingChat(true);
     try {
       const token = await user!.getIdToken();
-      const newChat = await createChat(
-        { name: newChatName, url: newChatUrl },
-        token,
-      );
+      const newChat = await createChat({ name, url }, token);
 
-      const memberIdsToCreate = [...groupChatSelectedIds];
+      const memberIdsToCreate = [...selectedIds];
       if (member?.id && !memberIdsToCreate.includes(member.id)) {
         memberIdsToCreate.push(member.id);
       }
@@ -140,6 +122,35 @@ export default function EditTribe() {
     } finally {
       setCreatingChat(false);
     }
+  };
+
+  const openEmailModal = () => {
+    setIsEmailModalVisible(true);
+  };
+
+  const handleCreateEmailThread = (subject: string, selectedIds: string[]) => {
+    if (selectedIds.length === 0) {
+      showAlert(
+        "No members selected",
+        "Please select at least one member for the email thread.",
+      );
+      return;
+    }
+
+    const selectedMembers = currentMembers.filter((m) =>
+      selectedIds.includes(m.id!),
+    );
+    const emails = selectedMembers
+      .map((m) => (m.email ? String(m.email).trim() : ""))
+      .filter((e) => e.length > 0);
+
+    if (emails.length === 0) {
+      showAlert("Error", "Selected members do not have email addresses.");
+      return;
+    }
+
+    openEmailThread(emails, subject, member?.email);
+    setIsEmailModalVisible(false);
   };
 
   const fetchMembersAndTribeMembers = useCallback(
@@ -171,6 +182,7 @@ export default function EditTribe() {
 
   const handleSelectTribe = useCallback(
     (tribe: Tribe) => {
+      setIsEditing(false);
       setSelectedTribe(tribe);
       setName(tribe.name || "");
       setDescription(tribe.description || "");
@@ -200,8 +212,25 @@ export default function EditTribe() {
     }
   }, [user, paramTribeId, handleSelectTribe]);
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchTribes();
+    }, [fetchTribes])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (selectedTribe?.id) {
+        fetchMembersAndTribeMembers(selectedTribe.id);
+      }
+    }, [selectedTribe?.id, fetchMembersAndTribeMembers])
+  );
+
   useEffect(() => {
-    fetchTribes();
+    const sub = DeviceEventEmitter.addListener("refreshView", () => {
+      fetchTribes();
+    });
+    return () => sub.remove();
   }, [fetchTribes]);
 
   useEffect(() => {
@@ -270,6 +299,7 @@ export default function EditTribe() {
         {
           text: "OK",
           onPress: () => {
+            setIsEditing(false);
             if (paramTribeId) {
               router.back();
             } else {
@@ -401,9 +431,12 @@ export default function EditTribe() {
     return (
       <TouchableOpacity
         style={styles.memberItem}
-        activeOpacity={1}
-        onLongPress={() => {
-          showInfoModal(item.name || "Member", infoText, { phone: cleanPhone });
+        onPress={() => {
+          showInfoModal(item.name || "Member", infoText, {
+            phone: cleanPhone,
+            email: cleanEmail,
+            memberId: item.id,
+          });
         }}
         {...(Platform.OS === "web" ? ({ title: infoText } as any) : {})}
       >
@@ -428,17 +461,6 @@ export default function EditTribe() {
           )}
         </View>
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-          {!isMe && isFam && !!cleanPhone && (
-            <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation();
-                openWhatsAppDM(cleanPhone);
-              }}
-              style={{ paddingHorizontal: 5 }}
-            >
-              <Text style={{ fontSize: 18 }}>💬</Text>
-            </TouchableOpacity>
-          )}
           {!isMe && !isFam && !isInvited && !isIncoming && (
             <TouchableOpacity
               onPress={(e) => {
@@ -461,26 +483,6 @@ export default function EditTribe() {
               <Text style={{ fontSize: 16 }}>⏳</Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity
-            onPress={(e) => {
-              e?.stopPropagation?.();
-              e?.preventDefault?.();
-              showInfoModal(item.name || "Member", infoText, {
-                phone: cleanPhone,
-              });
-            }}
-            style={{ paddingLeft: 10 }}
-          >
-            <Text
-              style={{
-                color: "#007bff",
-                fontSize: 14,
-                fontWeight: "bold",
-              }}
-            >
-              ⓘ
-            </Text>
-          </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
@@ -515,7 +517,11 @@ export default function EditTribe() {
         style={[styles.memberItem, isSelected && styles.memberItemSelected]}
         onPress={() => item.id && toggleMemberSelection(item.id)}
         onLongPress={() => {
-          showInfoModal(item.name || "Member", infoText, { phone: cleanPhone });
+          showInfoModal(item.name || "Member", infoText, {
+            phone: cleanPhone,
+            email: cleanEmail,
+            memberId: item.id,
+          });
         }}
         {...(Platform.OS === "web" ? ({ title: infoText } as any) : {})}
       >
@@ -540,26 +546,6 @@ export default function EditTribe() {
           )}
         </View>
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <TouchableOpacity
-            onPress={(e) => {
-              e?.stopPropagation?.();
-              e?.preventDefault?.();
-              showInfoModal(item.name || "Member", infoText, {
-                phone: cleanPhone,
-              });
-            }}
-            style={{ paddingLeft: 10, paddingRight: isSelected ? 10 : 0 }}
-          >
-            <Text
-              style={{
-                color: "#007bff",
-                fontSize: 14,
-                fontWeight: "bold",
-              }}
-            >
-              ⓘ
-            </Text>
-          </TouchableOpacity>
           {isSelected && (
             <TouchableOpacity
               onPress={(e) => {
@@ -587,42 +573,40 @@ export default function EditTribe() {
     selectedMemberIds.includes(member.id!),
   );
 
-  const filteredTribeForChat = currentMembers.filter((m) =>
-    (m.name || "").toLowerCase().includes(groupChatSearch.toLowerCase()),
-  );
-
   if (selectedTribe) {
     return (
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={{ paddingBottom: 40 }}
-      >
+      <View style={styles.container}>
         <Stack.Screen
           options={{
-            title: "Edit Tribe Details",
+            title: isEditing ? `Edit ${selectedTribe.name} Tribe` : selectedTribe.name || "Tribe Details",
             headerLeft: () => <CustomHeaderLeft onBack={handleBack} />,
           }}
         />
+        <ScrollView
+          contentContainerStyle={{ paddingBottom: 40 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={styles.label}>Name</Text>
+          <TextInput
+            style={[styles.input, !isEditing && styles.readOnlyInput]}
+            value={name}
+            onChangeText={setName}
+            placeholder="Tribe Name"
+            placeholderTextColor="#a0a0a0"
+            editable={isEditing}
+          />
 
-        <Text style={styles.label}>Name</Text>
-        <TextInput
-          style={styles.input}
-          value={name}
-          onChangeText={setName}
-          placeholder="Tribe Name"
-          placeholderTextColor="#a0a0a0"
-        />
-
-        <Text style={styles.label}>Description</Text>
-        <TextInput
-          style={[styles.input, styles.textArea]}
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Description"
-          multiline
-          numberOfLines={4}
-          placeholderTextColor="#a0a0a0"
-        />
+          <Text style={styles.label}>Description</Text>
+          <TextInput
+            style={[styles.input, styles.textArea, !isEditing && styles.readOnlyInput]}
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Description"
+            multiline
+            numberOfLines={4}
+            placeholderTextColor="#a0a0a0"
+            editable={isEditing}
+          />
 
         <View style={styles.sectionHeaderRow}>
           <Text style={[styles.label, { marginTop: 30, marginBottom: 10 }]}>
@@ -636,11 +620,19 @@ export default function EditTribe() {
               <Text style={styles.editButtonText}>💬 Groupchat</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => setIsModalVisible(true)}
+              onPress={openEmailModal}
               style={styles.editButton}
             >
-              <Text style={styles.editButtonText}>Edit</Text>
+              <Text style={styles.editButtonText}>📧 Email</Text>
             </TouchableOpacity>
+            {isEditing && (
+              <TouchableOpacity
+                onPress={() => setIsModalVisible(true)}
+                style={styles.editButton}
+              >
+                <Text style={styles.editButtonText}>Edit</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
         {membersLoading && <ActivityIndicator size="small" />}
@@ -648,13 +640,13 @@ export default function EditTribe() {
         {!membersLoading && currentMembers.length === 0 ? (
           <Text style={styles.emptyText}>No members in this tribe.</Text>
         ) : (
-          <ScrollView style={{ maxHeight: 212 }} nestedScrollEnabled>
+          <View style={{ maxHeight: 212 }}>
             {currentMembers.map((item) => (
               <React.Fragment key={item.id}>
                 {renderCurrentMemberItem({ item })}
               </React.Fragment>
             ))}
-          </ScrollView>
+          </View>
         )}
 
         <View style={styles.meetupsContainer}>
@@ -678,15 +670,15 @@ export default function EditTribe() {
           {meetups.length === 0 ? (
             <Text style={styles.emptyText}>No meetups in this tribe.</Text>
           ) : (
-            <ScrollView style={{ maxHeight: 256 }} nestedScrollEnabled>
+            <View style={{ maxHeight: 256 }}>
               {meetups.map((meetup) => {
                 const cleanDetails = meetup.details
                   ? String(meetup.details).trim()
                   : "";
                 const infoText =
                   cleanDetails.length > 0 &&
-                  cleanDetails !== "undefined" &&
-                  cleanDetails !== "null"
+                    cleanDetails !== "undefined" &&
+                    cleanDetails !== "null"
                     ? `Status: ${meetup.status || "Planning"}\n\n${cleanDetails}`
                     : `Status: ${meetup.status || "Planning"}`;
                 return (
@@ -741,7 +733,7 @@ export default function EditTribe() {
                   </TouchableOpacity>
                 );
               })}
-            </ScrollView>
+            </View>
           )}
         </View>
 
@@ -750,12 +742,46 @@ export default function EditTribe() {
         >
           {updating ? (
             <ActivityIndicator size="large" />
+          ) : isEditing ? (
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+              }}
+            >
+              <TouchableOpacity
+                style={[
+                  styles.primaryButton,
+                  {
+                    flex: 1,
+                    marginRight: 10,
+                    backgroundColor: "#f0f0f0",
+                    shadowOpacity: 0,
+                    elevation: 0,
+                  },
+                ]}
+                onPress={() => {
+                  handleSelectTribe(selectedTribe!);
+                  setIsEditing(false);
+                }}
+              >
+                <Text style={[styles.primaryButtonText, { color: "#333" }]}>
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.primaryButton, { flex: 1, marginLeft: 10 }]}
+                onPress={handleUpdate}
+              >
+                <Text style={styles.primaryButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             <TouchableOpacity
               style={styles.primaryButton}
-              onPress={handleUpdate}
+              onPress={() => setIsEditing(true)}
             >
-              <Text style={styles.primaryButtonText}>Update Tribe</Text>
+              <Text style={styles.primaryButtonText}>Edit Details</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -796,160 +822,40 @@ export default function EditTribe() {
           </View>
         </Modal>
 
-        <Modal
+        <GroupChatModal
           visible={isGroupChatModalVisible}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setIsGroupChatModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Start Tribe Groupchat</Text>
+          onClose={() => setIsGroupChatModalVisible(false)}
+          members={currentMembers}
+          onCreate={handleCreateGroupChat}
+          title="Start Tribe Groupchat"
+          creating={creatingChat}
+          defaultName={`${name} Chat`}
+          defaultSelectedIds={currentMembers
+            .filter((m) => {
+              const cleanPhone = (m as any).phone
+                ? String((m as any).phone).trim()
+                : "";
+              return cleanPhone.length > 0;
+            })
+            .map((m) => m.id!)}
+        />
 
-              <View style={styles.guidedPanel}>
-                <Text style={styles.guidedPanelText}>
-                  {
-                    "WhatsApp doesn't allow automatic group creation. To proceed:"
-                  }
-                </Text>
-                <Text style={styles.guidedPanelText}>
-                  {"1. Open WhatsApp and create a new group."}
-                </Text>
-                <Text style={styles.guidedPanelText}>
-                  {'2. Copy the group\'s "Invite Link".'}
-                </Text>
-                <TouchableOpacity
-                  style={[
-                    styles.primaryButton,
-                    { height: 44, marginTop: 8, marginBottom: 12 },
-                  ]}
-                  onPress={() =>
-                    Linking.openURL("whatsapp://app").catch(() =>
-                      showAlert("Error", "WhatsApp is not installed."),
-                    )
-                  }
-                >
-                  <Text style={styles.primaryButtonText}>Open WhatsApp</Text>
-                </TouchableOpacity>
-                <Text style={styles.guidedPanelText}>
-                  3. Paste the link and name the chat below.
-                </Text>
-              </View>
-
-              <TextInput
-                style={styles.modalInput}
-                placeholder="Chat Name"
-                value={newChatName}
-                onChangeText={setNewChatName}
-                placeholderTextColor="#a0a0a0"
-              />
-
-              <TextInput
-                style={styles.modalInput}
-                placeholder="WhatsApp Invite URL (https://chat.whatsapp.com/...)"
-                value={newChatUrl}
-                onChangeText={setNewChatUrl}
-                placeholderTextColor="#a0a0a0"
-                autoCapitalize="none"
-              />
-
-              <View style={styles.searchContainer}>
-                <Text style={styles.searchIcon}>🔍</Text>
-                <TextInput
-                  style={styles.modalSearchInput}
-                  placeholder="Search members..."
-                  value={groupChatSearch}
-                  onChangeText={setGroupChatSearch}
-                  placeholderTextColor="#a0a0a0"
-                />
-              </View>
-
-              <FlatList
-                style={{ maxHeight: 200, flexGrow: 0 }}
-                data={filteredTribeForChat}
-                keyExtractor={(item) => item.id!}
-                renderItem={({ item }) => {
-                  const isSelected = groupChatSelectedIds.includes(item.id!);
-                  const cleanPhone = (item as any).phone
-                    ? String((item as any).phone).trim()
-                    : "";
-                  const hasPhone = cleanPhone.length > 0;
-                  return (
-                    <TouchableOpacity
-                      style={[
-                        styles.memberItem,
-                        isSelected && styles.memberItemSelected,
-                        !hasPhone && { opacity: 0.5 },
-                      ]}
-                      onPress={() => toggleGroupChatSelection(item.id!)}
-                      disabled={!hasPhone}
-                    >
-                      <Text style={styles.itemTitle}>
-                        {item.name} {!hasPhone ? "(No Phone)" : ""}
-                      </Text>
-                      <View
-                        style={[
-                          styles.checkbox,
-                          isSelected && styles.checkboxSelected,
-                          !hasPhone && {
-                            backgroundColor: "#f0f0f0",
-                            borderColor: "#ccc",
-                          },
-                        ]}
-                      >
-                        {isSelected && <Text style={styles.checkmark}>✓</Text>}
-                      </View>
-                    </TouchableOpacity>
-                  );
-                }}
-                ListEmptyComponent={
-                  <Text style={styles.emptyText}>No matching members.</Text>
-                }
-              />
-
-              {creatingChat ? (
-                <ActivityIndicator
-                  size="large"
-                  color="#007bff"
-                  style={{ marginTop: 20 }}
-                />
-              ) : (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    marginTop: 20,
-                  }}
-                >
-                  <TouchableOpacity
-                    style={[
-                      styles.primaryButton,
-                      {
-                        flex: 1,
-                        marginRight: 10,
-                        backgroundColor: "#f0f0f0",
-                        shadowOpacity: 0,
-                        elevation: 0,
-                      },
-                    ]}
-                    onPress={() => setIsGroupChatModalVisible(false)}
-                  >
-                    <Text style={[styles.primaryButtonText, { color: "#333" }]}>
-                      Cancel
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.primaryButton, { flex: 1, marginLeft: 10 }]}
-                    onPress={handleCreateGroupChat}
-                  >
-                    <Text style={styles.primaryButtonText}>Create Chat</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          </View>
-        </Modal>
-      </ScrollView>
+        <EmailModal
+          visible={isEmailModalVisible}
+          onClose={() => setIsEmailModalVisible(false)}
+          members={currentMembers}
+          onCreate={handleCreateEmailThread}
+          title="Email Tribe Members"
+          defaultSubject={`${name} Thread`}
+          defaultSelectedIds={currentMembers
+            .filter((m) => {
+              const cleanEmail = m.email ? String(m.email).trim() : "";
+              return cleanEmail.length > 0;
+            })
+            .map((m) => m.id!)}
+        />
+        </ScrollView>
+      </View>
     );
   }
 
@@ -1002,6 +908,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontSize: 16,
     color: "#333",
+  },
+  readOnlyInput: {
+    backgroundColor: "#E4E7EB",
+    justifyContent: "center",
   },
   textArea: { height: 100, textAlignVertical: "top", paddingTop: 16 },
   buttonContainer: { marginTop: 20 },

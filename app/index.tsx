@@ -1,20 +1,20 @@
 import { useFocusEffect, useRouter } from "expo-router";
 import { signOut } from "firebase/auth";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
+  DeviceEventEmitter,
   Linking,
-  Modal,
   Platform,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { useAuth } from "../lib/auth";
+import { EmailModal } from "../lib/components/EmailModal";
+import { GroupChatModal } from "../lib/components/GroupChatModal";
 import { Chat } from "../lib/data/Chat";
 import { ChatMember } from "../lib/data/ChatMember";
 import { Meetup } from "../lib/data/Meetup";
@@ -36,7 +36,7 @@ import {
   updateMemberContact,
 } from "../lib/data/service";
 import { auth } from "../lib/firebaseConfig";
-import { openWhatsAppDM, showAlert } from "../lib/util";
+import { openEmailThread, openWhatsAppDM, showAlert } from "../lib/util";
 import { useCurrentMember, useInfoModal, useUserDevice } from "./_layout";
 
 export default function Home() {
@@ -62,37 +62,25 @@ export default function Home() {
     useState<GroupedMemberContacts | null>(null);
 
   const [isGroupChatModalVisible, setIsGroupChatModalVisible] = useState(false);
-  const [groupChatSearch, setGroupChatSearch] = useState("");
-  const [groupChatSelectedIds, setGroupChatSelectedIds] = useState<string[]>(
-    [],
-  );
-  const [newChatName, setNewChatName] = useState("");
-  const [newChatUrl, setNewChatUrl] = useState("");
   const [creatingChat, setCreatingChat] = useState(false);
 
+  const [isEmailModalVisible, setIsEmailModalVisible] = useState(false);
+
   const openGroupChatModal = () => {
-    setNewChatName("");
-    setNewChatUrl("");
-    setGroupChatSelectedIds([]); // Unselected by default for fam
-    setGroupChatSearch("");
     setIsGroupChatModalVisible(true);
   };
 
-  const toggleGroupChatSelection = (memberId: string) => {
-    setGroupChatSelectedIds((prev) =>
-      prev.includes(memberId)
-        ? prev.filter((id) => id !== memberId)
-        : [...prev, memberId],
-    );
-  };
-
-  const handleCreateGroupChat = async () => {
-    if (!newChatName || !newChatUrl) {
+  const handleCreateGroupChat = async (
+    name: string,
+    url: string,
+    selectedIds: string[],
+  ) => {
+    if (!name || !url) {
       showAlert("Validation Error", "Chat Name and Invite URL are required.");
       return;
     }
     if (
-      groupChatSelectedIds.length === 0 &&
+      selectedIds.length === 0 &&
       !myFamMembers.some((m) => m.id === currentMember?.id)
     ) {
       showAlert(
@@ -105,12 +93,9 @@ export default function Home() {
     setCreatingChat(true);
     try {
       const token = await user!.getIdToken();
-      const newChat = await createChat(
-        { name: newChatName, url: newChatUrl },
-        token,
-      );
+      const newChat = await createChat({ name, url }, token);
 
-      const memberIdsToCreate = [...groupChatSelectedIds];
+      const memberIdsToCreate = [...selectedIds];
       if (currentMember?.id && !memberIdsToCreate.includes(currentMember.id)) {
         memberIdsToCreate.push(currentMember.id);
       }
@@ -134,9 +119,34 @@ export default function Home() {
     }
   };
 
-  const filteredFamForChat = myFamMembers.filter((m) =>
-    (m.name || "").toLowerCase().includes(groupChatSearch.toLowerCase()),
-  );
+  const openEmailModal = () => {
+    setIsEmailModalVisible(true);
+  };
+
+  const handleCreateEmailThread = (subject: string, selectedIds: string[]) => {
+    if (selectedIds.length === 0) {
+      showAlert(
+        "No members selected",
+        "Please select at least one member for the email thread.",
+      );
+      return;
+    }
+
+    const selectedMembers = myFamMembers.filter((m) =>
+      selectedIds.includes(m.id!),
+    );
+    const emails = selectedMembers
+      .map((m) => (m.email ? String(m.email).trim() : ""))
+      .filter((e) => e.length > 0);
+
+    if (emails.length === 0) {
+      showAlert("Error", "Selected members do not have email addresses.");
+      return;
+    }
+
+    openEmailThread(emails, subject, currentMember?.email);
+    setIsEmailModalVisible(false);
+  };
 
   const fetchData = useCallback(async () => {
     if (!user) return;
@@ -240,6 +250,13 @@ export default function Home() {
     }, [fetchData]),
   );
 
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener("refreshView", () => {
+      fetchData();
+    });
+    return () => sub.remove();
+  }, [fetchData]);
+
   const handleSignOut = async () => {
     try {
       const deviceId = userDevice?.id;
@@ -274,7 +291,8 @@ export default function Home() {
     textTitle: string,
     subtitle: string,
     onPress: () => void,
-    infoModalOptions?: { phone?: string | null },
+    infoModalOptions?: { phone?: string | null; email?: string | null },
+    actionNode?: React.ReactNode,
   ) => {
     const cleanSubtitle = subtitle ? String(subtitle).trim() : "";
     const hasSubtitle =
@@ -304,25 +322,9 @@ export default function Home() {
           >
             {titleNode}
           </View>
-          <TouchableOpacity
-            onPress={(e) => {
-              e?.stopPropagation?.();
-              e?.preventDefault?.();
-              if (hasSubtitle)
-                showInfoModal(textTitle, cleanSubtitle, infoModalOptions);
-            }}
-            style={styles.infoIconContainer}
-            disabled={!hasSubtitle}
-          >
-            <Text
-              style={[
-                styles.infoIcon,
-                { color: hasSubtitle ? "#007bff" : "#ccc" },
-              ]}
-            >
-              ⓘ
-            </Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            {actionNode}
+          </View>
         </View>
       </TouchableOpacity>
     );
@@ -409,8 +411,9 @@ export default function Home() {
     tab: string,
   ) => {
     const isPendingJoin = f.status === "invited";
+    const cleanEmail = f.email ? String(f.email).trim() : "";
     const cleanPhone = (f as any).phone ? String((f as any).phone).trim() : "";
-    const infoText = `Email: ${f.email || "N/A"}\nPhone: ${cleanPhone || "N/A"}\nStatus: ${isPendingJoin ? "Pending App Join" : statusText}`;
+    const infoText = `Email: ${cleanEmail || "N/A"}\nPhone: ${cleanPhone || "N/A"}\nStatus: ${isPendingJoin ? "Pending App Join" : statusText}`;
 
     const titleNode = (
       <>
@@ -435,29 +438,37 @@ export default function Home() {
         >
           <Text style={styles.itemTitle}> {statusIcon}</Text>
         </TouchableOpacity>
-        {tab === "my_fam" && !!cleanPhone && (
+      </>
+    );
+
+    const onPress = () => {
+      showInfoModal(f.name || "Member", infoText, { phone: cleanPhone, email: cleanEmail, memberId: f.id });
+    };
+
+    const actionNode = (
+      <>
+        {tab === "incoming" && (
           <TouchableOpacity
             onPress={(e) => {
               e.stopPropagation();
-              openWhatsAppDM(cleanPhone);
+              handleIncomingPress(f);
             }}
-            style={{ marginLeft: 10 }}
+            style={{ paddingHorizontal: 5 }}
           >
-            <Text style={{ fontSize: 16 }}>💬</Text>
+            <Text style={{ fontSize: 18 }}>👋</Text>
           </TouchableOpacity>
         )}
       </>
     );
 
-    const onPress = () => {
-      if (tab === "incoming") {
-        handleIncomingPress(f);
-      }
-    };
-
-    return renderItem(titleNode, f.name || "Unnamed", infoText, onPress, {
-      phone: cleanPhone,
-    });
+    return renderItem(
+      titleNode,
+      f.name || "Unnamed",
+      infoText,
+      onPress,
+      { phone: cleanPhone, email: cleanEmail },
+      actionNode,
+    );
   };
 
   return (
@@ -536,6 +547,12 @@ export default function Home() {
                   <Text style={styles.actionButtonText}>
                     🚪 Invite to TribeVibe!
                   </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={openEmailModal}
+                >
+                  <Text style={styles.actionButtonText}>📧 Email Fam</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -652,12 +669,12 @@ export default function Home() {
                   () =>
                     chat.url
                       ? Linking.openURL(chat.url).catch(() =>
-                          showAlert("Error", "Could not open WhatsApp link."),
-                        )
+                        showAlert("Error", "Could not open WhatsApp link."),
+                      )
                       : showAlert(
-                          "Pending",
-                          "The group chat is being generated. Please check back in a moment.",
-                        ),
+                        "Pending",
+                        "The group chat is being generated. Please check back in a moment.",
+                      ),
                 );
               })}
             </ScrollView>
@@ -671,159 +688,22 @@ export default function Home() {
           <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>
 
-        <Modal
+        <GroupChatModal
           visible={isGroupChatModalVisible}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setIsGroupChatModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Create Fam Groupchat</Text>
+          onClose={() => setIsGroupChatModalVisible(false)}
+          members={myFamMembers}
+          onCreate={handleCreateGroupChat}
+          title="Create Fam Groupchat"
+          creating={creatingChat}
+        />
 
-              <View style={styles.guidedPanel}>
-                <Text style={styles.guidedPanelText}>
-                  {
-                    "WhatsApp doesn't allow automatic group creation. To proceed:"
-                  }
-                </Text>
-                <Text style={styles.guidedPanelText}>
-                  {"1. Open WhatsApp and create a new group."}
-                </Text>
-                <Text style={styles.guidedPanelText}>
-                  {'2. Copy the group\'s "Invite Link".'}
-                </Text>
-                <TouchableOpacity
-                  style={[
-                    styles.primaryButton,
-                    { height: 44, marginTop: 8, marginBottom: 12 },
-                  ]}
-                  onPress={() =>
-                    Linking.openURL("whatsapp://app").catch(() =>
-                      showAlert("Error", "WhatsApp is not installed."),
-                    )
-                  }
-                >
-                  <Text style={styles.primaryButtonText}>Open WhatsApp</Text>
-                </TouchableOpacity>
-                <Text style={styles.guidedPanelText}>
-                  3. Paste the link and name the chat below.
-                </Text>
-              </View>
-
-              <TextInput
-                style={styles.modalInput}
-                placeholder="Chat Name"
-                value={newChatName}
-                onChangeText={setNewChatName}
-                placeholderTextColor="#a0a0a0"
-              />
-
-              <TextInput
-                style={styles.modalInput}
-                placeholder="WhatsApp Invite URL (https://chat.whatsapp.com/...)"
-                value={newChatUrl}
-                onChangeText={setNewChatUrl}
-                placeholderTextColor="#a0a0a0"
-                autoCapitalize="none"
-              />
-
-              <View style={styles.searchContainer}>
-                <Text style={styles.searchIcon}>🔍</Text>
-                <TextInput
-                  style={styles.modalSearchInput}
-                  placeholder="Search members..."
-                  value={groupChatSearch}
-                  onChangeText={setGroupChatSearch}
-                  placeholderTextColor="#a0a0a0"
-                />
-              </View>
-
-              <FlatList
-                style={{ maxHeight: 200, flexGrow: 0 }}
-                data={filteredFamForChat}
-                keyExtractor={(item) => item.id!}
-                renderItem={({ item }) => {
-                  const isSelected = groupChatSelectedIds.includes(item.id!);
-                  const cleanPhone = (item as any).phone
-                    ? String((item as any).phone).trim()
-                    : "";
-                  const hasPhone = cleanPhone.length > 0;
-                  return (
-                    <TouchableOpacity
-                      style={[
-                        styles.memberItem,
-                        isSelected && styles.memberItemSelected,
-                        !hasPhone && { opacity: 0.5 },
-                      ]}
-                      onPress={() => toggleGroupChatSelection(item.id!)}
-                      disabled={!hasPhone}
-                    >
-                      <Text style={styles.itemTitle}>
-                        {item.name} {!hasPhone ? "(No Phone)" : ""}
-                      </Text>
-                      <View
-                        style={[
-                          styles.checkbox,
-                          isSelected && styles.checkboxSelected,
-                          !hasPhone && {
-                            backgroundColor: "#f0f0f0",
-                            borderColor: "#ccc",
-                          },
-                        ]}
-                      >
-                        {isSelected && <Text style={styles.checkmark}>✓</Text>}
-                      </View>
-                    </TouchableOpacity>
-                  );
-                }}
-                ListEmptyComponent={
-                  <Text style={styles.emptyText}>No matching members.</Text>
-                }
-              />
-
-              {creatingChat ? (
-                <ActivityIndicator
-                  size="large"
-                  color="#007bff"
-                  style={{ marginTop: 20 }}
-                />
-              ) : (
-                <View
-                  style={{
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    marginTop: 20,
-                  }}
-                >
-                  <TouchableOpacity
-                    style={[
-                      styles.primaryButton,
-                      {
-                        flex: 1,
-                        marginRight: 10,
-                        backgroundColor: "#f0f0f0",
-                        shadowOpacity: 0,
-                        elevation: 0,
-                      },
-                    ]}
-                    onPress={() => setIsGroupChatModalVisible(false)}
-                  >
-                    <Text style={[styles.primaryButtonText, { color: "#333" }]}>
-                      Cancel
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.primaryButton, { flex: 1, marginLeft: 10 }]}
-                    onPress={handleCreateGroupChat}
-                  >
-                    <Text style={styles.primaryButtonText}>Create Chat</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          </View>
-        </Modal>
+        <EmailModal
+          visible={isEmailModalVisible}
+          onClose={() => setIsEmailModalVisible(false)}
+          members={myFamMembers}
+          onCreate={handleCreateEmailThread}
+          title="Email Fam"
+        />
       </ScrollView>
     </View>
   );

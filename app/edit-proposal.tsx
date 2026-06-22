@@ -13,6 +13,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  DeviceEventEmitter,
 } from "react-native";
 import { useAuth } from "../lib/auth";
 import { DateTimePickerField } from "../lib/components/DateTimePickerField";
@@ -104,6 +105,13 @@ export default function EditProposal() {
       fetchDetails();
     }, [fetchDetails]),
   );
+
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener("refreshView", () => {
+      fetchDetails();
+    });
+    return () => sub.remove();
+  }, [fetchDetails]);
 
   useEffect(() => {
     if (authLoading) return;

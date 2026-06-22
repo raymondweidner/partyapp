@@ -72,6 +72,10 @@ export default function Login() {
       );
       if (member) setMember(member);
 
+      if (Platform.OS === "web" && "Notification" in window && window.Notification.permission === "default") {
+        await window.Notification.requestPermission();
+      }
+
       showAlert("Success", "Logged in successfully!");
     } catch (error: any) {
       showAlert("Login Error", error.message);
@@ -184,6 +188,10 @@ export default function Login() {
         throw new Error(
           "Failed to create or link host record. " + error.message,
         );
+      }
+
+      if (Platform.OS === "web" && "Notification" in window && window.Notification.permission === "default") {
+        await window.Notification.requestPermission();
       }
 
       showAlert("Success", "Account created!");

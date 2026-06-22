@@ -10,6 +10,7 @@ import { Proposal } from "./Proposal";
 import { Tribe } from "./Tribe";
 import { TribeMember } from "./TribeMember";
 import { UserDevice } from "./UserDevice";
+import { Notification } from "./Notification";
 
 const getHeaders = (token: string) => ({
   "Content-Type": "application/json",
@@ -563,4 +564,66 @@ export const createChatMember = async (
   });
   if (!response.ok) throw new Error("Failed to create chat member");
   return response.json();
+};
+
+// Notification Services
+export const getNotifications = async (
+  authToken: string,
+  memberId?: string,
+): Promise<Notification[]> => {
+  let url = `${getResourceEndpoint()}/notification`;
+  if (memberId) {
+    url += `?member_id=${encodeURIComponent(memberId)}`;
+  }
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${authToken}` },
+  });
+  if (!response.ok) {
+    if (response.status === 404) return [];
+    throw new Error("Failed to fetch notifications");
+  }
+  return response.json();
+};
+
+export const createNotification = async (
+  notification: Omit<Notification, "id">,
+  authToken: string,
+): Promise<Notification> => {
+  const response = await fetch(`${getResourceEndpoint()}/notification`, {
+    method: "POST",
+    headers: getHeaders(authToken),
+    body: JSON.stringify(notification),
+  });
+  if (!response.ok) throw new Error("Failed to create notification");
+  return response.json();
+};
+
+export const updateNotification = async (
+  notification: Notification & { id: string },
+  authToken: string,
+): Promise<Notification> => {
+  const response = await fetch(
+    `${getResourceEndpoint()}/notification/${notification.id}`,
+    {
+      method: "PUT",
+      headers: getHeaders(authToken),
+      body: JSON.stringify(notification),
+    },
+  );
+  if (!response.ok) throw new Error("Failed to update notification");
+  return response.json();
+};
+
+export const deleteNotification = async (
+  notificationId: string,
+  authToken: string,
+): Promise<void> => {
+  const response = await fetch(
+    `${getResourceEndpoint()}/notification/${notificationId}`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${authToken}` },
+    },
+  );
+  if (!response.ok) throw new Error("Failed to delete notification");
 };

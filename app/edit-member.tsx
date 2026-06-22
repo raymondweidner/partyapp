@@ -1,5 +1,5 @@
 // NOTE: Please rename this file to edit-member.tsx
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
     ActivityIndicator,
@@ -10,6 +10,7 @@ import {
     TextInput,
     TouchableOpacity,
     View,
+    DeviceEventEmitter,
 } from "react-native";
 import { Member } from "../lib/data/Member";
 import { getMembers, updateMember } from "../lib/data/service";
@@ -57,8 +58,17 @@ export default function EditMember() {
     }
   }, [user, paramMemberId]);
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchMembers();
+    }, [fetchMembers])
+  );
+
   useEffect(() => {
-    fetchMembers();
+    const sub = DeviceEventEmitter.addListener("refreshView", () => {
+      fetchMembers();
+    });
+    return () => sub.remove();
   }, [fetchMembers]);
 
   useEffect(() => {
@@ -155,9 +165,12 @@ export default function EditMember() {
     return (
       <TouchableOpacity
         style={styles.item}
-        onPress={() => handleSelectMember(item)}
-        onLongPress={() => {
-          showInfoModal(item.name || "Member", infoText, { phone: cleanPhone });
+        onPress={() => {
+          showInfoModal(item.name || "Member", infoText, {
+            phone: cleanPhone,
+            email: cleanEmail,
+            memberId: item.id,
+          });
         }}
         {...(Platform.OS === "web" ? ({ title: infoText } as any) : {})}
       >
@@ -183,26 +196,6 @@ export default function EditMember() {
               </TouchableOpacity>
             )}
           </View>
-          <TouchableOpacity
-            onPress={(e) => {
-              e?.stopPropagation?.();
-              e?.preventDefault?.();
-              showInfoModal(item.name || "Member", infoText, {
-                phone: cleanPhone,
-              });
-            }}
-            style={{ paddingLeft: 10 }}
-          >
-            <Text
-              style={{
-                color: "#007bff",
-                fontSize: 14,
-                fontWeight: "bold",
-              }}
-            >
-              ⓘ
-            </Text>
-          </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
