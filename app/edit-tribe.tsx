@@ -1,8 +1,10 @@
-import { Stack, useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  DeviceEventEmitter,
   FlatList,
+  Image,
   Modal,
   Platform,
   ScrollView,
@@ -11,7 +13,6 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  DeviceEventEmitter,
 } from "react-native";
 import { useAuth } from "../lib/auth";
 import { EmailModal } from "../lib/components/EmailModal";
@@ -34,7 +35,8 @@ import {
   GroupedMemberContacts,
   updateTribe,
 } from "../lib/data/service";
-import { openEmailThread, openWhatsAppDM, showAlert, safeBack } from "../lib/util";
+import { openEmailThread, safeBack, showAlert } from "../lib/util";
+import { colors, globalStyles } from "../lib/theme";
 import { CustomHeaderLeft, useCurrentMember, useInfoModal } from "./_layout";
 
 export default function EditTribe() {
@@ -355,7 +357,7 @@ export default function EditTribe() {
           >
             <Text
               style={{
-                color: hasDesc ? "#007bff" : "#ccc",
+                color: hasDesc ? colors.accent : colors.textMuted,
                 fontSize: 14,
                 fontWeight: "bold",
               }}
@@ -440,47 +442,53 @@ export default function EditTribe() {
         }}
         {...(Platform.OS === "web" ? ({ title: infoText } as any) : {})}
       >
-        <View
-          style={[
-            styles.memberInfo,
-            { flexDirection: "row", alignItems: "center" },
-          ]}
-        >
-          <Text style={styles.itemTitle} numberOfLines={1}>
-            {item.name}
-          </Text>
-          {isPending && (
-            <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation();
-                showInfoModal("Status", "Pending App Join");
-              }}
-            >
-              <Text style={styles.itemTitle}> ✉️</Text>
-            </TouchableOpacity>
+        <View style={styles.memberCardImageContainer}>
+          {item.profile_pic_data ? (
+            <Image source={{ uri: item.profile_pic_data }} style={styles.memberCardImage} />
+          ) : (
+            <Text style={styles.memberCardSilhouette}>👤</Text>
           )}
+          <View style={{ position: 'absolute', top: -5, right: -10 }}>
+            {!isMe && !isFam && !isInvited && !isIncoming && (
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleInvite();
+                }}
+                style={{ paddingHorizontal: 5, backgroundColor: colors.surface, borderRadius: 10 }}
+              >
+                <Text style={{ fontSize: 18 }}>➕</Text>
+              </TouchableOpacity>
+            )}
+            {!isMe && isInvited && (
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  showInfoModal("Status", "Invite Sent");
+                }}
+                style={{ paddingHorizontal: 5, backgroundColor: colors.surface, borderRadius: 10 }}
+              >
+                <Text style={{ fontSize: 18 }}>⏳</Text>
+              </TouchableOpacity>
+            )}
+            {isMe && (
+              <TouchableOpacity
+                onPress={(e) => {
+                  e.stopPropagation();
+                  showInfoModal("Status", "You");
+                }}
+                style={{ paddingHorizontal: 5, backgroundColor: colors.surface, borderRadius: 10 }}
+              >
+                <Text style={{ fontSize: 18 }}>⭐</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          {!isMe && !isFam && !isInvited && !isIncoming && (
-            <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation();
-                handleInvite();
-              }}
-              style={{ paddingHorizontal: 5 }}
-            >
-              <Text style={{ fontSize: 18 }}>➕</Text>
-            </TouchableOpacity>
-          )}
-          {!isMe && isInvited && (
-            <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation();
-                showInfoModal("Status", "Invite Sent");
-              }}
-              style={{ paddingHorizontal: 5 }}
-            >
-              <Text style={{ fontSize: 16 }}>⏳</Text>
+        <Text style={styles.memberCardName} numberOfLines={1}>{item.name || "Unnamed"}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+          {isPending && (
+            <TouchableOpacity onPress={(e) => { e.stopPropagation(); showInfoModal("Status", "Pending App Join"); }}>
+              <Text style={{ fontSize: 12 }}>✉️ </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -525,35 +533,23 @@ export default function EditTribe() {
         }}
         {...(Platform.OS === "web" ? ({ title: infoText } as any) : {})}
       >
-        <View
-          style={[
-            styles.memberInfo,
-            { flexDirection: "row", alignItems: "center" },
-          ]}
-        >
-          <Text style={styles.itemTitle} numberOfLines={1}>
-            {item.name}
-          </Text>
-          {isPending && (
-            <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation();
-                showInfoModal("Status", "Pending App Join");
-              }}
-            >
-              <Text style={styles.itemTitle}> ✉️</Text>
-            </TouchableOpacity>
+        <View style={styles.memberCardImageContainer}>
+          {item.profile_pic_data ? (
+            <Image source={{ uri: item.profile_pic_data }} style={styles.memberCardImage} />
+          ) : (
+            <Text style={styles.memberCardSilhouette}>👤</Text>
+          )}
+          {isSelected && (
+            <View style={{ position: 'absolute', top: -5, right: -5, backgroundColor: colors.surface, borderRadius: 10 }}>
+              <Text style={styles.checkmark}>✓</Text>
+            </View>
           )}
         </View>
-        <View style={{ flexDirection: "row", alignItems: "center" }}>
-          {isSelected && (
-            <TouchableOpacity
-              onPress={(e) => {
-                e.stopPropagation();
-                showInfoModal("Status", "Selected Member");
-              }}
-            >
-              <Text style={styles.checkmark}> ✓</Text>
+        <Text style={styles.memberCardName} numberOfLines={1}>{item.name}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+          {isPending && (
+            <TouchableOpacity onPress={(e) => { e.stopPropagation(); showInfoModal("Status", "Pending App Join"); }}>
+              <Text style={{ fontSize: 12 }}>✉️ </Text>
             </TouchableOpacity>
           )}
         </View>
@@ -592,7 +588,7 @@ export default function EditTribe() {
             value={name}
             onChangeText={setName}
             placeholder="Tribe Name"
-            placeholderTextColor="#a0a0a0"
+            placeholderTextColor={colors.textMuted}
             editable={isEditing}
           />
 
@@ -604,256 +600,260 @@ export default function EditTribe() {
             placeholder="Description"
             multiline
             numberOfLines={4}
-            placeholderTextColor="#a0a0a0"
+            placeholderTextColor={colors.textMuted}
             editable={isEditing}
           />
 
-        <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.label, { marginTop: 30, marginBottom: 10 }]}>
-            Tribe Members
-          </Text>
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <TouchableOpacity
-              onPress={openGroupChatModal}
-              style={styles.editButton}
-            >
-              <Text style={styles.editButtonText}>💬 Groupchat</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={openEmailModal}
-              style={styles.editButton}
-            >
-              <Text style={styles.editButtonText}>📧 Email</Text>
-            </TouchableOpacity>
-            {isEditing && (
+          <View style={styles.sectionHeaderRow}>
+            <Text style={[styles.label, { marginTop: 30, marginBottom: 10 }]}>
+              Tribe Members
+            </Text>
+            <View style={{ flexDirection: "row", gap: 8 }}>
               <TouchableOpacity
-                onPress={() => setIsModalVisible(true)}
+                onPress={openGroupChatModal}
                 style={styles.editButton}
               >
-                <Text style={styles.editButtonText}>Edit</Text>
+                <Text style={styles.editButtonText}>💬 Groupchat</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={openEmailModal}
+                style={styles.editButton}
+              >
+                <Text style={styles.editButtonText}>📧 Email</Text>
+              </TouchableOpacity>
+              {isEditing && (
+                <TouchableOpacity
+                  onPress={() => setIsModalVisible(true)}
+                  style={styles.editButton}
+                >
+                  <Text style={styles.editButtonText}>Edit</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+          {membersLoading && <ActivityIndicator size="small" />}
+
+          {!membersLoading && currentMembers.length === 0 ? (
+            <Text style={styles.emptyText}>No members in this tribe.</Text>
+          ) : (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
+              {currentMembers.map((item) => (
+                <React.Fragment key={item.id}>
+                  {renderCurrentMemberItem({ item })}
+                </React.Fragment>
+              ))}
+            </ScrollView>
+          )}
+
+          <View style={styles.meetupsContainer}>
+            <View style={styles.meetupsHeader}>
+              <Text style={[styles.label, { marginTop: 0, marginBottom: 0 }]}>
+                Tribe Meetups
+              </Text>
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() =>
+                  router.push({
+                    pathname: "/create-meetup",
+                    params: { tribeId: selectedTribe.id },
+                  })
+                }
+              >
+                <Text style={styles.addButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+
+            {meetups.length === 0 ? (
+              <Text style={styles.emptyText}>No meetups in this tribe.</Text>
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
+                {meetups.map((meetup) => {
+                  const cleanDetails = meetup.details
+                    ? String(meetup.details).trim()
+                    : "";
+                  const eventInfo = meetup.event_type ? `Type: ${meetup.event_type}\n` : "";
+                  const infoText =
+                    cleanDetails.length > 0 &&
+                      cleanDetails !== "undefined" &&
+                      cleanDetails !== "null"
+                      ? `${eventInfo}Status: ${meetup.status || "Planning"}\n\n${cleanDetails}`
+                      : `${eventInfo}Status: ${meetup.status || "Planning"}`;
+                  return (
+                    <TouchableOpacity
+                      key={meetup.id}
+                      style={styles.squareCard}
+                      onPress={() =>
+                        router.push({
+                          pathname: "/edit-meetup",
+                          params: { id: meetup.id, tribeId: selectedTribe.id },
+                        })
+                      }
+                      onLongPress={() => {
+                        showInfoModal(meetup.title || "Meetup", infoText);
+                      }}
+                      {...(Platform.OS === "web"
+                        ? ({ title: infoText } as any)
+                        : {})}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.squareCardIcon}>
+                          {meetup.icon_type || "🎉"}
+                        </Text>
+                        <Text
+                          style={styles.squareCardTitle}
+                          numberOfLines={2}
+                        >
+                          {meetup.title || "Unnamed Meetup"}
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+                          {meetup.status || "Planning"}
+                        </Text>
+                        <TouchableOpacity
+                          onPress={(e) => {
+                            e?.stopPropagation?.();
+                            e?.preventDefault?.();
+                            showInfoModal(meetup.title || "Meetup", infoText);
+                          }}
+                        >
+                          <Text
+                            style={{
+                              color: colors.accent,
+                              fontSize: 14,
+                              fontWeight: "bold",
+                            }}
+                          >
+                            ⓘ
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
+          </View>
+
+          <View
+            style={[styles.buttonContainer, { marginBottom: 20, marginTop: 30 }]}
+          >
+            {updating ? (
+              <ActivityIndicator size="large" />
+            ) : isEditing ? (
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                }}
+              >
+                <TouchableOpacity
+                  style={[
+                    styles.primaryButton,
+                    {
+                      flex: 1,
+                      marginRight: 10,
+                      backgroundColor: "#f0f0f0",
+                      shadowOpacity: 0,
+                      elevation: 0,
+                    },
+                  ]}
+                  onPress={() => {
+                    handleSelectTribe(selectedTribe!);
+                    setIsEditing(false);
+                  }}
+                >
+                    <Text style={[styles.primaryButtonText, { color: colors.textSecondary }]}>
+                    Cancel
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.primaryButton, { flex: 1, marginLeft: 10 }]}
+                  onPress={handleUpdate}
+                >
+                  <Text style={styles.primaryButtonText}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={() => setIsEditing(true)}
+              >
+                <Text style={styles.primaryButtonText}>Edit Details</Text>
               </TouchableOpacity>
             )}
           </View>
-        </View>
-        {membersLoading && <ActivityIndicator size="small" />}
 
-        {!membersLoading && currentMembers.length === 0 ? (
-          <Text style={styles.emptyText}>No members in this tribe.</Text>
-        ) : (
-          <View style={{ maxHeight: 212 }}>
-            {currentMembers.map((item) => (
-              <React.Fragment key={item.id}>
-                {renderCurrentMemberItem({ item })}
-              </React.Fragment>
-            ))}
-          </View>
-        )}
-
-        <View style={styles.meetupsContainer}>
-          <View style={styles.meetupsHeader}>
-            <Text style={[styles.label, { marginTop: 0, marginBottom: 0 }]}>
-              Tribe Meetups
-            </Text>
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={() =>
-                router.push({
-                  pathname: "/create-meetup",
-                  params: { tribeId: selectedTribe.id },
-                })
-              }
-            >
-              <Text style={styles.addButtonText}>+</Text>
-            </TouchableOpacity>
-          </View>
-
-          {meetups.length === 0 ? (
-            <Text style={styles.emptyText}>No meetups in this tribe.</Text>
-          ) : (
-            <View style={{ maxHeight: 256 }}>
-              {meetups.map((meetup) => {
-                const cleanDetails = meetup.details
-                  ? String(meetup.details).trim()
-                  : "";
-                const infoText =
-                  cleanDetails.length > 0 &&
-                    cleanDetails !== "undefined" &&
-                    cleanDetails !== "null"
-                    ? `Status: ${meetup.status || "Planning"}\n\n${cleanDetails}`
-                    : `Status: ${meetup.status || "Planning"}`;
-                return (
-                  <TouchableOpacity
-                    key={meetup.id}
-                    style={styles.meetupItem}
-                    onPress={() =>
-                      router.push({
-                        pathname: "/edit-meetup",
-                        params: { id: meetup.id, tribeId: selectedTribe.id },
-                      })
+          <Modal
+            visible={isModalVisible}
+            animationType="slide"
+            transparent={true}
+            onRequestClose={() => setIsModalVisible(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Manage Membership</Text>
+                {membersLoading ? (
+                  <ActivityIndicator size="large" />
+                ) : (
+                  <FlatList
+                    style={{ maxHeight: 300, flexGrow: 0 }}
+                    data={sortedMembers}
+                    keyExtractor={(item) => item.id!}
+                    numColumns={3}
+                    columnWrapperStyle={{ justifyContent: 'flex-start' }}
+                    renderItem={renderModalMemberItem}
+                    ListEmptyComponent={
+                      <Text style={styles.emptyText}>No members available.</Text>
                     }
-                    onLongPress={() => {
-                      showInfoModal(meetup.title || "Meetup", infoText);
-                    }}
-                    {...(Platform.OS === "web"
-                      ? ({ title: infoText } as any)
-                      : {})}
+                  />
+                )}
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={styles.primaryButton}
+                    onPress={() => setIsModalVisible(false)}
                   >
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Text
-                        style={[styles.itemTitle, { flex: 1 }]}
-                        numberOfLines={1}
-                      >
-                        {meetup.title || "Unnamed Meetup"}
-                      </Text>
-                      <TouchableOpacity
-                        onPress={(e) => {
-                          e?.stopPropagation?.();
-                          e?.preventDefault?.();
-                          showInfoModal(meetup.title || "Meetup", infoText);
-                        }}
-                        style={{ paddingLeft: 10 }}
-                      >
-                        <Text
-                          style={{
-                            color: "#007bff",
-                            fontSize: 14,
-                            fontWeight: "bold",
-                          }}
-                        >
-                          ⓘ
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
+                    <Text style={styles.primaryButtonText}>
+                      Update Membership
+                    </Text>
                   </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-        </View>
-
-        <View
-          style={[styles.buttonContainer, { marginBottom: 20, marginTop: 30 }]}
-        >
-          {updating ? (
-            <ActivityIndicator size="large" />
-          ) : isEditing ? (
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-              }}
-            >
-              <TouchableOpacity
-                style={[
-                  styles.primaryButton,
-                  {
-                    flex: 1,
-                    marginRight: 10,
-                    backgroundColor: "#f0f0f0",
-                    shadowOpacity: 0,
-                    elevation: 0,
-                  },
-                ]}
-                onPress={() => {
-                  handleSelectTribe(selectedTribe!);
-                  setIsEditing(false);
-                }}
-              >
-                <Text style={[styles.primaryButtonText, { color: "#333" }]}>
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.primaryButton, { flex: 1, marginLeft: 10 }]}
-                onPress={handleUpdate}
-              >
-                <Text style={styles.primaryButtonText}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={() => setIsEditing(true)}
-            >
-              <Text style={styles.primaryButtonText}>Edit Details</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <Modal
-          visible={isModalVisible}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setIsModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Manage Membership</Text>
-              {membersLoading ? (
-                <ActivityIndicator size="large" />
-              ) : (
-                <FlatList
-                  style={{ maxHeight: 212, flexGrow: 0 }}
-                  data={sortedMembers}
-                  keyExtractor={(item) => item.id!}
-                  renderItem={renderModalMemberItem}
-                  ListEmptyComponent={
-                    <Text style={styles.emptyText}>No members available.</Text>
-                  }
-                />
-              )}
-              <View style={styles.modalButtons}>
-                <TouchableOpacity
-                  style={styles.primaryButton}
-                  onPress={() => setIsModalVisible(false)}
-                >
-                  <Text style={styles.primaryButtonText}>
-                    Update Membership
-                  </Text>
-                </TouchableOpacity>
+                </View>
               </View>
             </View>
-          </View>
-        </Modal>
+          </Modal>
 
-        <GroupChatModal
-          visible={isGroupChatModalVisible}
-          onClose={() => setIsGroupChatModalVisible(false)}
-          members={currentMembers}
-          onCreate={handleCreateGroupChat}
-          title="Start Tribe Groupchat"
-          creating={creatingChat}
-          defaultName={`${name} Chat`}
-          defaultSelectedIds={currentMembers
-            .filter((m) => {
-              const cleanPhone = (m as any).phone
-                ? String((m as any).phone).trim()
-                : "";
-              return cleanPhone.length > 0;
-            })
-            .map((m) => m.id!)}
-        />
+          <GroupChatModal
+            visible={isGroupChatModalVisible}
+            onClose={() => setIsGroupChatModalVisible(false)}
+            members={currentMembers}
+            onCreate={handleCreateGroupChat}
+            title="Start Tribe Groupchat"
+            creating={creatingChat}
+            defaultName={`${name} Chat`}
+            defaultSelectedIds={currentMembers
+              .filter((m) => {
+                const cleanPhone = (m as any).phone
+                  ? String((m as any).phone).trim()
+                  : "";
+                return cleanPhone.length > 0;
+              })
+              .map((m) => m.id!)}
+          />
 
-        <EmailModal
-          visible={isEmailModalVisible}
-          onClose={() => setIsEmailModalVisible(false)}
-          members={currentMembers}
-          onCreate={handleCreateEmailThread}
-          title="Email Tribe Members"
-          defaultSubject={`${name} Thread`}
-          defaultSelectedIds={currentMembers
-            .filter((m) => {
-              const cleanEmail = m.email ? String(m.email).trim() : "";
-              return cleanEmail.length > 0;
-            })
-            .map((m) => m.id!)}
-        />
+          <EmailModal
+            visible={isEmailModalVisible}
+            onClose={() => setIsEmailModalVisible(false)}
+            members={currentMembers}
+            onCreate={handleCreateEmailThread}
+            title="Email Tribe Members"
+            defaultSubject={`${name} Thread`}
+            defaultSelectedIds={currentMembers
+              .filter((m) => {
+                const cleanEmail = m.email ? String(m.email).trim() : "";
+                return cleanEmail.length > 0;
+              })
+              .map((m) => m.id!)}
+          />
         </ScrollView>
       </View>
     );
@@ -887,55 +887,61 @@ export default function EditTribe() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#F7F9FC" },
-  item: { padding: 10, borderBottomWidth: 1, borderBottomColor: "#eee" },
-  itemTitle: { fontSize: 16, fontWeight: "bold" },
-  itemSubtitle: { fontSize: 14, color: "#666" },
-  label: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 8,
-    marginTop: 16,
-    color: "#333",
-  },
-  input: {
-    height: 52,
-    backgroundColor: "#F8F9FA",
-    borderColor: "#E4E7EB",
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 8,
-    fontSize: 16,
-    color: "#333",
-  },
-  readOnlyInput: {
-    backgroundColor: "#E4E7EB",
-    justifyContent: "center",
-  },
-  textArea: { height: 100, textAlignVertical: "top", paddingTop: 16 },
+  container: { ...globalStyles.container, padding: 20 },
+  item: { padding: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
+  itemTitle: { fontSize: 16, fontWeight: "bold", color: colors.text },
+  itemSubtitle: { fontSize: 14, color: colors.textSecondary },
+  label: globalStyles.label,
+  input: globalStyles.input,
+  readOnlyInput: globalStyles.readOnlyInput,
+  textArea: globalStyles.textArea,
   buttonContainer: { marginTop: 20 },
   emptyText: {
     textAlign: "center",
     marginTop: 20,
     fontSize: 16,
-    color: "#666",
+    color: colors.textMuted,
   },
   memberItem: {
-    flexDirection: "row",
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    width: 80,
+    marginRight: 10,
+    padding: 5,
+    borderRadius: 8,
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
+  },
+  memberCardImageContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.glassBackground,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 5,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  memberCardImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
+  },
+  memberCardSilhouette: {
+    fontSize: 32,
+  },
+  memberCardName: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: colors.text,
   },
   memberInfo: { flex: 1 },
   memberItemSelected: {
-    backgroundColor: "#e6f7ff",
+    backgroundColor: "rgba(157, 78, 221, 0.2)",
   },
   checkmark: {
     fontSize: 20,
-    color: "#007bff",
+    color: colors.accent,
     fontWeight: "bold",
   },
   meetupsContainer: { marginTop: 30 },
@@ -946,26 +952,38 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   addButton: {
-    backgroundColor: "#007bff",
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    backgroundColor: colors.primary,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
   },
   addButtonText: {
-    color: "#fff",
-    fontSize: 20,
-    lineHeight: 22,
+    color: colors.background,
+    fontSize: 24,
     fontWeight: "bold",
+    marginTop: -2,
   },
-  meetupItem: {
-    padding: 10,
+  squareCard: {
+    backgroundColor: colors.glassBackground,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#eee",
-    borderRadius: 8,
-    marginBottom: 10,
-    backgroundColor: "#fff",
+    borderColor: colors.border,
+    padding: 16,
+    width: 150,
+    height: 150,
+    marginRight: 15,
+    justifyContent: "space-between",
+  },
+  squareCardTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: colors.text,
+  },
+  squareCardIcon: {
+    fontSize: 32,
+    marginBottom: 8,
   },
   sectionHeaderRow: {
     flexDirection: "row",
@@ -976,94 +994,18 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingHorizontal: 15,
     paddingVertical: 5,
-    backgroundColor: "#e6f7ff",
+    backgroundColor: "rgba(0, 240, 255, 0.1)",
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: "#007bff",
+    borderColor: colors.primary,
   },
-  editButtonText: { color: "#007bff", fontWeight: "bold" },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  modalContent: {
-    margin: 20,
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    maxHeight: "80%",
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 15,
-    textAlign: "center",
-  },
+  editButtonText: { color: colors.primary, fontWeight: "bold" },
+  modalOverlay: globalStyles.modalOverlay,
+  modalContent: globalStyles.modalContent,
+  modalTitle: globalStyles.modalTitle,
   modalButtons: {
     marginTop: 20,
   },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F8F9FA",
-    borderColor: "#E4E7EB",
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    height: 52,
-  },
-  searchIcon: { fontSize: 18, marginRight: 8 },
-  modalInput: {
-    fontSize: 16,
-    color: "#333",
-    height: 52,
-    backgroundColor: "#F8F9FA",
-    borderColor: "#E4E7EB",
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  modalSearchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: "#333",
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 4,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#fff",
-  },
-  checkboxSelected: { backgroundColor: "#007bff", borderColor: "#007bff" },
-  primaryButton: {
-    backgroundColor: "#007bff",
-    height: 52,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#007bff",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  guidedPanel: {
-    backgroundColor: "#E4E7EB",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-  },
-  guidedPanelText: { fontSize: 14, color: "#333", marginBottom: 6 },
+  primaryButton: globalStyles.primaryButton,
+  primaryButtonText: globalStyles.primaryButtonText,
 });

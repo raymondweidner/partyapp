@@ -30,6 +30,7 @@ import {
   updateProposal,
 } from "../lib/data/service";
 import { showAlert } from "../lib/util";
+import { colors, globalStyles } from "../lib/theme";
 import { CustomHeaderLeft, useCurrentMember, useInfoModal } from "./_layout";
 
 export default function EditProposal() {
@@ -222,14 +223,14 @@ export default function EditProposal() {
                   {
                     flex: 1,
                     marginRight: 10,
-                    backgroundColor: "#f0f0f0",
+                    backgroundColor: colors.glassBackground,
                     shadowOpacity: 0,
                     elevation: 0,
                   },
                 ]}
                 onPress={handleCancel}
               >
-                <Text style={[styles.primaryButtonText, { color: "#333" }]}>
+                <Text style={[styles.primaryButtonText, { color: colors.textSecondary }]}>
                   Cancel
                 </Text>
               </TouchableOpacity>
@@ -296,7 +297,7 @@ export default function EditProposal() {
             <TouchableOpacity
               style={[
                 styles.primaryButton,
-                { backgroundColor: "#e6f7ff", shadowOpacity: 0, elevation: 0 },
+                { backgroundColor: "rgba(157, 78, 221, 0.2)", shadowOpacity: 0, elevation: 0 },
               ]}
               onPress={() =>
                 router.push({
@@ -305,7 +306,7 @@ export default function EditProposal() {
                 })
               }
             >
-              <Text style={[styles.primaryButtonText, { color: "#007bff" }]}>
+              <Text style={[styles.primaryButtonText, { color: colors.primary }]}>
                 Update Availability
               </Text>
             </TouchableOpacity>
@@ -317,51 +318,20 @@ export default function EditProposal() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#F7F9FC" },
-  label: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 8,
-    marginTop: 16,
-    color: "#333",
-  },
-  input: {
-    height: 52,
-    backgroundColor: "#F8F9FA",
-    borderColor: "#E4E7EB",
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 8,
-    fontSize: 16,
-    color: "#333",
-  },
-  readOnlyInput: { backgroundColor: "#E4E7EB", justifyContent: "center" },
-  disabledText: { color: "#888" },
-  itemTitle: { fontSize: 16, fontWeight: "bold" },
+  container: { ...globalStyles.container, padding: 20 },
+  label: globalStyles.label,
+  input: globalStyles.input,
+  readOnlyInput: globalStyles.readOnlyInput,
+  disabledText: { color: colors.textMuted },
+  itemTitle: { fontSize: 16, fontWeight: "bold", color: colors.text },
   availabilityItem: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: colors.border,
   },
-  primaryButton: {
-    backgroundColor: "#007bff",
-    height: 52,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#007bff",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+  primaryButton: globalStyles.primaryButton,
+  primaryButtonText: globalStyles.primaryButtonText,
 });

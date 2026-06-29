@@ -11,12 +11,19 @@ import {
     TouchableOpacity,
     View,
     DeviceEventEmitter,
+    Image,
+    Switch,
+    ScrollView,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import { Member } from "../lib/data/Member";
-import { getMembers, updateMember } from "../lib/data/service";
+import { MemberAlertPreference } from "../lib/data/MemberAlertPreference";
+import { getMembers, updateMember, getMemberAlertPreferences, updateMemberAlertPreference } from "../lib/data/service";
 
 import { useAuth } from "../lib/auth";
 import { showAlert, safeBack } from "../lib/util";
+import { colors, globalStyles } from "../lib/theme";
 import { CustomHeaderLeft, useInfoModal } from "./_layout";
 
 export default function EditMember() {
@@ -37,7 +44,11 @@ export default function EditMember() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [profilePicData, setProfilePicData] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
+
+  const [alertPreferences, setAlertPreferences] = useState<MemberAlertPreference[]>([]);
+  const [loadingAlerts, setLoadingAlerts] = useState(false);
 
   const fetchMembers = useCallback(async () => {
     if (!user) return;
@@ -89,6 +100,59 @@ export default function EditMember() {
     setName(member.name || "");
     setEmail(member.email || "");
     setPhone((member as any).phone || "");
+    setProfilePicData(member.profile_pic_data || null);
+
+    if (member.id && user && isProfile) {
+      setLoadingAlerts(true);
+      user.getIdToken().then(token => {
+        getMemberAlertPreferences(member.id!, token).then(prefs => {
+          setAlertPreferences(prefs.sort((a, b) => a.alert_type.localeCompare(b.alert_type)));
+          setLoadingAlerts(false);
+        }).catch(err => {
+          console.error("Failed to fetch alert preferences", err);
+          setLoadingAlerts(false);
+        });
+      });
+    }
+  };
+
+  const handleToggleAlert = async (pref: MemberAlertPreference, type: 'email' | 'push', value: boolean) => {
+    if (!user) return;
+    const updatedPref = { ...pref };
+    if (type === 'email') updatedPref.email_enabled = value;
+    if (type === 'push') updatedPref.push_enabled = value;
+    
+    // Optimistic update
+    setAlertPreferences(prev => prev.map(p => p.id === pref.id ? updatedPref : p));
+    
+    try {
+      const token = await user.getIdToken();
+      await updateMemberAlertPreference(updatedPref, token);
+    } catch (e: any) {
+      showAlert("Error", "Failed to update alert preference: " + e.message);
+      // Revert optimistic update
+      setAlertPreferences(prev => prev.map(p => p.id === pref.id ? pref : p));
+    }
+  };
+
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const manipResult = await ImageManipulator.manipulateAsync(
+        result.assets[0].uri,
+        [{ resize: { width: 400, height: 400 } }],
+        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+      );
+      if (manipResult.base64) {
+        setProfilePicData(`data:image/jpeg;base64,${manipResult.base64}`);
+      }
+    }
   };
 
   const validateEmail = (email: string) => {
@@ -115,7 +179,7 @@ export default function EditMember() {
     try {
       const token = await user.getIdToken();
       // @ts-ignore
-      await updateMember({ ...selectedMember, name, email, phone }, token);
+      await updateMember({ ...selectedMember, name, email, phone, profile_pic_data: profilePicData }, token);
 
       showAlert("Success", "Member updated successfully!", [
         {
@@ -211,14 +275,27 @@ export default function EditMember() {
           }}
         />
 
-        <View style={styles.formCard}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+          <View style={styles.formCard}>
+          <View style={{ alignItems: 'center', marginBottom: 20 }}>
+            <TouchableOpacity onPress={pickImage} style={styles.profilePicContainer}>
+              {profilePicData ? (
+                <Image source={{ uri: profilePicData }} style={styles.profilePic} />
+              ) : (
+                <View style={styles.profilePicPlaceholder}>
+                  <Text style={styles.profilePicPlaceholderText}>Add Photo</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
+
           <Text style={styles.label}>Name</Text>
           <TextInput
             style={styles.input}
             value={name}
             onChangeText={setName}
             placeholder="Member Name"
-            placeholderTextColor="#a0a0a0"
+            placeholderTextColor={colors.textMuted}
           />
 
           <Text style={styles.label}>Email</Text>
@@ -229,7 +306,7 @@ export default function EditMember() {
             placeholder="email@example.com"
             keyboardType="email-address"
             autoCapitalize="none"
-            placeholderTextColor="#a0a0a0"
+            placeholderTextColor={colors.textMuted}
             editable={!isProfile}
           />
 
@@ -240,7 +317,7 @@ export default function EditMember() {
             onChangeText={setPhone}
             placeholder="Phone Number"
             keyboardType="phone-pad"
-            placeholderTextColor="#a0a0a0"
+            placeholderTextColor={colors.textMuted}
           />
 
           <View style={styles.buttonContainer}>
@@ -254,8 +331,51 @@ export default function EditMember() {
                 <Text style={styles.primaryButtonText}>Update Member</Text>
               </TouchableOpacity>
             )}
+            </View>
           </View>
-        </View>
+          
+          {isProfile && (
+            <View style={[styles.formCard, { marginTop: 20 }]}>
+              <Text style={[styles.label, { fontSize: 18, marginBottom: 15 }]}>Alert Preferences</Text>
+              
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 10 }}>
+                <Text style={{ flex: 2, fontWeight: 'bold', color: colors.text }}>Scenario</Text>
+                <Text style={{ flex: 1, textAlign: 'center', fontWeight: 'bold', color: colors.text }}>Email</Text>
+                <Text style={{ flex: 1, textAlign: 'center', fontWeight: 'bold', color: colors.text }}>Push</Text>
+              </View>
+
+              {loadingAlerts ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : alertPreferences.length === 0 ? (
+                <Text style={{ color: colors.textMuted, fontStyle: 'italic' }}>No alert preferences found.</Text>
+              ) : (
+                alertPreferences.map(pref => (
+                  <View key={pref.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                    <Text style={{ flex: 2, fontSize: 14, color: colors.text }}>
+                      {pref.alert_type.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                    </Text>
+                    <View style={{ flex: 1, alignItems: 'center' }}>
+                      <Switch 
+                        value={pref.email_enabled} 
+                        onValueChange={(val) => handleToggleAlert(pref, 'email', val)} 
+                        trackColor={{ false: "#767577", true: colors.primary }}
+                        thumbColor={pref.email_enabled ? colors.accent : "#f4f3f4"}
+                      />
+                    </View>
+                    <View style={{ flex: 1, alignItems: 'center' }}>
+                      <Switch 
+                        value={pref.push_enabled} 
+                        onValueChange={(val) => handleToggleAlert(pref, 'push', val)} 
+                        trackColor={{ false: "#767577", true: colors.primary }}
+                        thumbColor={pref.push_enabled ? colors.accent : "#f4f3f4"}
+                      />
+                    </View>
+                  </View>
+                ))
+              )}
+            </View>
+          )}
+        </ScrollView>
       </View>
     );
   }
@@ -288,58 +408,50 @@ export default function EditMember() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#F7F9FC" },
+  container: { ...globalStyles.container, padding: 20 },
   formCard: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.glassBackground,
     borderRadius: 16,
     padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
-  },
-  item: { padding: 10, borderBottomWidth: 1, borderBottomColor: "#eee" },
-  itemTitle: { fontSize: 16, fontWeight: "bold" },
-  itemSubtitle: { fontSize: 14, color: "#666" },
-  label: { fontSize: 16, fontWeight: "700", marginBottom: 8, color: "#333" },
-  input: {
-    height: 52,
-    backgroundColor: "#F8F9FA",
-    borderColor: "#E4E7EB",
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    fontSize: 16,
-    color: "#333",
+    borderColor: colors.border,
   },
+  item: { padding: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
+  itemTitle: { fontSize: 16, fontWeight: "bold", color: colors.text },
+  itemSubtitle: { fontSize: 14, color: colors.textSecondary },
+  label: globalStyles.label,
+  input: globalStyles.input,
   buttonContainer: { marginTop: 8 },
-  primaryButton: {
-    backgroundColor: "#007bff",
-    height: 52,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#007bff",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+  primaryButton: globalStyles.primaryButton,
+  primaryButtonText: globalStyles.primaryButtonText,
   emptyText: {
     textAlign: "center",
     marginTop: 20,
     fontSize: 16,
-    color: "#666",
+    color: colors.textMuted,
   },
-  readOnlyInput: {
-    backgroundColor: "#E4E7EB",
-    color: "#888",
+  readOnlyInput: globalStyles.readOnlyInput,
+  profilePicContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    overflow: 'hidden',
+    backgroundColor: colors.glassBackground,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.primary,
+  },
+  profilePic: {
+    width: '100%',
+    height: '100%',
+  },
+  profilePicPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  profilePicPlaceholderText: {
+    color: colors.primary,
+    fontWeight: 'bold',
   },
 });

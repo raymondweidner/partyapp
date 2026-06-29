@@ -11,11 +11,51 @@ import { Tribe } from "./Tribe";
 import { TribeMember } from "./TribeMember";
 import { UserDevice } from "./UserDevice";
 import { Notification } from "./Notification";
+import { MemberAlertPreference } from "./MemberAlertPreference";
 
 const getHeaders = (token: string) => ({
   "Content-Type": "application/json",
   Authorization: `Bearer ${token}`,
 });
+
+// MemberAlertPreference Services
+export const getMemberAlertPreferences = async (
+  memberId: string,
+  authToken: string,
+): Promise<MemberAlertPreference[]> => {
+  const response = await fetch(
+    `${getResourceEndpoint()}/member_alert_preference?member_id=${encodeURIComponent(memberId)}`,
+    {
+      headers: { Authorization: `Bearer ${authToken}` },
+    },
+  );
+  if (response.ok) {
+    const data = await response.json();
+    return Array.isArray(data) ? data : [data];
+  }
+  return [];
+};
+
+export const updateMemberAlertPreference = async (
+  pref: MemberAlertPreference & { id?: string },
+  authToken: string,
+): Promise<MemberAlertPreference> => {
+  const idToUpdate = pref.id; 
+  if (idToUpdate) {
+    const response = await fetch(
+      `${getResourceEndpoint()}/member_alert_preference/${idToUpdate}`,
+      {
+        method: "PUT",
+        headers: getHeaders(authToken),
+        body: JSON.stringify(pref),
+      },
+    );
+    if (!response.ok) throw new Error("Failed to update preference");
+    return response.json();
+  } else {
+    throw new Error("No ID provided for preference update");
+  }
+};
 
 // UserDevice Services
 export const getUserDeviceByToken = async (

@@ -30,12 +30,14 @@ import {
   getTribes,
   updateMeetup,
 } from "../lib/data/service";
+import { EVENT_DEFAULTS, AVAILABLE_ICONS } from "../lib/constants";
 
 import { useAuth } from "../lib/auth";
 import { CheckboxToggle } from "../lib/components/CheckboxToggle";
 import { DropdownSelect } from "../lib/components/DropdownSelect";
 import { NumberStepper } from "../lib/components/NumberStepper";
 import { showAlert, safeBack } from "../lib/util";
+import { colors, globalStyles } from "../lib/theme";
 import { CustomHeaderLeft, useCurrentMember, useInfoModal } from "./_layout";
 
 export default function EditMeetup() {
@@ -61,6 +63,8 @@ export default function EditMeetup() {
   );
 
   const [title, setTitle] = useState("");
+  const [eventType, setEventType] = useState("");
+  const [iconType, setIconType] = useState("🎉");
   const [details, setDetails] = useState("");
 
   const [decisionMethod, setDecisionMethod] = useState("most_available");
@@ -143,6 +147,8 @@ export default function EditMeetup() {
     setIsEditing(false);
     setSelectedMeetup(meetup);
     setTitle(meetup.title || "");
+    setEventType(meetup.event_type || "");
+    setIconType(meetup.icon_type || "🎉");
     setDetails(meetup.details || "");
     setSelectedTribeId(meetup.tribe_id || "");
 
@@ -232,6 +238,8 @@ export default function EditMeetup() {
         {
           ...selectedMeetup,
           title,
+          event_type: eventType,
+          icon_type: iconType,
           details,
           tribe_id: selectedTribeId,
           decision_method: decisionMethod,
@@ -328,9 +336,54 @@ export default function EditMeetup() {
             value={title}
             onChangeText={setTitle}
             placeholder="Meetup Title"
-            placeholderTextColor="#a0a0a0"
+            placeholderTextColor={colors.textMuted}
             editable={isEditing}
           />
+
+          <View style={{ zIndex: 6000, elevation: 6000 }}>
+            <Text style={styles.label}>Event Type</Text>
+            <DropdownSelect
+              value={EVENT_DEFAULTS.some(d => d.type === eventType) ? eventType : "custom"}
+              options={[
+                ...EVENT_DEFAULTS.map(def => ({ label: `${def.icon} ${def.type}`, value: def.type })),
+                { label: "Other (Custom)", value: "custom" }
+              ]}
+              onSelect={(val) => {
+                if (val !== "custom") {
+                  setEventType(val);
+                  const match = EVENT_DEFAULTS.find(d => d.type === val);
+                  if (match) setIconType(match.icon);
+                } else {
+                  setEventType("");
+                }
+              }}
+              placeholder="Select Event Type"
+              disabled={!isEditing}
+            />
+          </View>
+          {(!EVENT_DEFAULTS.some(d => d.type === eventType)) && (
+            <View style={{ marginTop: 10 }}>
+              <TextInput
+                style={[styles.input, !isEditing && styles.readOnlyInput]}
+                value={eventType}
+                onChangeText={setEventType}
+                placeholder="Type custom event..."
+                placeholderTextColor={colors.textMuted}
+                editable={isEditing}
+              />
+            </View>
+          )}
+
+          <View style={{ zIndex: 5000, elevation: 5000, marginBottom: 20 }}>
+            <Text style={styles.label}>Icon</Text>
+            <DropdownSelect
+              value={iconType}
+              options={AVAILABLE_ICONS.map(icon => ({ label: icon, value: icon }))}
+              onSelect={setIconType}
+              placeholder="Select an Icon"
+              disabled={!isEditing}
+            />
+          </View>
 
           {createdAt ? (
             <View style={{ marginBottom: 0 }}>
@@ -382,7 +435,7 @@ export default function EditMeetup() {
               placeholder="Details"
               multiline
               numberOfLines={4}
-              placeholderTextColor="#a0a0a0"
+              placeholderTextColor={colors.textMuted}
               editable={isEditing}
             />
           </View>
@@ -482,7 +535,7 @@ export default function EditMeetup() {
                   {
                     flex: 1,
                     marginRight: 10,
-                    backgroundColor: "#f0f0f0",
+                    backgroundColor: colors.glassBackground,
                     shadowOpacity: 0,
                     elevation: 0,
                   },
@@ -492,7 +545,7 @@ export default function EditMeetup() {
                   setIsEditing(false);
                 }}
               >
-                <Text style={[styles.primaryButtonText, { color: "#333" }]}>
+                <Text style={[styles.primaryButtonText, { color: colors.textSecondary }]}>
                   Cancel
                 </Text>
               </TouchableOpacity>
@@ -621,7 +674,7 @@ export default function EditMeetup() {
                             >
                               <Text
                                 style={{
-                                  color: "green",
+                                  color: colors.accent,
                                   fontSize: 20,
                                   marginRight: 10,
                                 }}
@@ -697,89 +750,84 @@ export default function EditMeetup() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#F7F9FC" },
-  item: { padding: 10, borderBottomWidth: 1, borderBottomColor: "#eee" },
-  itemTitle: { fontSize: 16, fontWeight: "bold" },
-  itemSubtitle: { fontSize: 14, color: "#666" },
-  label: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 8,
-    marginTop: 16,
-    color: "#333",
-  },
-  input: {
-    height: 52,
-    backgroundColor: "#F8F9FA",
-    borderColor: "#E4E7EB",
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 8,
-    fontSize: 16,
-    color: "#333",
-  },
-  textArea: { height: 100, textAlignVertical: "top", paddingTop: 16 },
+  container: { ...globalStyles.container, padding: 20 },
+  item: { padding: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
+  itemTitle: { fontSize: 16, fontWeight: "bold", color: colors.text },
+  itemSubtitle: { fontSize: 14, color: colors.textSecondary },
+  label: globalStyles.label,
+  input: globalStyles.input,
+  textArea: globalStyles.textArea,
   spacer: { height: 20 },
-  emptyText: {
-    textAlign: "center",
-    marginTop: 20,
-    fontSize: 16,
-    color: "#666",
+  emptyText: { textAlign: "center", color: colors.textMuted, marginTop: 20 },
+  chip: {
+    backgroundColor: colors.glassBackground,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
   },
-  readOnlyInput: {
-    backgroundColor: "#E4E7EB",
-    justifyContent: "center",
+  chipSelected: {
+    backgroundColor: colors.primary,
   },
+  chipText: {
+    fontSize: 14,
+    color: colors.text,
+  },
+  chipTextSelected: {
+    color: colors.background,
+  },
+  iconChip: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.glassBackground,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  iconChipSelected: {
+    backgroundColor: colors.primary,
+    borderWidth: 2,
+    borderColor: colors.accent,
+  },
+  readOnlyInput: globalStyles.readOnlyInput,
   disabledText: {
-    color: "#888",
+    color: colors.textMuted,
   },
   proposalsContainer: {
     marginTop: 30,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 20,
   },
   proposalsHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 10,
+    marginBottom: 15,
   },
   addButton: {
-    backgroundColor: "#007bff",
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    backgroundColor: colors.primary,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
   },
   addButtonText: {
-    color: "#fff",
-    fontSize: 20,
-    lineHeight: 22,
+    color: colors.background,
+    fontSize: 24,
     fontWeight: "bold",
+    marginTop: -2,
   },
   proposalItem: {
-    padding: 10,
-    borderWidth: 1,
-    borderColor: "#eee",
-    borderRadius: 8,
-    marginBottom: 10,
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  primaryButton: {
-    backgroundColor: "#007bff",
-    height: 52,
+    padding: 15,
+    backgroundColor: colors.glassBackground,
     borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+  primaryButton: globalStyles.primaryButton,
+  primaryButtonText: globalStyles.primaryButtonText,
 });

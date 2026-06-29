@@ -3,6 +3,7 @@ import { useContext, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Modal,
   Platform,
   StyleSheet,
@@ -18,7 +19,8 @@ import {
   createTribeMember,
   getMembers,
 } from "../lib/data/service";
-import { showAlert, safeBack } from "../lib/util";
+import { safeBack, showAlert } from "../lib/util";
+import { colors, globalStyles } from "../lib/theme";
 import {
   CurrentMemberContext,
   CustomHeaderLeft,
@@ -159,7 +161,7 @@ export default function CreateTribe() {
           value={name}
           onChangeText={setName}
           placeholder="Tribe Name"
-          placeholderTextColor="#a0a0a0"
+          placeholderTextColor={colors.textMuted}
         />
 
         <Text style={styles.label}>Description</Text>
@@ -170,7 +172,7 @@ export default function CreateTribe() {
           placeholder="Description"
           multiline
           numberOfLines={4}
-          placeholderTextColor="#a0a0a0"
+          placeholderTextColor={colors.textMuted}
         />
 
         <View style={styles.buttonContainer}>
@@ -203,9 +205,11 @@ export default function CreateTribe() {
               <ActivityIndicator size="large" />
             ) : (
               <FlatList
-                style={{ maxHeight: 212, flexGrow: 0 }}
+                style={{ maxHeight: 300, flexGrow: 0 }}
                 data={sortedMembers}
                 keyExtractor={(item) => item.id!}
+                numColumns={3}
+                columnWrapperStyle={{ justifyContent: 'flex-start' }}
                 renderItem={({ item }) => {
                   const isSelected = selectedMemberIds.includes(item.id!);
                   const cleanEmail = item.email
@@ -251,25 +255,19 @@ export default function CreateTribe() {
                         ? ({ title: infoText } as any)
                         : {})}
                     >
-                      <View style={styles.memberInfo}>
-                        <Text style={styles.itemTitle} numberOfLines={1}>
-                          {item.name}
-                        </Text>
-                      </View>
-                      <View
-                        style={{ flexDirection: "row", alignItems: "center" }}
-                      >
+                      <View style={styles.memberCardImageContainer}>
+                        {item.profile_pic_data ? (
+                          <Image source={{ uri: item.profile_pic_data }} style={styles.memberCardImage} />
+                        ) : (
+                          <Text style={styles.memberCardSilhouette}>👤</Text>
+                        )}
                         {isSelected && (
-                          <TouchableOpacity
-                            onPress={(e) => {
-                              e.stopPropagation();
-                              showInfoModal("Status", "Selected Member");
-                            }}
-                          >
-                            <Text style={styles.checkmark}> ✓</Text>
-                          </TouchableOpacity>
+                          <View style={{ position: 'absolute', top: -5, right: -5, backgroundColor: colors.surface, borderRadius: 10 }}>
+                            <Text style={styles.checkmark}>✓</Text>
+                          </View>
                         )}
                       </View>
+                      <Text style={styles.memberCardName} numberOfLines={1}>{item.name}</Text>
                     </TouchableOpacity>
                   );
                 }}
@@ -293,7 +291,7 @@ export default function CreateTribe() {
                     style={[
                       styles.primaryButton,
                       {
-                        backgroundColor: "#f0f0f0",
+                        backgroundColor: colors.glassBackground,
                         marginTop: 10,
                         shadowOpacity: 0,
                         elevation: 0,
@@ -304,7 +302,7 @@ export default function CreateTribe() {
                       safeBack(router, "/");
                     }}
                   >
-                    <Text style={[styles.primaryButtonText, { color: "#333" }]}>
+                    <Text style={[styles.primaryButtonText, { color: colors.textSecondary }]}>
                       Skip
                     </Text>
                   </TouchableOpacity>
@@ -319,91 +317,72 @@ export default function CreateTribe() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#F7F9FC" },
+  container: { ...globalStyles.container, padding: 20 },
   formCard: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.glassBackground,
     borderRadius: 16,
     padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
-  },
-  label: { fontSize: 16, fontWeight: "700", marginBottom: 8, color: "#333" },
-  input: {
-    height: 52,
-    backgroundColor: "#F8F9FA",
-    borderColor: "#E4E7EB",
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    fontSize: 16,
-    color: "#333",
+    borderColor: colors.border,
   },
-  textArea: { height: 100, textAlignVertical: "top", paddingTop: 16 },
+  label: globalStyles.label,
+  input: globalStyles.input,
+  textArea: globalStyles.textArea,
   buttonContainer: { marginTop: 8 },
-  primaryButton: {
-    backgroundColor: "#007bff",
-    height: 52,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#007bff",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+  primaryButton: globalStyles.primaryButton,
+  primaryButtonText: globalStyles.primaryButtonText,
   memberItem: {
-    flexDirection: "row",
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    width: 80,
+    margin: 5,
+    padding: 5,
+    borderRadius: 8,
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
   },
-  memberInfo: { flex: 1 },
-  itemTitle: { fontSize: 16, fontWeight: "bold" },
-  itemSubtitle: { fontSize: 14, color: "#666" },
+  memberCardImageContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.glassBackground,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 5,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  memberCardImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
+  },
+  memberCardSilhouette: {
+    fontSize: 32,
+  },
+  memberCardName: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: colors.text,
+  },
+  itemTitle: { fontSize: 16, fontWeight: "bold", color: colors.text },
+  itemSubtitle: { fontSize: 14, color: colors.textSecondary },
   memberItemSelected: {
-    backgroundColor: "#e6f7ff",
+    backgroundColor: "rgba(157, 78, 221, 0.2)",
   },
   checkmark: {
     fontSize: 20,
-    color: "#007bff",
+    color: colors.accent,
     fontWeight: "bold",
   },
   emptyText: {
     textAlign: "center",
     marginTop: 20,
     fontSize: 16,
-    color: "#666",
+    color: colors.textMuted,
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  modalContent: {
-    margin: 20,
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 24,
-    maxHeight: "80%",
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 15,
-    textAlign: "center",
-  },
+  modalOverlay: globalStyles.modalOverlay,
+  modalContent: globalStyles.modalContent,
+  modalTitle: globalStyles.modalTitle,
   modalButtons: {
     marginTop: 20,
   },

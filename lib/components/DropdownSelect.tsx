@@ -6,6 +6,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { colors } from "../theme";
 
 export function DropdownSelect({
   value,
@@ -37,7 +38,7 @@ export function DropdownSelect({
         <Text style={[styles.itemTitle, styles.disabledText]}>
           {selectedLabel}
         </Text>
-        <Text style={{ fontSize: 16, color: "#888" }}>▼</Text>
+        <Text style={{ fontSize: 16, color: colors.textMuted }}>▼</Text>
       </View>
     );
   }
@@ -49,7 +50,7 @@ export function DropdownSelect({
         onPress={() => setIsOpen(!isOpen)}
       >
         <Text style={styles.itemTitle}>{selectedLabel}</Text>
-        <Text style={{ fontSize: 16 }}>{isOpen ? "▲" : "▼"}</Text>
+        <Text style={{ fontSize: 16, color: colors.textSecondary }}>{isOpen ? "▲" : "▼"}</Text>
       </TouchableOpacity>
       {isOpen && (
         <View style={styles.dropdownListContainer}>
@@ -76,41 +77,41 @@ export function DropdownSelect({
 const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    padding: 10,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 16,
     fontSize: 16,
+    backgroundColor: colors.glassBackground,
   },
-  readOnlyInput: { backgroundColor: "#f5f5f5", justifyContent: "center" },
-  disabledText: { color: "#888" },
-  itemTitle: { fontSize: 16, fontWeight: "bold" },
+  readOnlyInput: { backgroundColor: 'rgba(255,255,255,0.02)', justifyContent: "center" },
+  disabledText: { color: colors.textMuted },
+  itemTitle: { fontSize: 16, fontWeight: "bold", color: colors.text },
   dropdownHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "#fff",
   },
   dropdownListContainer: {
     position: "absolute",
-    top: 45,
+    top: 55,
     left: 0,
     right: 0,
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    maxHeight: 150,
+    borderColor: colors.border,
+    borderRadius: 12,
+    maxHeight: 200,
     zIndex: 1000,
     elevation: 10,
     shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
   },
   dropdownList: { flexGrow: 0 },
   dropdownItem: {
-    padding: 12,
+    padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: colors.border,
   },
 });

@@ -5,4 +5,5 @@ export interface Member {
   phone?: string;
   user_id?: string;
   status: string;
+  profile_pic_data?: string;
 }

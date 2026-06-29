@@ -7,6 +7,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { colors } from "../theme";
 
 export function DateTimePickerField({
   date,
@@ -29,7 +30,8 @@ export function DateTimePickerField({
           width: "100%",
           boxSizing: "border-box",
           fontFamily: "inherit",
-          color: disabled ? "#888" : "inherit",
+          color: disabled ? colors.textMuted : colors.text,
+          backgroundColor: disabled ? 'rgba(255,255,255,0.02)' : colors.glassBackground,
         }}
         value={
           !isNaN(date.getTime())
@@ -54,7 +56,7 @@ export function DateTimePickerField({
         onPress={() => setShowDatePicker(true)}
       >
         <View style={[styles.input, disabled && styles.readOnlyInput]}>
-          <Text style={disabled ? styles.disabledText : undefined}>
+          <Text style={disabled ? styles.disabledText : { color: colors.text }}>
             {date.toLocaleString()}
           </Text>
         </View>
@@ -77,11 +79,12 @@ export function DateTimePickerField({
 const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    padding: 10,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 16,
     fontSize: 16,
+    backgroundColor: colors.glassBackground,
   },
-  readOnlyInput: { backgroundColor: "#f5f5f5", justifyContent: "center" },
-  disabledText: { color: "#888" },
+  readOnlyInput: { backgroundColor: 'rgba(255,255,255,0.02)', justifyContent: "center" },
+  disabledText: { color: colors.textMuted },
 });

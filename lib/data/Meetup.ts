@@ -9,4 +9,6 @@ export interface Meetup {
   days_to_decide: number;
   status: string;
   recurs_every_days: number;
+  event_type?: string;
+  icon_type?: string;
 }

@@ -1,5 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { colors } from "../theme";
 
 export function NumberStepper({
   value,
@@ -48,32 +49,30 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
+    borderColor: colors.border,
+    borderRadius: 12,
     flex: 1,
     marginRight: 10,
-    backgroundColor: "#fff",
+    backgroundColor: colors.glassBackground,
+    overflow: "hidden",
   },
   counterButton: {
     paddingVertical: 10,
     paddingHorizontal: 15,
-    backgroundColor: "#f0f0f0",
-    borderTopLeftRadius: 5,
-    borderBottomLeftRadius: 5,
+    backgroundColor: "rgba(255,255,255,0.05)",
   },
   counterButtonRight: {
     paddingVertical: 10,
     paddingHorizontal: 15,
-    backgroundColor: "#f0f0f0",
-    borderTopRightRadius: 5,
-    borderBottomRightRadius: 5,
+    backgroundColor: "rgba(255,255,255,0.05)",
   },
-  counterButtonText: { fontSize: 18, fontWeight: "bold", color: "#333" },
+  counterButtonText: { fontSize: 18, fontWeight: "bold", color: colors.text },
   counterValue: {
     flex: 1,
     textAlign: "center",
     fontSize: 16,
     fontWeight: "bold",
+    color: colors.text,
   },
-  disabledText: { color: "#888" },
+  disabledText: { color: colors.textMuted },
 });

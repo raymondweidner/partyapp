@@ -19,7 +19,9 @@ import {
   getTribes,
 } from "../lib/data/service";
 import { Tribe } from "../lib/data/Tribe";
+import { EVENT_DEFAULTS, AVAILABLE_ICONS } from "../lib/constants";
 import { showAlert, safeBack } from "../lib/util";
+import { colors, globalStyles } from "../lib/theme";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
 
 export default function CreateMeetup() {
@@ -32,6 +34,8 @@ export default function CreateMeetup() {
 
   // Form State
   const [title, setTitle] = useState("");
+  const [eventType, setEventType] = useState("");
+  const [iconType, setIconType] = useState("🎉");
   const [details, setDetails] = useState("");
 
   const [decisionMethod, setDecisionMethod] = useState("most_available");
@@ -133,6 +137,8 @@ export default function CreateMeetup() {
           creator_id: member.id as any,
           tribe_id: selectedTribeId,
           title,
+          event_type: eventType,
+          icon_type: iconType,
           details,
           decision_method: decisionMethod,
           days_to_decide,
@@ -181,8 +187,50 @@ export default function CreateMeetup() {
           value={title}
           onChangeText={setTitle}
           placeholder="Meetup Title"
-          placeholderTextColor="#a0a0a0"
+          placeholderTextColor={colors.textMuted}
         />
+
+        <View style={{ zIndex: 6000, elevation: 6000 }}>
+          <Text style={styles.label}>Event Type</Text>
+          <DropdownSelect
+            value={EVENT_DEFAULTS.some(d => d.type === eventType) ? eventType : "custom"}
+            options={[
+              ...EVENT_DEFAULTS.map(def => ({ label: `${def.icon} ${def.type}`, value: def.type })),
+              { label: "Other (Custom)", value: "custom" }
+            ]}
+            onSelect={(val) => {
+              if (val !== "custom") {
+                setEventType(val);
+                const match = EVENT_DEFAULTS.find(d => d.type === val);
+                if (match) setIconType(match.icon);
+              } else {
+                setEventType("");
+              }
+            }}
+            placeholder="Select Event Type"
+          />
+        </View>
+        {(!EVENT_DEFAULTS.some(d => d.type === eventType)) && (
+          <View style={{ marginTop: 10 }}>
+            <TextInput
+              style={styles.input}
+              value={eventType}
+              onChangeText={setEventType}
+              placeholder="Type custom event..."
+              placeholderTextColor={colors.textMuted}
+            />
+          </View>
+        )}
+
+        <View style={{ zIndex: 5000, elevation: 5000, marginBottom: 20 }}>
+          <Text style={styles.label}>Icon</Text>
+          <DropdownSelect
+            value={iconType}
+            options={AVAILABLE_ICONS.map(icon => ({ label: icon, value: icon }))}
+            onSelect={setIconType}
+            placeholder="Select an Icon"
+          />
+        </View>
 
         <View style={{ zIndex: 4000, elevation: 4000 }}>
           <Text style={styles.label}>Tribe</Text>
@@ -213,7 +261,7 @@ export default function CreateMeetup() {
           placeholder="Event context and vibes..."
           multiline
           numberOfLines={4}
-          placeholderTextColor="#a0a0a0"
+          placeholderTextColor={colors.textMuted}
         />
 
         <View style={{ zIndex: 3000, elevation: 3000 }}>
@@ -301,49 +349,47 @@ export default function CreateMeetup() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#F7F9FC" },
-  label: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginBottom: 8,
-    marginTop: 16,
-    color: "#333",
-  },
-  input: {
-    height: 52,
-    backgroundColor: "#F8F9FA",
-    borderColor: "#E4E7EB",
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: "#333",
-  },
-  textArea: { height: 100, textAlignVertical: "top", paddingTop: 16 },
+  container: { ...globalStyles.container, padding: 20 },
+  label: globalStyles.label,
+  input: globalStyles.input,
+  textArea: globalStyles.textArea,
   spacer: { height: 20 },
-  itemTitle: { fontSize: 16, fontWeight: "bold" },
-  readOnlyInput: {
-    backgroundColor: "#f5f5f5",
-    justifyContent: "center",
-  },
+  itemTitle: { fontSize: 16, fontWeight: "bold", color: colors.text },
+  readOnlyInput: globalStyles.readOnlyInput,
   disabledText: {
-    color: "#888",
+    color: colors.textMuted,
   },
-  primaryButton: {
-    backgroundColor: "#007bff",
-    height: 52,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#007bff",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
+  primaryButton: globalStyles.primaryButton,
+  primaryButtonText: globalStyles.primaryButtonText,
+  chip: {
+    backgroundColor: colors.glassBackground,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
   },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
+  chipSelected: {
+    backgroundColor: colors.primary,
+  },
+  chipText: {
+    fontSize: 14,
+    color: colors.text,
+  },
+  chipTextSelected: {
+    color: colors.background,
+  },
+  iconChip: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.glassBackground,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  iconChipSelected: {
+    backgroundColor: colors.primary,
+    borderWidth: 2,
+    borderColor: colors.accent,
   },
 });

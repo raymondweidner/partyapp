@@ -1,5 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { colors } from "../theme";
 
 export function CheckboxToggle({
   label,
@@ -24,9 +25,9 @@ export function CheckboxToggle({
           {
             backgroundColor: isChecked
               ? disabled
-                ? "#aaa"
-                : "#007bff"
-              : "#fff",
+                ? colors.glassBackground
+                : colors.accent
+              : "transparent",
           },
           disabled && { opacity: 0.7 },
         ]}
@@ -45,12 +46,12 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: colors.border,
     borderRadius: 4,
     marginRight: 10,
     justifyContent: "center",
     alignItems: "center",
   },
   checkmark: { color: "#fff", fontWeight: "bold" },
-  checkboxLabel: { fontSize: 16, fontWeight: "bold" },
+  checkboxLabel: { fontSize: 16, fontWeight: "bold", color: colors.text },
 });

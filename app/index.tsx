@@ -1,9 +1,11 @@
+import { BlurView } from "expo-blur";
 import { useFocusEffect, useRouter } from "expo-router";
 import { signOut } from "firebase/auth";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   DeviceEventEmitter,
+  Image,
   Linking,
   Platform,
   ScrollView,
@@ -36,7 +38,7 @@ import {
   updateMemberContact,
 } from "../lib/data/service";
 import { auth } from "../lib/firebaseConfig";
-import { openEmailThread, openWhatsAppDM, showAlert } from "../lib/util";
+import { openEmailThread, showAlert } from "../lib/util";
 import { useCurrentMember, useInfoModal, useUserDevice } from "./_layout";
 
 export default function Home() {
@@ -235,7 +237,15 @@ export default function Home() {
         setMeetups([]);
       }
 
-      setChats(chatsData);
+      let myChats = chatsData;
+      if (currentMember && currentMember.id) {
+        const myChatIds = chatMembersData
+          .filter((cm) => cm.member_id === currentMember.id)
+          .map((cm) => cm.chat_id);
+        myChats = chatsData.filter((c) => c.id && myChatIds.includes(c.id));
+      }
+
+      setChats(myChats);
       setChatMembers(chatMembersData);
     } catch (error: any) {
       showAlert("Error", error.message);
@@ -280,19 +290,19 @@ export default function Home() {
         onPress={() =>
           typeof action === "string" ? router.push(action as any) : action()
         }
+        style={styles.addButton}
       >
-        <Text style={styles.plusButton}>+</Text>
+        <Text style={styles.addButtonText}>+ Add</Text>
       </TouchableOpacity>
     </View>
   );
 
   const renderItem = (
-    titleNode: React.ReactNode,
+    icon: string | null,
     textTitle: string,
     subtitle: string,
     onPress: () => void,
     infoModalOptions?: { phone?: string | null; email?: string | null },
-    actionNode?: React.ReactNode,
   ) => {
     const cleanSubtitle = subtitle ? String(subtitle).trim() : "";
     const hasSubtitle =
@@ -301,7 +311,6 @@ export default function Home() {
       cleanSubtitle !== "null";
     return (
       <TouchableOpacity
-        style={styles.itemContainer}
         onPress={onPress}
         onLongPress={() => {
           if (hasSubtitle)
@@ -310,22 +319,17 @@ export default function Home() {
         {...(Platform.OS === "web" && hasSubtitle
           ? ({ title: cleanSubtitle } as any)
           : {})}
+        style={{ marginRight: 16 }}
       >
-        <View style={styles.itemRow}>
-          <View
-            style={{
-              flex: 1,
-              flexDirection: "row",
-              alignItems: "center",
-              overflow: "hidden",
-            }}
-          >
-            {titleNode}
-          </View>
-          <View style={{ flexDirection: "row", alignItems: "center" }}>
-            {actionNode}
-          </View>
-        </View>
+        <BlurView intensity={30} tint="dark" style={styles.itemContainer}>
+          <Text style={{ fontSize: 36, textAlign: 'center', marginBottom: 8 }}>{icon || "📁"}</Text>
+          <Text style={styles.itemTitle} numberOfLines={1}>
+            {textTitle || "Unnamed"}
+          </Text>
+          <Text style={styles.itemSubtitle} numberOfLines={2}>
+            {cleanSubtitle.replace(/\n/g, ' ')}
+          </Text>
+        </BlurView>
       </TouchableOpacity>
     );
   };
@@ -415,81 +419,72 @@ export default function Home() {
     const cleanPhone = (f as any).phone ? String((f as any).phone).trim() : "";
     const infoText = `Email: ${cleanEmail || "N/A"}\nPhone: ${cleanPhone || "N/A"}\nStatus: ${isPendingJoin ? "Pending App Join" : statusText}`;
 
-    const titleNode = (
-      <>
-        <Text style={styles.itemTitle} numberOfLines={1}>
-          {f.name || "Unnamed"}
-        </Text>
-        {isPendingJoin && (
-          <TouchableOpacity
-            onPress={(e) => {
-              e.stopPropagation();
-              showInfoModal("Status", "Pending App Join");
-            }}
-          >
-            <Text style={styles.itemTitle}> ✉️</Text>
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          onPress={(e) => {
-            e.stopPropagation();
-            showInfoModal("Connection Status", statusText);
-          }}
-        >
-          <Text style={styles.itemTitle}> {statusIcon}</Text>
-        </TouchableOpacity>
-      </>
-    );
-
     const onPress = () => {
       showInfoModal(f.name || "Member", infoText, { phone: cleanPhone, email: cleanEmail, memberId: f.id });
     };
 
-    const actionNode = (
-      <>
-        {tab === "incoming" && (
-          <TouchableOpacity
-            onPress={(e) => {
-              e.stopPropagation();
-              handleIncomingPress(f);
-            }}
-            style={{ paddingHorizontal: 5 }}
-          >
-            <Text style={{ fontSize: 18 }}>👋</Text>
-          </TouchableOpacity>
-        )}
-      </>
-    );
+    const actionNode = tab === "incoming" ? (
+      <TouchableOpacity
+        onPress={(e) => {
+          e.stopPropagation();
+          handleIncomingPress(f);
+        }}
+        style={{ paddingHorizontal: 5, backgroundColor: 'white', borderRadius: 10 }}
+      >
+        <Text style={{ fontSize: 18 }}>👋</Text>
+      </TouchableOpacity>
+    ) : null;
 
-    return renderItem(
-      titleNode,
-      f.name || "Unnamed",
-      infoText,
-      onPress,
-      { phone: cleanPhone, email: cleanEmail },
-      actionNode,
+    return (
+      <TouchableOpacity
+        key={f.id}
+        style={styles.memberCard}
+        onPress={onPress}
+      >
+        <View style={styles.memberCardImageContainer}>
+          {f.profile_pic_data ? (
+            <Image source={{ uri: f.profile_pic_data }} style={styles.memberCardImage} />
+          ) : (
+            <Text style={styles.memberCardSilhouette}>👤</Text>
+          )}
+          {actionNode && (
+            <View style={{ position: 'absolute', top: -5, right: -10 }}>
+              {actionNode}
+            </View>
+          )}
+        </View>
+        <Text style={styles.memberCardName} numberOfLines={1}>{f.name || "Unnamed"}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+          {isPendingJoin && (
+            <TouchableOpacity onPress={(e) => { e.stopPropagation(); showInfoModal("Status", "Pending App Join"); }}>
+              <Text style={{ fontSize: 12 }}>✉️ </Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={(e) => { e.stopPropagation(); showInfoModal("Connection Status", statusText); }}>
+            <Text style={{ fontSize: 12 }}>{statusIcon}</Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
     );
   };
 
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.header}>TribeVibe</Text>
+        <View style={{ marginBottom: 10 }}>
+          <Text style={styles.header}>TribeVibe</Text>
+          <Text style={styles.greeting}>Welcome back, {currentMember?.name || "Fam"}!</Text>
+        </View>
 
         {loading ? (
           <ActivityIndicator size="large" color="#007bff" />
         ) : (
           <>
             {renderSectionHeader("Tribes", "/create-tribe")}
-            <ScrollView style={styles.listContainer} nestedScrollEnabled>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.listContainer} nestedScrollEnabled>
               {tribes.map((t) =>
                 renderItem(
-                  <Text
-                    style={[styles.itemTitle, { flex: 1 }]}
-                    numberOfLines={1}
-                  >
-                    {t.name || "Unnamed"}
-                  </Text>,
+                  "🔥",
                   t.name || "Unnamed",
                   t.description || "",
                   () =>
@@ -505,18 +500,14 @@ export default function Home() {
             )}
 
             {renderSectionHeader("Meetups", "/create-meetup")}
-            <ScrollView style={styles.listContainer} nestedScrollEnabled>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.listContainer} nestedScrollEnabled>
               {meetups.map((m) => {
+                const eventInfo = m.event_type ? `Type: ${m.event_type}\n` : "";
                 const meetupSubtitle = m.details
-                  ? `Status: ${m.status || "Planning"}\n\n${m.details}`
-                  : `Status: ${m.status || "Planning"}`;
+                  ? `${eventInfo}Status: ${m.status || "Planning"}\n\n${m.details}`
+                  : `${eventInfo}Status: ${m.status || "Planning"}`;
                 return renderItem(
-                  <Text
-                    style={[styles.itemTitle, { flex: 1 }]}
-                    numberOfLines={1}
-                  >
-                    {m.title || "Unnamed"}
-                  </Text>,
+                  m.icon_type || "🎉",
                   m.title || "Unnamed",
                   meetupSubtitle,
                   () =>
@@ -617,7 +608,7 @@ export default function Home() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.listContainer} nestedScrollEnabled>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', paddingBottom: 20 }}>
               {famTab === "my_fam" &&
                 myFamMembers.map((f) =>
                   renderFamItem(f, "Active", "✅", "my_fam"),
@@ -630,7 +621,7 @@ export default function Home() {
                 outgoingInvites.map((f) =>
                   renderFamItem(f, "Outgoing Invite", "⏳", "outgoing"),
                 )}
-            </ScrollView>
+            </View>
 
             {famTab === "my_fam" && myFamMembers.length === 0 && (
               <Text style={styles.emptyText}>No active connections.</Text>
@@ -643,7 +634,7 @@ export default function Home() {
             )}
 
             {renderSectionHeader("Group Chats", openGroupChatModal)}
-            <ScrollView style={styles.listContainer} nestedScrollEnabled>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.listContainer} nestedScrollEnabled>
               {chats.map((chat) => {
                 const membersOfChat = chatMembers
                   .filter((cm) => cm.chat_id === chat.id)
@@ -658,12 +649,7 @@ export default function Home() {
                 )}`;
 
                 return renderItem(
-                  <Text
-                    style={[styles.itemTitle, { flex: 1 }]}
-                    numberOfLines={1}
-                  >
-                    {chat.name}
-                  </Text>,
+                  "💬",
                   chat.name,
                   infoText,
                   () =>
@@ -672,8 +658,8 @@ export default function Home() {
                         showAlert("Error", "Could not open WhatsApp link."),
                       )
                       : showAlert(
-                        "Pending",
-                        "The group chat is being generated. Please check back in a moment.",
+                        "Error",
+                        "No WhatsApp link provided for this chat.",
                       ),
                 );
               })}
@@ -710,47 +696,64 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F7F9FC" },
+  container: { flex: 1, backgroundColor: "#121212" },
   scrollContent: { padding: 20 },
   header: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: "900",
-    marginBottom: 20,
+    marginBottom: 4,
     textAlign: "center",
-    color: "#007bff",
-    letterSpacing: 0.5,
+    color: "#00F0FF",
+    letterSpacing: 1,
+    textShadowColor: "rgba(0, 240, 255, 0.4)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
+  },
+  greeting: {
+    fontSize: 16,
+    color: "#E0E0E0",
+    textAlign: "center",
+    fontWeight: "500",
+    marginBottom: 10,
   },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginTop: 20,
-    marginBottom: 10,
+    marginBottom: 16,
     paddingBottom: 5,
     borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
+    borderBottomColor: "rgba(255,255,255,0.1)",
   },
-  sectionTitle: { fontSize: 22, fontWeight: "800", color: "#1A1A1A" },
-  plusButton: {
-    fontSize: 28,
-    color: "#007bff",
-    lineHeight: 30,
-    paddingHorizontal: 10,
+  sectionTitle: { fontSize: 22, fontWeight: "800", color: "#E0E0E0" },
+  addButton: {
+    backgroundColor: "rgba(0, 240, 255, 0.1)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(0, 240, 255, 0.5)",
   },
-  listContainer: { maxHeight: 240 },
+  addButtonText: {
+    color: "#00F0FF",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  listContainer: { paddingBottom: 10 },
   itemContainer: {
     padding: 16,
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.15)",
+    overflow: "hidden",
+    width: 140,
+    height: 140,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  itemTitle: { fontSize: 14, fontWeight: "600", color: "#333" },
-  itemSubtitle: { fontSize: 14, color: "#666", marginTop: 4 },
+  itemTitle: { fontSize: 14, fontWeight: "600", color: "#FFFFFF", textAlign: "center", marginBottom: 4 },
+  itemSubtitle: { fontSize: 11, color: "#AAAAAA", textAlign: "center", lineHeight: 14 },
   itemRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -762,14 +765,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: "rgba(255,255,255,0.05)",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  memberItemSelected: { backgroundColor: "#e6f7ff", borderRadius: 8 },
+  memberItemSelected: { backgroundColor: "rgba(0, 240, 255, 0.1)", borderRadius: 8 },
   emptyText: {
     fontSize: 14,
-    color: "#666",
+    color: "#888",
     fontStyle: "italic",
     marginTop: 5,
     marginBottom: 10,
@@ -781,11 +784,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#FF4D4D",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
   },
   signOutText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
   headerButtonsRow: {
@@ -796,22 +794,24 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   actionButton: {
-    backgroundColor: "#e6f7ff",
+    backgroundColor: "rgba(157, 78, 221, 0.2)",
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
     flexDirection: "row",
     alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(157, 78, 221, 0.5)",
   },
   actionButtonText: {
-    color: "#007bff",
+    color: "#9D4EDD",
     fontSize: 13,
     fontWeight: "700",
   },
   tabContainer: {
     flexDirection: "row",
     marginBottom: 16,
-    backgroundColor: "#E4E7EB",
+    backgroundColor: "rgba(255,255,255,0.05)",
     borderRadius: 12,
     padding: 4,
   },
@@ -824,19 +824,50 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activeTab: {
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
   },
   tabText: {
     fontSize: 14,
-    color: "#666",
+    color: "#888",
     fontWeight: "600",
   },
-  activeTabText: { color: "#007bff" },
+  activeTabText: { color: "#00F0FF" },
+  memberCard: {
+    width: 80,
+    margin: 10,
+    alignItems: 'center',
+  },
+  memberCardImageContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#1E1E1E',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 5,
+    borderWidth: 2,
+    borderColor: '#00F0FF',
+    shadowColor: "#00F0FF",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 5,
+  },
+  memberCardImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
+  },
+  memberCardSilhouette: {
+    fontSize: 32,
+  },
+  memberCardName: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: '#E0E0E0',
+  },
   badge: {
     backgroundColor: "#ff4444",
     borderRadius: 10,
@@ -851,39 +882,42 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.7)",
   },
   modalContent: {
     margin: 20,
-    backgroundColor: "#fff",
+    backgroundColor: "#1E1E1E",
     borderRadius: 16,
     padding: 24,
     maxHeight: "80%",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: "bold",
     marginBottom: 15,
     textAlign: "center",
+    color: "#FFFFFF",
   },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8F9FA",
-    borderColor: "#E4E7EB",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderColor: "rgba(255,255,255,0.1)",
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 16,
     marginBottom: 16,
     height: 52,
   },
-  searchIcon: { fontSize: 18, marginRight: 8 },
+  searchIcon: { fontSize: 18, marginRight: 8, color: "#888" },
   modalInput: {
     fontSize: 16,
-    color: "#333",
+    color: "#FFFFFF",
     height: 52,
-    backgroundColor: "#F8F9FA",
-    borderColor: "#E4E7EB",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderColor: "rgba(255,255,255,0.1)",
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 16,
@@ -892,38 +926,40 @@ const styles = StyleSheet.create({
   modalSearchInput: {
     flex: 1,
     fontSize: 16,
-    color: "#333",
+    color: "#FFFFFF",
   },
   checkbox: {
     width: 24,
     height: 24,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: "#666",
     borderRadius: 4,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "transparent",
   },
-  checkboxSelected: { backgroundColor: "#007bff", borderColor: "#007bff" },
+  checkboxSelected: { backgroundColor: "#9D4EDD", borderColor: "#9D4EDD" },
   checkmark: { fontSize: 16, color: "#fff", fontWeight: "bold" },
   primaryButton: {
-    backgroundColor: "#007bff",
+    backgroundColor: "#9D4EDD",
     height: 52,
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#007bff",
+    shadowColor: "#9D4EDD",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 3,
   },
   primaryButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
   guidedPanel: {
-    backgroundColor: "#E4E7EB",
+    backgroundColor: "rgba(255,255,255,0.05)",
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
   },
-  guidedPanelText: { fontSize: 14, color: "#333", marginBottom: 6 },
+  guidedPanelText: { fontSize: 14, color: "#E0E0E0", marginBottom: 6 },
 });

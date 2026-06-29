@@ -20,6 +20,7 @@ import {
     GroupedMemberContacts,
 } from "../lib/data/service";
 import { showAlert } from "../lib/util";
+import { colors, globalStyles } from "../lib/theme";
 import { CustomHeaderLeft, useCurrentMember, useInfoModal } from "./_layout";
 
 export default function FindFriend() {
@@ -207,7 +208,7 @@ export default function FindFriend() {
           onChangeText={setSearchTerm}
           placeholder="e.g. Jane Doe or jane@example.com"
           autoCapitalize="none"
-          placeholderTextColor="#a0a0a0"
+          placeholderTextColor={colors.textMuted}
         />
         <View style={styles.buttonContainer}>
           {loading ? (
@@ -279,81 +280,40 @@ export default function FindFriend() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#F7F9FC" },
-  label: { fontSize: 16, fontWeight: "bold", marginBottom: 10, color: "#333" },
+  container: { ...globalStyles.container, padding: 20 },
+  label: globalStyles.label,
   formCard: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.glassBackground,
     borderRadius: 16,
     padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
-  },
-  input: {
-    height: 52,
-    backgroundColor: "#F8F9FA",
-    borderColor: "#E4E7EB",
     borderWidth: 1,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    fontSize: 16,
-    color: "#333",
+    borderColor: colors.border,
   },
+  input: globalStyles.input,
   buttonContainer: { marginTop: 16 },
-  primaryButton: {
-    backgroundColor: "#007bff",
-    height: 52,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#007bff",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+  primaryButton: globalStyles.primaryButton,
+  primaryButtonText: globalStyles.primaryButtonText,
   modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
+    ...globalStyles.modalOverlay,
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
   },
   modalContent: {
+    ...globalStyles.modalContent,
     width: "90%",
     maxHeight: "60%",
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 5,
   },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 15,
-    textAlign: "center",
-  },
+  modalTitle: globalStyles.modalTitle,
   resultItem: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: colors.border,
   },
-  resultName: { fontSize: 16, fontWeight: "bold" },
-  resultEmail: { fontSize: 14, color: "#666" },
+  resultName: { fontSize: 16, fontWeight: "bold", color: colors.text },
+  resultEmail: { fontSize: 14, color: colors.textSecondary },
   emptyText: {
     textAlign: "center",
     marginTop: 20,
     fontSize: 16,
-    color: "#666",
+    color: colors.textMuted,
   },
 });

@@ -18,6 +18,7 @@ import {
   updateAvailability,
 } from "../lib/data/service";
 import { showAlert, safeBack } from "../lib/util";
+import { colors, globalStyles } from "../lib/theme";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
 
 export default function UpdateAvailability() {
@@ -184,7 +185,7 @@ export default function UpdateAvailability() {
           )}
           <View style={styles.buttonContainer}>
             {saving ? (
-              <ActivityIndicator size="large" color="#007bff" />
+              <ActivityIndicator size="large" color={colors.primary} />
             ) : (
               <TouchableOpacity
                 style={styles.primaryButton}
@@ -201,51 +202,31 @@ export default function UpdateAvailability() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#F7F9FC" },
+  container: { ...globalStyles.container, padding: 20 },
   formCard: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.glassBackground,
     borderRadius: 16,
     padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   label: {
+    ...globalStyles.label,
     fontSize: 18,
-    fontWeight: "800",
-    marginBottom: 20,
     textAlign: "center",
-    color: "#333",
   },
   statusContainer: { flexDirection: "column", gap: 15 },
   statusButton: {
     padding: 16,
     borderWidth: 2,
-    borderColor: "#E4E7EB",
+    borderColor: colors.border,
     borderRadius: 12,
     alignItems: "center",
-    backgroundColor: "#F8F9FA",
+    backgroundColor: colors.glassBackground,
   },
-  statusSelected: { borderColor: "#007bff", backgroundColor: "#e6f7ff" },
-  statusText: { fontSize: 18, fontWeight: "bold" },
+  statusSelected: { borderColor: colors.primary, backgroundColor: "rgba(0, 240, 255, 0.1)" },
+  statusText: { fontSize: 18, fontWeight: "bold", color: colors.text },
   buttonContainer: { marginTop: 30 },
-  primaryButton: {
-    backgroundColor: "#007bff",
-    height: 52,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#007bff",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+  primaryButton: globalStyles.primaryButton,
+  primaryButtonText: globalStyles.primaryButtonText,
 });

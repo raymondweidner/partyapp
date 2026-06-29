@@ -4,6 +4,7 @@ import { getApp } from "firebase/app";
 import {
   getMessaging,
   getToken as getWebToken,
+  isSupported,
   onMessage,
 } from "firebase/messaging";
 import React, {
@@ -15,14 +16,14 @@ import React, {
 } from "react";
 import {
   ActivityIndicator,
-  Alert,
   DeviceEventEmitter,
+  Image,
   Modal,
   Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { AuthProvider, useAuth } from "../lib/auth";
 import { Member } from "../lib/data/Member";
@@ -37,7 +38,7 @@ import {
   updateUserDevice,
 } from "../lib/data/service";
 import "../lib/firebaseConfig";
-import { handleNotificationPress, openEmailThread, openWhatsAppDM, pendingRedirect, setPendingRedirect, showAlert, safeBack } from "../lib/util";
+import { handleNotificationPress, openEmailThread, openWhatsAppDM, pendingRedirect, safeBack, setPendingRedirect, showAlert } from "../lib/util";
 
 const UserDeviceContext = createContext<{
   userDevice: UserDevice | null;
@@ -78,6 +79,12 @@ function UserDeviceProvider({ children }: { children: React.ReactNode }) {
           console.warn(
             "This browser does not support service workers (Check if you are on HTTPS or localhost)",
           );
+          return;
+        }
+
+        const supported = await isSupported();
+        if (!supported) {
+          console.warn("Firebase Messaging is not supported in this browser environment.");
           return;
         }
 
@@ -323,7 +330,11 @@ function Header() {
             }
             style={{ flexDirection: "row", alignItems: "center", marginRight: 15 }}
           >
-            <Text style={{ fontSize: 24, marginRight: 8 }}>👤</Text>
+            {member.profile_pic_data ? (
+              <Image source={{ uri: member.profile_pic_data }} style={{ width: 32, height: 32, borderRadius: 16, marginRight: 8, borderWidth: 1, borderColor: '#007bff' }} />
+            ) : (
+              <Text style={{ fontSize: 24, marginRight: 8 }}>👤</Text>
+            )}
             <Text style={{ fontWeight: "bold", fontSize: 16 }}>{member.name}</Text>
           </TouchableOpacity>
         ) : null}
@@ -445,20 +456,26 @@ function FCMHandler() {
     };
 
     if (Platform.OS === "web") {
-      console.log("[FCMHandler] Attaching web foreground listener...");
-      const messagingWeb = getMessaging(getApp());
-      unsubscribe = onMessage(messagingWeb, (payload) => {
-        console.log("[FCMHandler] Received onMessage from firebase/messaging (web foreground).");
-        handlePayload(payload, false);
-      });
+      isSupported().then((supported) => {
+        if (!supported) {
+          console.warn("[FCMHandler] Firebase Messaging is not supported.");
+          return;
+        }
+        console.log("[FCMHandler] Attaching web foreground listener...");
+        const messagingWeb = getMessaging(getApp());
+        unsubscribe = onMessage(messagingWeb, (payload) => {
+          console.log("[FCMHandler] Received onMessage from firebase/messaging (web foreground).");
+          handlePayload(payload, false);
+        });
 
-      if (typeof BroadcastChannel !== "undefined") {
-        channel = new BroadcastChannel("fcm_channel");
-        channel.onmessage = (event) => {
-          console.log("[FCMHandler] Received BroadcastChannel message from SW.");
-          handlePayload(event.data, false);
-        };
-      }
+        if (typeof BroadcastChannel !== "undefined") {
+          channel = new BroadcastChannel("fcm_channel");
+          channel.onmessage = (event) => {
+            console.log("[FCMHandler] Received BroadcastChannel message from SW.");
+            handlePayload(event.data, false);
+          };
+        }
+      });
     } else {
       console.log("[FCMHandler] Attaching React Native foreground listener...");
       unsubscribe = messaging().onMessage(async (remoteMessage) => {

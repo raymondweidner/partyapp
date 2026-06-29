@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { Member } from "../data/Member";
 import { showAlert } from "../util";
+import { colors, globalStyles } from "../theme";
 
 export function GroupChatModal({
   visible,
@@ -101,7 +102,7 @@ export function GroupChatModal({
             placeholder="Chat Name"
             value={name}
             onChangeText={setName}
-            placeholderTextColor="#a0a0a0"
+            placeholderTextColor={colors.textMuted}
           />
 
           <TextInput
@@ -109,7 +110,7 @@ export function GroupChatModal({
             placeholder="WhatsApp Invite URL (https://chat.whatsapp.com/...)"
             value={url}
             onChangeText={setUrl}
-            placeholderTextColor="#a0a0a0"
+            placeholderTextColor={colors.textMuted}
             autoCapitalize="none"
           />
 
@@ -120,7 +121,7 @@ export function GroupChatModal({
               placeholder="Search members..."
               value={search}
               onChangeText={setSearch}
-              placeholderTextColor="#a0a0a0"
+              placeholderTextColor={colors.textMuted}
             />
           </View>
 
@@ -152,8 +153,8 @@ export function GroupChatModal({
                       styles.checkbox,
                       isSelected && styles.checkboxSelected,
                       !hasPhone && {
-                        backgroundColor: "#f0f0f0",
-                        borderColor: "#ccc",
+                        backgroundColor: "transparent",
+                        borderColor: colors.textMuted,
                       },
                     ]}
                   >
@@ -187,14 +188,14 @@ export function GroupChatModal({
                   {
                     flex: 1,
                     marginRight: 10,
-                    backgroundColor: "#f0f0f0",
+                    backgroundColor: colors.glassBackground,
                     shadowOpacity: 0,
                     elevation: 0,
                   },
                 ]}
                 onPress={onClose}
               >
-                <Text style={[styles.primaryButtonText, { color: "#333" }]}>
+                <Text style={[styles.primaryButtonText, { color: colors.textSecondary }]}>
                   Cancel
                 </Text>
               </TouchableOpacity>
@@ -213,93 +214,69 @@ export function GroupChatModal({
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  modalContent: {
-    margin: 20,
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 24,
-    maxHeight: "80%",
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 15,
-    textAlign: "center",
-  },
+  modalOverlay: globalStyles.modalOverlay,
+  modalContent: globalStyles.modalContent,
+  modalTitle: globalStyles.modalTitle,
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F8F9FA",
-    borderColor: "#E4E7EB",
+    backgroundColor: colors.glassBackground,
+    borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 16,
     marginBottom: 16,
     height: 52,
   },
-  searchIcon: { fontSize: 18, marginRight: 8 },
+  searchIcon: { fontSize: 18, marginRight: 8, color: colors.textMuted },
   modalInput: {
     fontSize: 16,
-    color: "#333",
+    color: colors.text,
     height: 52,
-    backgroundColor: "#F8F9FA",
-    borderColor: "#E4E7EB",
+    backgroundColor: colors.glassBackground,
+    borderColor: colors.border,
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 16,
     marginBottom: 16,
   },
-  modalSearchInput: { flex: 1, fontSize: 16, color: "#333" },
+  modalSearchInput: { flex: 1, fontSize: 16, color: colors.text },
   checkbox: {
     width: 24,
     height: 24,
     borderWidth: 1,
-    borderColor: "#ccc",
+    borderColor: colors.border,
     borderRadius: 4,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "transparent",
   },
-  checkboxSelected: { backgroundColor: "#007bff", borderColor: "#007bff" },
+  checkboxSelected: { backgroundColor: colors.accent, borderColor: colors.accent },
   checkmark: { fontSize: 16, color: "#fff", fontWeight: "bold" },
-  primaryButton: {
-    backgroundColor: "#007bff",
-    height: 52,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#007bff",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  primaryButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  primaryButton: globalStyles.primaryButton,
+  primaryButtonText: globalStyles.primaryButtonText,
   guidedPanel: {
-    backgroundColor: "#E4E7EB",
+    backgroundColor: colors.glassBackground,
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
-  guidedPanelText: { fontSize: 14, color: "#333", marginBottom: 6 },
+  guidedPanelText: { fontSize: 14, color: colors.textSecondary, marginBottom: 6 },
   memberItem: {
     flexDirection: "row",
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: colors.border,
     alignItems: "center",
     justifyContent: "space-between",
   },
-  memberItemSelected: { backgroundColor: "#e6f7ff", borderRadius: 8 },
-  itemTitle: { fontSize: 14, fontWeight: "600", color: "#333" },
+  memberItemSelected: { backgroundColor: "rgba(157, 78, 221, 0.2)", borderRadius: 8 },
+  itemTitle: { fontSize: 14, fontWeight: "600", color: colors.text },
   emptyText: {
     fontSize: 14,
-    color: "#666",
+    color: colors.textMuted,
     fontStyle: "italic",
     marginTop: 5,
     marginBottom: 10,

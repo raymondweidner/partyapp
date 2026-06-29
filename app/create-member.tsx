@@ -12,6 +12,7 @@ import {
 import { useAuth } from "../lib/auth";
 import { createMember, createMemberContact } from "../lib/data/service";
 import { showAlert, safeBack } from "../lib/util";
+import { colors, globalStyles } from "../lib/theme";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
 
 export default function CreateMember() {
@@ -98,7 +99,7 @@ export default function CreateMember() {
           value={name}
           onChangeText={setName}
           placeholder="Member Name"
-          placeholderTextColor="#a0a0a0"
+          placeholderTextColor={colors.textMuted}
         />
 
         <Text style={styles.label}>Email</Text>
@@ -109,7 +110,7 @@ export default function CreateMember() {
           placeholder="email@example.com"
           keyboardType="email-address"
           autoCapitalize="none"
-          placeholderTextColor="#a0a0a0"
+          placeholderTextColor={colors.textMuted}
         />
 
         <Text style={styles.label}>Phone Number</Text>
@@ -119,7 +120,7 @@ export default function CreateMember() {
           onChangeText={setPhone}
           placeholder="Phone Number"
           keyboardType="phone-pad"
-          placeholderTextColor="#a0a0a0"
+          placeholderTextColor={colors.textMuted}
         />
 
         <View style={styles.buttonContainer}>
@@ -140,45 +141,17 @@ export default function CreateMember() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: "#F7F9FC" },
+  container: { ...globalStyles.container, padding: 20 },
   formCard: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.glassBackground,
     borderRadius: 16,
     padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
-  },
-  label: { fontSize: 16, fontWeight: "700", marginBottom: 8, color: "#333" },
-  input: {
-    height: 52,
-    backgroundColor: "#F8F9FA",
-    borderColor: "#E4E7EB",
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 16,
-    fontSize: 16,
-    color: "#333",
+    borderColor: colors.border,
   },
+  label: globalStyles.label,
+  input: globalStyles.input,
   buttonContainer: { marginTop: 8 },
-  primaryButton: {
-    backgroundColor: "#007bff",
-    height: 52,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#007bff",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+  primaryButton: globalStyles.primaryButton,
+  primaryButtonText: globalStyles.primaryButtonText,
 });

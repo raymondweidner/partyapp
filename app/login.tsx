@@ -25,6 +25,7 @@ import {
 } from "../lib/data/service";
 import { auth } from "../lib/firebaseConfig";
 import { showAlert } from "../lib/util";
+import { colors, globalStyles } from "../lib/theme";
 import { useCurrentMember } from "./_layout";
 
 export default function Login() {
@@ -231,7 +232,7 @@ export default function Login() {
                 placeholder="Name"
                 value={name}
                 onChangeText={setName}
-                placeholderTextColor="#a0a0a0"
+                placeholderTextColor={colors.textMuted}
               />
               <TextInput
                 style={styles.input}
@@ -239,7 +240,7 @@ export default function Login() {
                 value={phone}
                 onChangeText={setPhone}
                 keyboardType="phone-pad"
-                placeholderTextColor="#a0a0a0"
+                placeholderTextColor={colors.textMuted}
               />
             </>
           )}
@@ -247,14 +248,14 @@ export default function Login() {
           <TextInput
             style={[
               styles.input,
-              invitedMember && { backgroundColor: "#f0f0f0", color: "#888" },
+              invitedMember && styles.readOnlyInput,
             ]}
             placeholder="Email"
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
             keyboardType="email-address"
-            placeholderTextColor="#a0a0a0"
+            placeholderTextColor={colors.textMuted}
             editable={!invitedMember}
           />
 
@@ -264,7 +265,7 @@ export default function Login() {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
-            placeholderTextColor="#a0a0a0"
+            placeholderTextColor={colors.textMuted}
           />
 
           {loading ? (
@@ -322,63 +323,30 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F7F9FC" },
+  container: globalStyles.container,
   inner: { flexGrow: 1, justifyContent: "center", padding: 24 },
   headerContainer: {
     alignItems: "center",
     marginBottom: 32,
   },
-  logoText: {
-    fontSize: 36,
-    fontWeight: "900",
-    color: "#007bff",
-    marginBottom: 8,
-    letterSpacing: 0.5,
-  },
+  logoText: globalStyles.header,
   subtitle: {
     fontSize: 16,
-    color: "#666",
+    color: colors.textSecondary,
     textAlign: "center",
   },
   formCard: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.glassBackground,
     borderRadius: 16,
     padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
-  },
-  input: {
-    height: 52,
-    backgroundColor: "#F8F9FA",
-    borderColor: "#E4E7EB",
     borderWidth: 1,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    fontSize: 16,
-    color: "#333",
+    borderColor: colors.border,
   },
+  input: globalStyles.input,
+  readOnlyInput: globalStyles.readOnlyInput,
   buttonContainer: { marginTop: 8, gap: 12 },
-  primaryButton: {
-    backgroundColor: "#007bff",
-    height: 52,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    shadowColor: "#007bff",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  primaryButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+  primaryButton: globalStyles.primaryButton,
+  primaryButtonText: globalStyles.primaryButtonText,
   secondaryButton: {
     height: 52,
     borderRadius: 12,
@@ -386,7 +354,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   secondaryButtonText: {
-    color: "#007bff",
+    color: colors.primary,
     fontSize: 16,
     fontWeight: "600",
   },
