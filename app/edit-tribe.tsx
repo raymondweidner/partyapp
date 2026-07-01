@@ -585,56 +585,65 @@ export default function EditTribe() {
           contentContainerStyle={{ paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={{ flexDirection: "row", gap: 10, zIndex: 6000, elevation: 6000 }}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.label}>Name</Text>
-              <TextInput
-                style={[styles.input, !isEditing && styles.readOnlyInput]}
-                value={name}
-                onChangeText={setName}
-                placeholder="Tribe Name"
-                placeholderTextColor={colors.textMuted}
-                editable={isEditing}
-              />
-            </View>
-            <View style={{ width: 90 }}>
-              <Text style={styles.label}>Icon</Text>
-              <DropdownSelect
-                options={[
-                  { label: "👨‍👩‍👧‍👦", value: "👨‍👩‍👧‍👦" },
-                  { label: "🏠", value: "🏠" },
-                  { label: "💼", value: "💼" },
-                  { label: "🏢", value: "🏢" },
-                  { label: "🎓", value: "🎓" },
-                  { label: "🎒", value: "🎒" },
-                  { label: "♾️", value: "♾️" },
-                  { label: "🤝", value: "🤝" },
-                  { label: "🪖", value: "🪖" },
-                  { label: "🎖️", value: "🎖️" },
-                  { label: "⚽", value: "⚽" },
-                  { label: "🏅", value: "🏅" },
-                  { label: "😊", value: "😊" },
-                  { label: "😃", value: "😃" },
-                ]}
-                value={iconType}
-                onSelect={setIconType}
-                placeholder="😊"
-                disabled={!isEditing}
-              />
-            </View>
-          </View>
+          {isEditing ? (
+            <>
+              <View style={{ flexDirection: "row", gap: 10, zIndex: 6000, elevation: 6000 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.label}>Name</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={name}
+                    onChangeText={setName}
+                    placeholder="Tribe Name"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </View>
+                <View style={{ width: 90 }}>
+                  <Text style={styles.label}>Icon</Text>
+                  <DropdownSelect
+                    options={[
+                      { label: "👨‍👩‍👧‍👦", value: "👨‍👩‍👧‍👦" },
+                      { label: "🏠", value: "🏠" },
+                      { label: "💼", value: "💼" },
+                      { label: "🏢", value: "🏢" },
+                      { label: "🎓", value: "🎓" },
+                      { label: "🎒", value: "🎒" },
+                      { label: "♾️", value: "♾️" },
+                      { label: "🤝", value: "🤝" },
+                      { label: "🪖", value: "🪖" },
+                      { label: "🎖️", value: "🎖️" },
+                      { label: "⚽", value: "⚽" },
+                      { label: "🏅", value: "🏅" },
+                      { label: "😊", value: "😊" },
+                      { label: "😃", value: "😃" },
+                    ]}
+                    value={iconType}
+                    onSelect={setIconType}
+                    placeholder="😊"
+                  />
+                </View>
+              </View>
 
-          <Text style={styles.label}>Description</Text>
-          <TextInput
-            style={[styles.input, styles.textArea, !isEditing && styles.readOnlyInput]}
-            value={description}
-            onChangeText={setDescription}
-            placeholder="Description"
-            multiline
-            numberOfLines={4}
-            placeholderTextColor={colors.textMuted}
-            editable={isEditing}
-          />
+              <Text style={styles.label}>Description</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={description}
+                onChangeText={setDescription}
+                placeholder="Description"
+                multiline
+                numberOfLines={4}
+                placeholderTextColor={colors.textMuted}
+              />
+            </>
+          ) : (
+            <View style={{ alignItems: "center", marginVertical: 24 }}>
+              <Text style={{ fontSize: 72, marginBottom: 12 }}>{iconType || "😊"}</Text>
+              <Text style={{ fontSize: 32, fontFamily: "Nunito_900Black", color: colors.text, textAlign: "center", marginBottom: 8 }}>{name}</Text>
+              {description ? (
+                <Text style={{ fontSize: 16, color: colors.textSecondary, textAlign: "center", paddingHorizontal: 20 }}>{description}</Text>
+              ) : null}
+            </View>
+          )}
 
           <View style={styles.sectionHeaderRow}>
             <Text style={[styles.label, { marginTop: 30, marginBottom: 10 }]}>
@@ -1026,12 +1035,15 @@ const styles = StyleSheet.create({
     marginTop: 20,
     paddingHorizontal: 15,
     paddingVertical: 5,
-    backgroundColor: "rgba(0, 240, 255, 0.1)",
+    backgroundColor: colors.primary,
     borderRadius: 5,
-    borderWidth: 1,
-    borderColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  editButtonText: { color: colors.primary, fontWeight: "bold" },
+  editButtonText: { color: "#F8F9FA", fontWeight: "bold" },
   modalOverlay: globalStyles.modalOverlay,
   modalContent: globalStyles.modalContent,
   modalTitle: globalStyles.modalTitle,

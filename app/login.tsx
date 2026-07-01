@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  input: globalStyles.input,
+  input: { ...globalStyles.input, marginBottom: 16 },
   readOnlyInput: globalStyles.readOnlyInput,
   buttonContainer: { marginTop: 8, gap: 12 },
   primaryButton: globalStyles.primaryButton,

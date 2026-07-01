@@ -17,6 +17,7 @@ import {
 import { useAuth } from "../lib/auth";
 import { EmailModal } from "../lib/components/EmailModal";
 import { GroupChatModal } from "../lib/components/GroupChatModal";
+import { colors, globalStyles } from "../lib/theme";
 import { Chat } from "../lib/data/Chat";
 import { ChatMember } from "../lib/data/ChatMember";
 import { Meetup } from "../lib/data/Meetup";
@@ -470,7 +471,7 @@ export default function Home() {
           <ActivityIndicator size="large" color="#007bff" />
         ) : (
           <>
-            {renderSectionHeader("Tribes", "/create-tribe")}
+            {renderSectionHeader("🏕️ Tribes", "/create-tribe")}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.listContainer} nestedScrollEnabled>
               {tribes.map((t) =>
                 renderItem(
@@ -489,7 +490,7 @@ export default function Home() {
               <Text style={styles.emptyText}>No tribes found.</Text>
             )}
 
-            {renderSectionHeader("Meetups", "/create-meetup")}
+            {renderSectionHeader("🎉 Meetups", "/create-meetup")}
             <View style={styles.tabContainer}>
               <TouchableOpacity
                 style={[styles.tab, meetupTab === "proposed" && styles.activeTab]}
@@ -542,7 +543,7 @@ export default function Home() {
             )}
 
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Fam</Text>
+              <Text style={styles.sectionTitle}>🙌 Fam</Text>
               <View style={styles.headerButtonsRow}>
                 <TouchableOpacity
                   style={styles.actionButton}
@@ -653,7 +654,7 @@ export default function Home() {
               <Text style={styles.emptyText}>No outgoing invites.</Text>
             )}
 
-            {renderSectionHeader("Group Chats", openGroupChatModal)}
+            {renderSectionHeader("💬 Group Chats", openGroupChatModal)}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.listContainer} nestedScrollEnabled>
               {chats.map((chat) => {
                 const membersOfChat = chatMembers
@@ -716,14 +717,14 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#121212" },
+  container: { flex: 1, backgroundColor: colors.background },
   scrollContent: { padding: 20 },
   header: {
     fontSize: 36,
     fontWeight: "900",
     marginBottom: 4,
     textAlign: "center",
-    color: "#00F0FF",
+    color: colors.primary,
     letterSpacing: 1,
     textShadowColor: "rgba(0, 240, 255, 0.4)",
     textShadowOffset: { width: 0, height: 0 },
@@ -731,7 +732,7 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 16,
-    color: "#E0E0E0",
+    color: colors.text,
     textAlign: "center",
     fontWeight: "500",
     marginBottom: 10,
@@ -744,19 +745,22 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingBottom: 5,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.1)",
+    borderBottomColor: "colors.border",
   },
-  sectionTitle: { fontSize: 22, fontWeight: "800", color: "#E0E0E0" },
+  sectionTitle: { fontSize: 22, fontWeight: "800", color: colors.text },
   addButton: {
-    backgroundColor: "rgba(0, 240, 255, 0.1)",
+    backgroundColor: colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "rgba(0, 240, 255, 0.5)",
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 2,
   },
   addButtonText: {
-    color: "#00F0FF",
+    color: "#F8F9FA",
     fontSize: 12,
     fontWeight: "bold",
   },
@@ -765,15 +769,15 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
+    borderColor: "colors.border",
     overflow: "hidden",
     width: 140,
     height: 140,
     justifyContent: "center",
     alignItems: "center",
   },
-  itemTitle: { fontSize: 14, fontWeight: "600", color: "#FFFFFF", textAlign: "center", marginBottom: 4 },
-  itemSubtitle: { fontSize: 11, color: "#AAAAAA", textAlign: "center", lineHeight: 14 },
+  itemTitle: { fontSize: 14, fontWeight: "600", color: colors.text, textAlign: "center", marginBottom: 4 },
+  itemSubtitle: { fontSize: 11, color: colors.textMuted, textAlign: "center", lineHeight: 14 },
   itemRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -785,7 +789,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.05)",
+    borderBottomColor: "colors.glassBorder",
     alignItems: "center",
     justifyContent: "space-between",
   },
@@ -800,12 +804,12 @@ const styles = StyleSheet.create({
   signOutButton: {
     marginTop: 32,
     height: 52,
-    backgroundColor: "#FF4D4D",
+    backgroundColor: colors.danger,
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
   },
-  signOutText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  signOutText: { color: "#F8F9FA", fontSize: 16, fontWeight: "bold" },
   headerButtonsRow: {
     flexDirection: "row",
     gap: 8,
@@ -814,24 +818,27 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   actionButton: {
-    backgroundColor: "rgba(157, 78, 221, 0.2)",
+    backgroundColor: colors.accent,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(157, 78, 221, 0.5)",
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 2,
   },
   actionButtonText: {
-    color: "#9D4EDD",
+    color: "#F8F9FA",
     fontSize: 13,
     fontWeight: "700",
   },
   tabContainer: {
     flexDirection: "row",
     marginBottom: 16,
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "colors.glassBorder",
     borderRadius: 12,
     padding: 4,
   },
@@ -844,16 +851,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activeTab: {
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "colors.border",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    borderColor: "colors.border",
   },
   tabText: {
     fontSize: 14,
     color: "#888",
     fontWeight: "600",
   },
-  activeTabText: { color: "#00F0FF" },
+  activeTabText: { color: colors.primary },
   memberCard: {
     width: 80,
     margin: 10,
@@ -863,13 +870,13 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#1E1E1E',
+    backgroundColor: colors.surface,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 5,
     borderWidth: 2,
-    borderColor: '#00F0FF',
-    shadowColor: "#00F0FF",
+    borderColor: colors.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 5,
@@ -886,7 +893,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: 'bold',
     textAlign: 'center',
-    color: '#E0E0E0',
+    color: colors.text,
   },
   badge: {
     backgroundColor: "#ff4444",
@@ -903,7 +910,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   tabBadge: {
-    backgroundColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "colors.border",
     borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -911,39 +918,21 @@ const styles = StyleSheet.create({
     minWidth: 20,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.2)",
+    borderColor: "colors.border",
   },
   tabBadgeText: {
     color: "#ccc",
     fontSize: 12,
     fontWeight: "bold",
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    backgroundColor: "rgba(0,0,0,0.7)",
-  },
-  modalContent: {
-    margin: 20,
-    backgroundColor: "#1E1E1E",
-    borderRadius: 16,
-    padding: 24,
-    maxHeight: "80%",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 15,
-    textAlign: "center",
-    color: "#FFFFFF",
-  },
+  modalOverlay: globalStyles.modalOverlay,
+  modalContent: globalStyles.modalContent,
+  modalTitle: globalStyles.modalTitle,
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "colors.glassBorder",
+    borderColor: "colors.border",
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 16,
@@ -953,10 +942,10 @@ const styles = StyleSheet.create({
   searchIcon: { fontSize: 18, marginRight: 8, color: "#888" },
   modalInput: {
     fontSize: 16,
-    color: "#FFFFFF",
+    color: colors.text,
     height: 52,
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "colors.glassBorder",
+    borderColor: "colors.border",
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 16,
@@ -965,40 +954,40 @@ const styles = StyleSheet.create({
   modalSearchInput: {
     flex: 1,
     fontSize: 16,
-    color: "#FFFFFF",
+    color: colors.text,
   },
   checkbox: {
     width: 24,
     height: 24,
     borderWidth: 1,
-    borderColor: "#666",
+    borderColor: colors.border,
     borderRadius: 4,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "transparent",
   },
-  checkboxSelected: { backgroundColor: "#9D4EDD", borderColor: "#9D4EDD" },
+  checkboxSelected: { backgroundColor: colors.accent, borderColor: colors.accent },
   checkmark: { fontSize: 16, color: "#fff", fontWeight: "bold" },
   primaryButton: {
-    backgroundColor: "#9D4EDD",
+    backgroundColor: colors.accent,
     height: 52,
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#9D4EDD",
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 3,
   },
-  primaryButtonText: { color: "#fff", fontSize: 16, fontWeight: "bold" },
+  primaryButtonText: { color: "#F8F9FA", fontSize: 16, fontWeight: "bold" },
   guidedPanel: {
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "colors.glassBorder",
     padding: 16,
     borderRadius: 12,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "colors.border",
   },
-  guidedPanelText: { fontSize: 14, color: "#E0E0E0", marginBottom: 6 },
+  guidedPanelText: { fontSize: 14, color: colors.text, marginBottom: 6 },
 });

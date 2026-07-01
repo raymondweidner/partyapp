@@ -330,198 +330,243 @@ export default function EditMeetup() {
           contentContainerStyle={{ paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.label}>Title</Text>
-          <TextInput
-            style={[styles.input, !isEditing && styles.readOnlyInput]}
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Meetup Title"
-            placeholderTextColor={colors.textMuted}
-            editable={isEditing}
-          />
-
-          <View style={{ flexDirection: 'row', zIndex: 6000, elevation: 6000, gap: 10 }}>
-            <View style={{ flex: 1, zIndex: 6000, elevation: 6000 }}>
-              <Text style={styles.label}>Event Type</Text>
-              <DropdownSelect
-                value={EVENT_DEFAULTS.some(d => d.type === eventType) ? eventType : "custom"}
-                options={[
-                  ...EVENT_DEFAULTS.map(def => ({ label: `${def.icon} ${def.type}`, value: def.type })),
-                  { label: "Other (Custom)", value: "custom" }
-                ]}
-                onSelect={(val) => {
-                  if (val !== "custom") {
-                    setEventType(val);
-                    const match = EVENT_DEFAULTS.find(d => d.type === val);
-                    if (match) setIconType(match.icon);
-                  } else {
-                    setEventType("");
-                  }
-                }}
-                placeholder="Select Event Type"
-                disabled={!isEditing}
-              />
-            </View>
-
-            <View style={{ width: 90, zIndex: 6001, elevation: 6001 }}>
-              <Text style={styles.label}>Icon</Text>
-              <DropdownSelect
-                value={iconType}
-                options={AVAILABLE_ICONS.map(icon => ({ label: icon, value: icon }))}
-                onSelect={setIconType}
-                placeholder="Icon"
-                disabled={!isEditing}
-              />
-            </View>
-          </View>
-
-          {(!EVENT_DEFAULTS.some(d => d.type === eventType)) && (
-            <View style={{ marginTop: 10, marginBottom: 20 }}>
+          {isEditing ? (
+            <>
+              <Text style={styles.label}>Title</Text>
               <TextInput
-                style={[styles.input, !isEditing && styles.readOnlyInput]}
-                value={eventType}
-                onChangeText={setEventType}
-                placeholder="Type custom event..."
+                style={styles.input}
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Meetup Title"
                 placeholderTextColor={colors.textMuted}
-                editable={isEditing}
               />
-            </View>
-          )}
 
-          {createdAt ? (
-            <View style={{ marginBottom: 0 }}>
-              <Text style={styles.label}>Created At</Text>
-              <View style={[styles.input, styles.readOnlyInput]}>
-                <Text style={[styles.itemTitle, styles.disabledText]}>
-                  {new Date(createdAt).toLocaleString()}
-                </Text>
+              <View style={{ flexDirection: 'row', zIndex: 6000, elevation: 6000, gap: 10 }}>
+                <View style={{ flex: 1, zIndex: 6000, elevation: 6000 }}>
+                  <Text style={styles.label}>Event Type</Text>
+                  <DropdownSelect
+                    value={EVENT_DEFAULTS.some(d => d.type === eventType) ? eventType : "custom"}
+                    options={[
+                      ...EVENT_DEFAULTS.map(def => ({ label: `${def.icon} ${def.type}`, value: def.type })),
+                      { label: "Other (Custom)", value: "custom" }
+                    ]}
+                    onSelect={(val) => {
+                      if (val !== "custom") {
+                        setEventType(val);
+                        const match = EVENT_DEFAULTS.find(d => d.type === val);
+                        if (match) setIconType(match.icon);
+                      } else {
+                        setEventType("");
+                      }
+                    }}
+                    placeholder="Select Event Type"
+                  />
+                </View>
+
+                <View style={{ width: 90, zIndex: 6001, elevation: 6001 }}>
+                  <Text style={styles.label}>Icon</Text>
+                  <DropdownSelect
+                    value={iconType}
+                    options={AVAILABLE_ICONS.map(icon => ({ label: icon, value: icon }))}
+                    onSelect={setIconType}
+                    placeholder="Icon"
+                  />
+                </View>
               </View>
-            </View>
-          ) : null}
 
-          <View style={{ marginBottom: 0 }}>
-            <Text style={styles.label}>Status</Text>
-            <View style={[styles.input, styles.readOnlyInput]}>
-              <Text style={[styles.itemTitle, styles.disabledText]}>
-                {status}
-              </Text>
-            </View>
-          </View>
+              {(!EVENT_DEFAULTS.some(d => d.type === eventType)) && (
+                <View style={{ marginTop: 10, marginBottom: 20 }}>
+                  <TextInput
+                    style={styles.input}
+                    value={eventType}
+                    onChangeText={setEventType}
+                    placeholder="Type custom event..."
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </View>
+              )}
 
-          <View style={{ zIndex: 4000, elevation: 4000 }}>
-            <Text style={styles.label}>Tribe</Text>
-            <DropdownSelect
-              value={selectedTribeId}
-              options={tribes.map((t) => ({
-                label: t.name || "",
-                value: t.id || "",
-              }))}
-              onSelect={setSelectedTribeId}
-              disabled={!isEditing || !!paramTribeId}
-              placeholder={
-                tribes.find((t) => t.id === selectedTribeId)?.name ||
-                "Loading..."
-              }
-            />
-          </View>
+              {createdAt ? (
+                <View style={{ marginBottom: 0 }}>
+                  <Text style={styles.label}>Created At</Text>
+                  <View style={[styles.input, styles.readOnlyInput]}>
+                    <Text style={[styles.itemTitle, styles.disabledText]}>
+                      {new Date(createdAt).toLocaleString()}
+                    </Text>
+                  </View>
+                </View>
+              ) : null}
 
-          <View style={{ zIndex: 3500, elevation: 3500 }}>
-            <Text style={styles.label}>Details</Text>
-            <TextInput
-              style={[
-                styles.input,
-                styles.textArea,
-                !isEditing && styles.readOnlyInput,
-              ]}
-              value={details}
-              onChangeText={setDetails}
-              placeholder="Details"
-              multiline
-              numberOfLines={4}
-              placeholderTextColor={colors.textMuted}
-              editable={isEditing}
-            />
-          </View>
+              <View style={{ marginBottom: 0 }}>
+                <Text style={styles.label}>Status</Text>
+                <View style={[styles.input, styles.readOnlyInput]}>
+                  <Text style={[styles.itemTitle, styles.disabledText]}>
+                    {status}
+                  </Text>
+                </View>
+              </View>
 
-          <View style={{ zIndex: 3000, elevation: 3000 }}>
-            <Text style={styles.label}>Decision Method</Text>
-            <DropdownSelect
-              value={decisionMethod}
-              options={[
-                { label: "By most available", value: "most_available" },
-                { label: "By vote", value: "single_choice_voting" },
-              ]}
-              onSelect={setDecisionMethod}
-              disabled={!isEditing}
-            />
-          </View>
-
-          <View style={{ zIndex: 2000, elevation: 2000 }}>
-            <Text style={styles.label}>Time to Decide</Text>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <NumberStepper
-                value={daysToDecideNum}
-                onChange={setDaysToDecideNum}
-                disabled={!isEditing}
-              />
-              <View style={{ flex: 2 }}>
+              <View style={{ zIndex: 4000, elevation: 4000 }}>
+                <Text style={styles.label}>Tribe</Text>
                 <DropdownSelect
-                  value={daysToDecideUnit}
-                  options={["days", "weeks", "months"].map((u) => ({
-                    label: u,
-                    value: u,
+                  value={selectedTribeId}
+                  options={tribes.map((t) => ({
+                    label: t.name || "",
+                    value: t.id || "",
                   }))}
-                  onSelect={setDaysToDecideUnit}
-                  disabled={!isEditing}
+                  onSelect={setSelectedTribeId}
+                  disabled={!!paramTribeId}
+                  placeholder={
+                    tribes.find((t) => t.id === selectedTribeId)?.name ||
+                    "Loading..."
+                  }
                 />
               </View>
-            </View>
-          </View>
 
-          <View
-            style={{
-              zIndex: 1000,
-              elevation: 1000,
-              marginTop: 20,
-              marginBottom: 20,
-            }}
-          >
-            <CheckboxToggle
-              label="Recurring event?"
-              isChecked={isRecurring}
-              onPress={() => setIsRecurring(!isRecurring)}
-              disabled={!isEditing}
-            />
+              <View style={{ zIndex: 3500, elevation: 3500 }}>
+                <Text style={styles.label}>Details</Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  value={details}
+                  onChangeText={setDetails}
+                  placeholder="Details"
+                  multiline
+                  numberOfLines={4}
+                  placeholderTextColor={colors.textMuted}
+                />
+              </View>
 
-            {isRecurring && (
-              <View>
-                <Text
-                  style={[styles.label, { marginBottom: 10, marginTop: 0 }]}
-                >
-                  Time till the next event:
-                </Text>
+              <View style={{ zIndex: 3000, elevation: 3000 }}>
+                <Text style={styles.label}>Decision Method</Text>
+                <DropdownSelect
+                  value={decisionMethod}
+                  options={[
+                    { label: "By most available", value: "most_available" },
+                    { label: "By vote", value: "single_choice_voting" },
+                  ]}
+                  onSelect={setDecisionMethod}
+                />
+              </View>
+
+              <View style={{ zIndex: 2000, elevation: 2000 }}>
+                <Text style={styles.label}>Time to Decide</Text>
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
                   <NumberStepper
-                    value={recurringNum}
-                    onChange={setRecurringNum}
-                    disabled={!isEditing}
+                    value={daysToDecideNum}
+                    onChange={setDaysToDecideNum}
                   />
                   <View style={{ flex: 2 }}>
                     <DropdownSelect
-                      value={recurringUnit}
-                      options={["weeks", "months", "years"].map((u) => ({
+                      value={daysToDecideUnit}
+                      options={["days", "weeks", "months"].map((u) => ({
                         label: u,
                         value: u,
                       }))}
-                      onSelect={setRecurringUnit}
-                      disabled={!isEditing}
+                      onSelect={setDaysToDecideUnit}
                     />
                   </View>
                 </View>
               </View>
-            )}
-          </View>
 
+              <View style={{ zIndex: 1000, elevation: 1000, marginTop: 20, marginBottom: 20 }}>
+                <CheckboxToggle
+                  label="Recurring event?"
+                  isChecked={isRecurring}
+                  onPress={() => setIsRecurring(!isRecurring)}
+                />
+
+                {isRecurring && (
+                  <View>
+                    <Text style={[styles.label, { marginBottom: 10, marginTop: 0 }]}>
+                      Time till the next event:
+                    </Text>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <NumberStepper
+                        value={recurringNum}
+                        onChange={setRecurringNum}
+                      />
+                      <View style={{ flex: 2 }}>
+                        <DropdownSelect
+                          value={recurringUnit}
+                          options={["weeks", "months", "years"].map((u) => ({
+                            label: u,
+                            value: u,
+                          }))}
+                          onSelect={setRecurringUnit}
+                        />
+                      </View>
+                    </View>
+                  </View>
+                )}
+              </View>
+            </>
+          ) : (
+            <View style={{ marginBottom: 24 }}>
+              <View style={{ alignItems: "center", marginTop: 24 }}>
+                <Text style={{ fontSize: 72, marginBottom: 12 }}>{iconType || "🎉"}</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 8, flexWrap: "wrap", gap: 12 }}>
+                  <Text style={{ fontSize: 32, fontFamily: "Nunito_900Black", color: colors.text, textAlign: "center" }}>{title}</Text>
+                  <View style={{ backgroundColor: colors.accent, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+                    <Text style={{ color: "#F8F9FA", fontWeight: "bold", fontSize: 12, textTransform: "uppercase" }}>{status}</Text>
+                  </View>
+                </View>
+                {details ? (
+                  <Text style={{ fontSize: 16, color: colors.textSecondary, textAlign: "center", paddingHorizontal: 20, marginBottom: 24 }}>{details}</Text>
+                ) : <View style={{ marginBottom: 24 }} />}
+              </View>
+
+              <View style={{ backgroundColor: colors.surface, padding: 20, borderRadius: 16, borderWidth: 1, borderColor: colors.borderLight }}>
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{ fontFamily: "Quicksand_700Bold", color: "#999999", fontSize: 12, textTransform: "uppercase", marginBottom: 4 }}>Decision Method</Text>
+                  <Text style={{ fontFamily: "Nunito_600SemiBold", color: colors.text, fontSize: 16 }}>
+                    {decisionMethod === "most_available" ? "By most available" : "By vote"}
+                  </Text>
+                </View>
+
+                {createdAt && (
+                  <View style={{ marginBottom: 16 }}>
+                    <Text style={{ fontFamily: "Quicksand_700Bold", color: "#999999", fontSize: 12, textTransform: "uppercase", marginBottom: 4 }}>Created On</Text>
+                    <Text style={{ fontFamily: "Nunito_600SemiBold", color: colors.text, fontSize: 16 }}>
+                      {new Date(createdAt).toLocaleDateString()}
+                    </Text>
+                  </View>
+                )}
+
+                {createdAt && (
+                  <View style={{ marginBottom: isRecurring ? 16 : 0 }}>
+                    <Text style={{ fontFamily: "Quicksand_700Bold", color: "#999999", fontSize: 12, textTransform: "uppercase", marginBottom: 4 }}>Decision Deadline</Text>
+                    <Text style={{ fontFamily: "Nunito_600SemiBold", color: colors.text, fontSize: 16 }}>
+                      {(() => {
+                        const createdDate = new Date(createdAt);
+                        if (isNaN(createdDate.getTime())) return "Unknown";
+                        const deadlineDate = new Date(createdDate);
+                        const num = parseInt(daysToDecideNum) || 0;
+                        if (daysToDecideUnit === "days") deadlineDate.setDate(deadlineDate.getDate() + num);
+                        else if (daysToDecideUnit === "weeks") deadlineDate.setDate(deadlineDate.getDate() + num * 7);
+                        else if (daysToDecideUnit === "months") deadlineDate.setMonth(deadlineDate.getMonth() + num);
+                        return deadlineDate.toLocaleDateString();
+                      })()}
+                    </Text>
+                  </View>
+                )}
+
+                {isRecurring && (
+                  <View style={{ marginTop: 8, alignItems: "center", paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+                    <Text style={{ fontFamily: "Nunito_700Bold", color: colors.primary, fontSize: 16 }}>
+                      {(() => {
+                        const num = parseInt(recurringNum) || 0;
+                        let days = 0;
+                        if (recurringUnit === "weeks") days = num * 7;
+                        else if (recurringUnit === "months") days = num * 30;
+                        else if (recurringUnit === "years") days = num * 365;
+                        return `Repeats in ${days} days`;
+                      })()}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          )}
           {updating ? (
             <ActivityIndicator size="large" />
           ) : isEditing ? (

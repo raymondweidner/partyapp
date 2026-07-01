@@ -9,7 +9,9 @@ import {
     TextInput,
     TouchableOpacity,
     View,
+    Animated,
 } from "react-native";
+import { BlurView } from "expo-blur";
 import { Member } from "../data/Member";
 import { showAlert } from "../util";
 import { colors, globalStyles } from "../theme";
@@ -38,6 +40,9 @@ export function GroupChatModal({
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
+  const scaleAnim = React.useRef(new Animated.Value(0.8)).current;
+  const opacityAnim = React.useRef(new Animated.Value(0)).current;
+
   // Initialize form states when the modal is opened
   useEffect(() => {
     if (visible) {
@@ -45,6 +50,22 @@ export function GroupChatModal({
       setUrl("");
       setSearch("");
       setSelectedIds(defaultSelectedIds);
+      Animated.parallel([
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          friction: 8,
+          tension: 100,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        })
+      ]).start();
+    } else {
+      scaleAnim.setValue(0.8);
+      opacityAnim.setValue(0);
     }
   }, [visible]);
 
@@ -61,12 +82,13 @@ export function GroupChatModal({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="fade"
       transparent={true}
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+      <BlurView intensity={20} tint="light" style={styles.modalOverlay}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
+        <Animated.View style={[styles.modalContent, { transform: [{ scale: scaleAnim }], opacity: opacityAnim }]}>
           <Text style={styles.modalTitle}>{title}</Text>
 
           <View style={styles.guidedPanel}>
@@ -207,8 +229,8 @@ export function GroupChatModal({
               </TouchableOpacity>
             </View>
           )}
-        </View>
-      </View>
+        </Animated.View>
+      </BlurView>
     </Modal>
   );
 }

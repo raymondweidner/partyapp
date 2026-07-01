@@ -149,7 +149,7 @@ export default function CreateTribe() {
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: "Add Tribe",
+          title: "🏕️ Add Tribe",
           headerLeft: () => (
             <CustomHeaderLeft onBack={() => router.navigate("/")} />
           ),

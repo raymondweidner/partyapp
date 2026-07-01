@@ -67,7 +67,7 @@ export default function CreateProposal() {
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: "Create Proposal",
+          title: "🗳️ Create Proposal",
           headerLeft: () => <CustomHeaderLeft />,
         }}
       />

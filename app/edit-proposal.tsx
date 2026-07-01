@@ -190,23 +190,22 @@ export default function EditProposal() {
         contentContainerStyle={{ paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.label}>Host</Text>
-        <View style={[styles.input, styles.readOnlyInput]}>
-          <Text style={[styles.itemTitle, styles.disabledText]}>
-            {host?.name || "Unknown"}
-          </Text>
-        </View>
-
-        <Text style={styles.label}>Date</Text>
-        <DateTimePickerField
-          date={date}
-          onChange={setDate}
-          disabled={!isEditing}
-        />
-
-        <Text style={styles.label}>Location</Text>
         {isEditing ? (
           <>
+            <Text style={styles.label}>Host</Text>
+            <View style={[styles.input, styles.readOnlyInput]}>
+              <Text style={[styles.itemTitle, styles.disabledText]}>
+                {host?.name || "Unknown"}
+              </Text>
+            </View>
+
+            <Text style={styles.label}>Date</Text>
+            <DateTimePickerField
+              date={date}
+              onChange={setDate}
+            />
+
+            <Text style={styles.label}>Location</Text>
             <TouchableOpacity
               style={styles.input}
               onPress={() => setLocationModalVisible(true)}
@@ -224,25 +223,43 @@ export default function EditProposal() {
             />
           </>
         ) : (
-          <TouchableOpacity
-            style={[styles.input, styles.readOnlyInput]}
-            onPress={() => {
-              if (location) {
-                showAlert(
-                  "Open in Maps",
-                  "Would you like to open this location in your Maps app?",
-                  [
-                    { text: "Cancel", style: "cancel" },
-                    { text: "Open", onPress: () => openMapUrl(location, member?.map_type) }
-                  ]
-                );
-              }
-            }}
-          >
-            <Text style={[styles.itemTitle, styles.disabledText, { color: colors.primary }]}>
-              {location || "No Location"}
-            </Text>
-          </TouchableOpacity>
+          <View style={{ padding: 24, borderWidth: 1, borderColor: colors.borderLight, borderRadius: 16, alignItems: "center", backgroundColor: colors.surface, marginTop: 16 }}>
+            <View style={{ marginBottom: 12, alignItems: "center" }}>
+              <Text style={{ fontFamily: "Quicksand_700Bold", color: "#999999", fontSize: 12, textTransform: "uppercase", marginBottom: 2 }}>When</Text>
+              <Text style={{ fontFamily: "Nunito_600SemiBold", color: colors.text, fontSize: 16 }}>
+                {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} on {date.toLocaleDateString()}
+              </Text>
+            </View>
+
+            <View style={{ marginBottom: 12, alignItems: "center" }}>
+              <Text style={{ fontFamily: "Quicksand_700Bold", color: "#999999", fontSize: 12, textTransform: "uppercase", marginBottom: 2 }}>Where</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  if (location) {
+                    showAlert(
+                      "Open in Maps",
+                      "Would you like to open this location in your Maps app?",
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        { text: "Open", onPress: () => openMapUrl(location, member?.map_type) }
+                      ]
+                    );
+                  }
+                }}
+              >
+                <Text style={{ fontFamily: "Nunito_600SemiBold", color: colors.primary, fontSize: 16 }}>
+                  {location || "TBD"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ alignItems: "center" }}>
+              <Text style={{ fontFamily: "Quicksand_700Bold", color: "#999999", fontSize: 12, textTransform: "uppercase", marginBottom: 2 }}>Who</Text>
+              <Text style={{ fontFamily: "Nunito_600SemiBold", color: colors.text, fontSize: 16 }}>
+                {host?.name || "Unknown"}
+              </Text>
+            </View>
+          </View>
         )}
 
         <View style={{ marginTop: 20 }}>

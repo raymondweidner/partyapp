@@ -163,7 +163,7 @@ export default function CreateMeetup() {
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: "Create Meetup",
+          title: "🎉 Create Meetup",
           headerLeft: () => (
             <CustomHeaderLeft
               onBack={() => {

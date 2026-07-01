@@ -7,7 +7,9 @@ import {
     TextInput,
     TouchableOpacity,
     View,
+    Animated,
 } from "react-native";
+import { BlurView } from "expo-blur";
 import { Member } from "../data/Member";
 import { colors, globalStyles } from "../theme";
 
@@ -32,12 +34,31 @@ export function EmailModal({
   const [search, setSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
+  const scaleAnim = React.useRef(new Animated.Value(0.8)).current;
+  const opacityAnim = React.useRef(new Animated.Value(0)).current;
+
   // Initialize form states when the modal is opened
   useEffect(() => {
     if (visible) {
       setSubject(defaultSubject);
       setSearch("");
       setSelectedIds(defaultSelectedIds);
+      Animated.parallel([
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          friction: 8,
+          tension: 100,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        })
+      ]).start();
+    } else {
+      scaleAnim.setValue(0.8);
+      opacityAnim.setValue(0);
     }
   }, [visible]);
 
@@ -54,12 +75,13 @@ export function EmailModal({
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="fade"
       transparent={true}
       onRequestClose={onClose}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+      <BlurView intensity={20} tint="light" style={styles.modalOverlay}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
+        <Animated.View style={[styles.modalContent, { transform: [{ scale: scaleAnim }], opacity: opacityAnim }]}>
           <Text style={styles.modalTitle}>{title}</Text>
 
           <TextInput
@@ -153,8 +175,8 @@ export function EmailModal({
               <Text style={styles.primaryButtonText}>Create Thread</Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </View>
+        </Animated.View>
+      </BlurView>
     </Modal>
   );
 }

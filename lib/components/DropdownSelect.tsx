@@ -6,7 +6,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import { colors } from "../theme";
+import { colors, globalStyles } from "../theme";
 
 export function DropdownSelect({
   value,
@@ -27,19 +27,9 @@ export function DropdownSelect({
 
   if (disabled) {
     return (
-      <View
-        style={[
-          styles.input,
-          styles.dropdownHeader,
-          styles.readOnlyInput,
-          { opacity: 0.7 },
-        ]}
-      >
-        <Text style={[styles.itemTitle, styles.disabledText]}>
-          {selectedLabel}
-        </Text>
-        <Text style={{ fontSize: 16, color: colors.textMuted }}>▼</Text>
-      </View>
+      <Text style={[globalStyles.valueText, { opacity: 0.8 }]}>
+        {selectedLabel}
+      </Text>
     );
   }
 

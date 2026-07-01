@@ -1,5 +1,13 @@
+import * as SplashScreen from 'expo-splash-screen';
+import { BlurView } from "expo-blur";
+import { Animated } from "react-native";
+import { useFonts, Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold, Nunito_900Black } from '@expo-google-fonts/nunito';
+import { useFonts as useQuicksandFonts, Quicksand_700Bold } from '@expo-google-fonts/quicksand';
 import messaging from "@react-native-firebase/messaging";
 import { Stack, useGlobalSearchParams, usePathname, useRouter, useSegments } from "expo-router";
+import { colors, globalStyles } from "../lib/theme";
+
+SplashScreen.preventAutoHideAsync();
 import { getApp } from "firebase/app";
 import {
   getMessaging,
@@ -13,6 +21,7 @@ import React, {
   useContext,
   useEffect,
   useState,
+  useRef,
 } from "react";
 import {
   ActivityIndicator,
@@ -525,6 +534,24 @@ function RootLayoutNav() {
     }
   }, [params.deleteNotifId, user]);
 
+  const [fontsLoaded] = useFonts({
+    Nunito_400Regular,
+    Nunito_600SemiBold,
+    Nunito_700Bold,
+    Nunito_800ExtraBold,
+    Nunito_900Black,
+  });
+
+  const [quicksandLoaded] = useQuicksandFonts({
+    Quicksand_700Bold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded && quicksandLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded, quicksandLoaded]);
+
   useEffect(() => {
     if (loading) return;
 
@@ -546,7 +573,7 @@ function RootLayoutNav() {
     }
   }, [user, loading, segments, router, pathname, params]);
 
-  if (loading) {
+  if (loading || !fontsLoaded || !quicksandLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" />
@@ -585,6 +612,8 @@ export const InfoModalContext = createContext<{
 export const useInfoModal = () => useContext(InfoModalContext);
 
 function InfoModalProvider({ children }: { children: React.ReactNode }) {
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
   const [modalConfig, setModalConfig] = useState({
     visible: false,
     title: "",
@@ -609,6 +638,18 @@ function InfoModalProvider({ children }: { children: React.ReactNode }) {
     setModalConfig((prev) => ({ ...prev, visible: false }));
   }, []);
 
+  useEffect(() => {
+    if (modalConfig.visible) {
+      Animated.parallel([
+        Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, friction: 8, tension: 100 }),
+        Animated.timing(opacityAnim, { toValue: 1, duration: 200, useNativeDriver: true })
+      ]).start();
+    } else {
+      scaleAnim.setValue(0.8);
+      opacityAnim.setValue(0);
+    }
+  }, [modalConfig.visible]);
+
   const phone = modalConfig.options?.phone;
   const email = modalConfig.options?.email;
   const targetMemberId = modalConfig.options?.memberId;
@@ -624,13 +665,13 @@ function InfoModalProvider({ children }: { children: React.ReactNode }) {
         animationType="fade"
         onRequestClose={closeModal}
       >
-        <View style={layoutStyles.modalOverlay}>
+        <BlurView intensity={20} tint="light" style={layoutStyles.modalOverlay}>
           <TouchableOpacity
             style={StyleSheet.absoluteFill}
             activeOpacity={1}
             onPress={closeModal}
           />
-          <View style={layoutStyles.modalContent}>
+          <Animated.View style={[layoutStyles.modalContent, { transform: [{ scale: scaleAnim }], opacity: opacityAnim }]}>
             {!!modalConfig.title && (
               <Text style={layoutStyles.modalTitle}>{modalConfig.title}</Text>
             )}
@@ -640,7 +681,7 @@ function InfoModalProvider({ children }: { children: React.ReactNode }) {
                 <TouchableOpacity
                   style={[
                     layoutStyles.dmButton,
-                    { flex: 1, minWidth: 100, marginTop: 0, backgroundColor: "#007bff" },
+                    { flex: 1, minWidth: 100, marginTop: 0, backgroundColor: colors.primary },
                     !email && layoutStyles.dmButtonDisabled,
                   ]}
                   disabled={!email}
@@ -673,7 +714,7 @@ function InfoModalProvider({ children }: { children: React.ReactNode }) {
                   <TouchableOpacity
                     style={[
                       layoutStyles.dmButton,
-                      { flex: 1, minWidth: 100, marginTop: 0, backgroundColor: "#28a745" },
+                      { flex: 1, minWidth: 100, marginTop: 0, backgroundColor: colors.accent },
                     ]}
                     onPress={() => {
                       closeModal();
@@ -685,8 +726,8 @@ function InfoModalProvider({ children }: { children: React.ReactNode }) {
                 )}
               </View>
             )}
-          </View>
-        </View>
+          </Animated.View>
+        </BlurView>
       </Modal>
     </InfoModalContext.Provider>
   );
@@ -695,6 +736,21 @@ function InfoModalProvider({ children }: { children: React.ReactNode }) {
 import { ScrollView } from "react-native";
 
 function NotificationsModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const notifScaleAnim = useRef(new Animated.Value(0.8)).current;
+  const notifOpacityAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.spring(notifScaleAnim, { toValue: 1, useNativeDriver: true, friction: 8, tension: 100 }),
+        Animated.timing(notifOpacityAnim, { toValue: 1, duration: 200, useNativeDriver: true })
+      ]).start();
+    } else {
+      notifScaleAnim.setValue(0.8);
+      notifOpacityAnim.setValue(0);
+    }
+  }, [visible]);
+
   const { notifications, removeNotification } = useNotifications();
   const router = useRouter();
 
@@ -707,13 +763,13 @@ function NotificationsModal({ visible, onClose }: { visible: boolean; onClose: (
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View style={layoutStyles.modalOverlay}>
+      <BlurView intensity={20} tint="light" style={layoutStyles.modalOverlay}>
         <TouchableOpacity
           style={StyleSheet.absoluteFill}
           activeOpacity={1}
           onPress={onClose}
         />
-        <View style={[layoutStyles.modalContent, { padding: 0, width: "90%" }]}>
+        <Animated.View style={[layoutStyles.modalContent, { padding: 0, width: "90%", transform: [{ scale: notifScaleAnim }], opacity: notifOpacityAnim }]}>
           <Text style={[layoutStyles.modalTitle, { margin: 20, marginBottom: 10 }]}>Notifications</Text>
           <ScrollView style={{ maxHeight: 400 }}>
             {notifications.map((notif) => (
@@ -739,10 +795,10 @@ function NotificationsModal({ visible, onClose }: { visible: boolean; onClose: (
                   {Platform.OS === "web" && (notif.html_body || (notif as any).htmlBody) ? (
                     React.createElement("div", {
                       dangerouslySetInnerHTML: { __html: notif.html_body || (notif as any).htmlBody },
-                      style: { fontSize: 14, color: "#555", margin: 0, padding: 0 }
+                      style: { fontSize: 14, color: colors.textSecondary, margin: 0, padding: 0 }
                     })
                   ) : (
-                    <Text style={{ color: "#555" }}>{notif.body}</Text>
+                    <Text style={{ color: colors.textSecondary }}>{notif.body}</Text>
                   )}
                 </View>
                 <TouchableOpacity
@@ -757,13 +813,13 @@ function NotificationsModal({ visible, onClose }: { visible: boolean; onClose: (
               </TouchableOpacity>
             ))}
             {notifications.length === 0 && (
-              <Text style={{ textAlign: "center", padding: 20, color: "#888" }}>
+              <Text style={{ textAlign: "center", padding: 20, color: colors.textMuted }}>
                 No new notifications.
               </Text>
             )}
           </ScrollView>
-        </View>
-      </View>
+        </Animated.View>
+      </BlurView>
     </Modal>
   );
 }
@@ -789,11 +845,10 @@ const layoutStyles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
   },
   modalContent: {
     width: "80%",
-    backgroundColor: "#fff",
+    backgroundColor: colors.glassBackground,
     borderRadius: 10,
     padding: 20,
     maxHeight: "80%",
@@ -806,7 +861,7 @@ const layoutStyles = StyleSheet.create({
   },
   modalText: {
     fontSize: 16,
-    color: "#333",
+    color: colors.text,
     lineHeight: 22,
   },
   dmButton: {
@@ -817,10 +872,10 @@ const layoutStyles = StyleSheet.create({
     alignItems: "center",
   },
   dmButtonDisabled: {
-    backgroundColor: "#ccc",
+    backgroundColor: colors.border,
   },
   dmButtonText: {
-    color: "#fff",
+    color: "#F8F9FA",
     fontWeight: "bold",
     fontSize: 16,
   },

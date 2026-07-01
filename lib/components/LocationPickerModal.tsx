@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform, TextInput, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, TextInput, ActivityIndicator, Modal, Animated } from 'react-native';
+import { BlurView } from 'expo-blur';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
@@ -29,10 +30,29 @@ export function LocationPickerModal({ visible, onClose, onSelect, initialValue =
   const [currentAddress, setCurrentAddress] = useState(initialValue);
   const mapRef = useRef<MapView>(null);
 
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     if (visible) {
       setMode("autocomplete");
       setCurrentAddress(initialValue);
+      Animated.parallel([
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          friction: 8,
+          tension: 100,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        })
+      ]).start();
+    } else {
+      scaleAnim.setValue(0.8);
+      opacityAnim.setValue(0);
     }
   }, [visible, initialValue]);
 
@@ -83,9 +103,10 @@ export function LocationPickerModal({ visible, onClose, onSelect, initialValue =
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent={true} onRequestClose={onClose}>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
+    <Modal visible={visible} animationType="fade" transparent={true} onRequestClose={onClose}>
+      <BlurView intensity={20} tint="light" style={styles.modalOverlay}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
+        <Animated.View style={[styles.modalContent, { transform: [{ scale: scaleAnim }], opacity: opacityAnim }]}>
           <View style={styles.header}>
             <TouchableOpacity onPress={onClose}>
               <Text style={styles.headerButton}>Cancel</Text>
@@ -215,8 +236,8 @@ export function LocationPickerModal({ visible, onClose, onSelect, initialValue =
               </View>
             )}
           </View>
-        </View>
-      </View>
+        </Animated.View>
+      </BlurView>
     </Modal>
   );
 }

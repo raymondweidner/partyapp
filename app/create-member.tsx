@@ -85,7 +85,7 @@ export default function CreateMember() {
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: "Invite Fam",
+          title: "🙌 Invite Fam",
           headerLeft: () => (
             <CustomHeaderLeft onBack={() => router.navigate("/")} />
           ),
