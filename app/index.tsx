@@ -58,6 +58,7 @@ export default function Home() {
     "my_fam",
   );
   const [meetups, setMeetups] = useState<Meetup[]>([]);
+  const [meetupTab, setMeetupTab] = useState<"proposed" | "upcoming">("proposed");
   const [chats, setChats] = useState<Chat[]>([]);
   const [chatMembers, setChatMembers] = useState<ChatMember[]>([]);
   const [memberContacts, setMemberContacts] =
@@ -155,7 +156,6 @@ export default function Home() {
     setLoading(true);
     try {
       const token = await user.getIdToken();
-
       const [allMembersData, chatsData, chatMembersData] = await Promise.all([
         getMembers(token),
         getChats(token),
@@ -454,16 +454,6 @@ export default function Home() {
           )}
         </View>
         <Text style={styles.memberCardName} numberOfLines={1}>{f.name || "Unnamed"}</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-          {isPendingJoin && (
-            <TouchableOpacity onPress={(e) => { e.stopPropagation(); showInfoModal("Status", "Pending App Join"); }}>
-              <Text style={{ fontSize: 12 }}>✉️ </Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity onPress={(e) => { e.stopPropagation(); showInfoModal("Connection Status", statusText); }}>
-            <Text style={{ fontSize: 12 }}>{statusIcon}</Text>
-          </TouchableOpacity>
-        </View>
       </TouchableOpacity>
     );
   };
@@ -484,7 +474,7 @@ export default function Home() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.listContainer} nestedScrollEnabled>
               {tribes.map((t) =>
                 renderItem(
-                  "🔥",
+                  t.icon_type || "😊",
                   t.name || "Unnamed",
                   t.description || "",
                   () =>
@@ -500,16 +490,45 @@ export default function Home() {
             )}
 
             {renderSectionHeader("Meetups", "/create-meetup")}
+            <View style={styles.tabContainer}>
+              <TouchableOpacity
+                style={[styles.tab, meetupTab === "proposed" && styles.activeTab]}
+                onPress={() => setMeetupTab("proposed")}
+              >
+                <Text style={[styles.tabText, meetupTab === "proposed" && styles.activeTabText]}>
+                  Proposed
+                </Text>
+                <View style={styles.tabBadge}>
+                  <Text style={styles.tabBadgeText}>
+                    {meetups.filter(m => !m.status || !["upcoming", "selected", "scheduled"].includes(m.status.toLowerCase())).length > 99
+                      ? "99+"
+                      : meetups.filter(m => !m.status || !["upcoming", "selected", "scheduled"].includes(m.status.toLowerCase())).length}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.tab, meetupTab === "upcoming" && styles.activeTab]}
+                onPress={() => setMeetupTab("upcoming")}
+              >
+                <Text style={[styles.tabText, meetupTab === "upcoming" && styles.activeTabText]}>
+                  Upcoming
+                </Text>
+                <View style={styles.tabBadge}>
+                  <Text style={styles.tabBadgeText}>
+                    {meetups.filter(m => m.status && ["upcoming", "selected", "scheduled"].includes(m.status.toLowerCase())).length > 99
+                      ? "99+"
+                      : meetups.filter(m => m.status && ["upcoming", "selected", "scheduled"].includes(m.status.toLowerCase())).length}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.listContainer} nestedScrollEnabled>
-              {meetups.map((m) => {
-                const eventInfo = m.event_type ? `Type: ${m.event_type}\n` : "";
-                const meetupSubtitle = m.details
-                  ? `${eventInfo}Status: ${m.status || "Planning"}\n\n${m.details}`
-                  : `${eventInfo}Status: ${m.status || "Planning"}`;
+              {(meetupTab === "proposed" ? meetups.filter(m => !m.status || !["upcoming", "selected", "scheduled"].includes(m.status.toLowerCase())) : meetups.filter(m => m.status && ["upcoming", "selected", "scheduled"].includes(m.status.toLowerCase()))).map((m) => {
                 return renderItem(
                   m.icon_type || "🎉",
                   m.title || "Unnamed",
-                  meetupSubtitle,
+                  "",
                   () =>
                     router.push({
                       pathname: "/edit-meetup",
@@ -518,7 +537,7 @@ export default function Home() {
                 );
               })}
             </ScrollView>
-            {meetups.length === 0 && (
+            {(meetupTab === "proposed" ? meetups.filter(m => !m.status || !["upcoming", "selected", "scheduled"].includes(m.status.toLowerCase())) : meetups.filter(m => m.status && ["upcoming", "selected", "scheduled"].includes(m.status.toLowerCase()))).length === 0 && (
               <Text style={styles.emptyText}>No meetups found.</Text>
             )}
 
@@ -561,6 +580,11 @@ export default function Home() {
                 >
                   My Fam
                 </Text>
+                <View style={styles.tabBadge}>
+                  <Text style={styles.tabBadgeText}>
+                    {myFamMembers.length > 99 ? "99+" : myFamMembers.length}
+                  </Text>
+                </View>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.tab, famTab === "incoming" && styles.activeTab]}
@@ -574,15 +598,13 @@ export default function Home() {
                 >
                   Incoming
                 </Text>
-                {incomingInvites.length > 0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>
-                      {incomingInvites.length > 99
-                        ? "99+"
-                        : incomingInvites.length}
-                    </Text>
-                  </View>
-                )}
+                <View style={styles.tabBadge}>
+                  <Text style={styles.tabBadgeText}>
+                    {incomingInvites.length > 99
+                      ? "99+"
+                      : incomingInvites.length}
+                  </Text>
+                </View>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.tab, famTab === "outgoing" && styles.activeTab]}
@@ -596,15 +618,13 @@ export default function Home() {
                 >
                   Outgoing
                 </Text>
-                {outgoingInvites.length > 0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>
-                      {outgoingInvites.length > 99
-                        ? "99+"
-                        : outgoingInvites.length}
-                    </Text>
-                  </View>
-                )}
+                <View style={styles.tabBadge}>
+                  <Text style={styles.tabBadgeText}>
+                    {outgoingInvites.length > 99
+                      ? "99+"
+                      : outgoingInvites.length}
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
 
@@ -876,9 +896,28 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     minWidth: 20,
     alignItems: "center",
-    justifyContent: "center",
   },
-  badgeText: { color: "white", fontSize: 10, fontWeight: "bold" },
+  badgeText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  tabBadge: {
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginLeft: 6,
+    minWidth: 20,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  tabBadgeText: {
+    color: "#ccc",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
   modalOverlay: {
     flex: 1,
     justifyContent: "center",

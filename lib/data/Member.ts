@@ -6,4 +6,5 @@ export interface Member {
   user_id?: string;
   status: string;
   profile_pic_data?: string;
+  map_type?: string;
 }

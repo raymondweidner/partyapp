@@ -669,7 +669,7 @@ function InfoModalProvider({ children }: { children: React.ReactNode }) {
                 >
                   <Text style={layoutStyles.dmButtonText}>💬 WhatsApp</Text>
                 </TouchableOpacity>
-                {targetMemberId && (
+                {targetMemberId && targetMemberId === member?.id && (
                   <TouchableOpacity
                     style={[
                       layoutStyles.dmButton,

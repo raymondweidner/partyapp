@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useAuth } from "../lib/auth";
 import { DateTimePickerField } from "../lib/components/DateTimePickerField";
+import { LocationPickerModal } from "../lib/components/LocationPickerModal";
 import { createProposal } from "../lib/data/service";
 import { showAlert, safeBack } from "../lib/util";
 import { colors, globalStyles } from "../lib/theme";
@@ -24,6 +25,7 @@ export default function CreateProposal() {
 
   const [date, setDate] = useState(new Date());
   const [location, setLocation] = useState("");
+  const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -85,12 +87,21 @@ export default function CreateProposal() {
           <DateTimePickerField date={date} onChange={setDate} />
 
           <Text style={styles.label}>Location</Text>
-          <TextInput
+          <TouchableOpacity
             style={styles.input}
-            value={location}
-            onChangeText={setLocation}
-            placeholder="Location"
-            placeholderTextColor={colors.textMuted}
+            onPress={() => setLocationModalVisible(true)}
+          >
+            <Text style={{ color: location ? colors.text : colors.textMuted }}>
+              {location || "Select Location"}
+            </Text>
+          </TouchableOpacity>
+          
+          <LocationPickerModal
+            visible={locationModalVisible}
+            onClose={() => setLocationModalVisible(false)}
+            onSelect={setLocation}
+            initialValue={location}
+            mapType={member?.map_type}
           />
 
           <View style={styles.buttonContainer}>

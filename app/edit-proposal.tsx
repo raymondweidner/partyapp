@@ -21,6 +21,7 @@ import { Availability } from "../lib/data/Availability";
 import { Meetup } from "../lib/data/Meetup";
 import { Member } from "../lib/data/Member";
 import { Proposal } from "../lib/data/Proposal";
+import { LocationPickerModal } from "../lib/components/LocationPickerModal";
 import {
   getAvailabilities,
   getMeetups,
@@ -29,7 +30,7 @@ import {
   getTribeMembers,
   updateProposal,
 } from "../lib/data/service";
-import { showAlert } from "../lib/util";
+import { showAlert, openMapUrl } from "../lib/util";
 import { colors, globalStyles } from "../lib/theme";
 import { CustomHeaderLeft, useCurrentMember, useInfoModal } from "./_layout";
 
@@ -50,6 +51,7 @@ export default function EditProposal() {
 
   const [date, setDate] = useState(new Date());
   const [location, setLocation] = useState("");
+  const [locationModalVisible, setLocationModalVisible] = useState(false);
 
   const [members, setMembers] = useState<Member[]>([]);
   const [tribeMembers, setTribeMembers] = useState<Member[]>([]);
@@ -203,12 +205,45 @@ export default function EditProposal() {
         />
 
         <Text style={styles.label}>Location</Text>
-        <TextInput
-          style={[styles.input, !isEditing && styles.readOnlyInput]}
-          value={location}
-          onChangeText={setLocation}
-          editable={isEditing}
-        />
+        {isEditing ? (
+          <>
+            <TouchableOpacity
+              style={styles.input}
+              onPress={() => setLocationModalVisible(true)}
+            >
+              <Text style={{ color: location ? colors.text : colors.textMuted }}>
+                {location || "Select Location"}
+              </Text>
+            </TouchableOpacity>
+            <LocationPickerModal
+              visible={locationModalVisible}
+              onClose={() => setLocationModalVisible(false)}
+              onSelect={setLocation}
+              initialValue={location}
+              mapType={member?.map_type}
+            />
+          </>
+        ) : (
+          <TouchableOpacity
+            style={[styles.input, styles.readOnlyInput]}
+            onPress={() => {
+              if (location) {
+                showAlert(
+                  "Open in Maps",
+                  "Would you like to open this location in your Maps app?",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Open", onPress: () => openMapUrl(location, member?.map_type) }
+                  ]
+                );
+              }
+            }}
+          >
+            <Text style={[styles.itemTitle, styles.disabledText, { color: colors.primary }]}>
+              {location || "No Location"}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         <View style={{ marginTop: 20 }}>
           {updating ? (

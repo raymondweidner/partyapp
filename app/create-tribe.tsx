@@ -20,6 +20,7 @@ import {
   getMembers,
 } from "../lib/data/service";
 import { safeBack, showAlert } from "../lib/util";
+import { DropdownSelect } from "../lib/components/DropdownSelect";
 import { colors, globalStyles } from "../lib/theme";
 import {
   CurrentMemberContext,
@@ -35,6 +36,7 @@ export default function CreateTribe() {
   const { showInfoModal } = useInfoModal();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [iconType, setIconType] = useState("😊");
   const [loading, setLoading] = useState(false);
   const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
@@ -78,7 +80,7 @@ export default function CreateTribe() {
         throw new Error("User is not authenticated.");
       }
 
-      const newTribe = await createTribe({ name, description }, token);
+      const newTribe = await createTribe({ name, description, icon_type: iconType }, token);
       setCreatedTribeId(newTribe.id!);
 
       if (member?.id) {
@@ -155,14 +157,42 @@ export default function CreateTribe() {
       />
 
       <View style={styles.formCard}>
-        <Text style={styles.label}>Name</Text>
-        <TextInput
-          style={styles.input}
-          value={name}
-          onChangeText={setName}
-          placeholder="Tribe Name"
-          placeholderTextColor={colors.textMuted}
-        />
+        <View style={{ flexDirection: "row", gap: 10, zIndex: 6000, elevation: 6000 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.label}>Name</Text>
+            <TextInput
+              style={styles.input}
+              value={name}
+              onChangeText={setName}
+              placeholder="Tribe Name"
+              placeholderTextColor={colors.textMuted}
+            />
+          </View>
+          <View style={{ width: 90 }}>
+            <Text style={styles.label}>Icon</Text>
+            <DropdownSelect
+              options={[
+                { label: "👨‍👩‍👧‍👦", value: "👨‍👩‍👧‍👦" },
+                { label: "🏠", value: "🏠" },
+                { label: "💼", value: "💼" },
+                { label: "🏢", value: "🏢" },
+                { label: "🎓", value: "🎓" },
+                { label: "🎒", value: "🎒" },
+                { label: "♾️", value: "♾️" },
+                { label: "🤝", value: "🤝" },
+                { label: "🪖", value: "🪖" },
+                { label: "🎖️", value: "🎖️" },
+                { label: "⚽", value: "⚽" },
+                { label: "🏅", value: "🏅" },
+                { label: "😊", value: "😊" },
+                { label: "😃", value: "😃" },
+              ]}
+              value={iconType}
+              onSelect={setIconType}
+              placeholder="😊"
+            />
+          </View>
+        </View>
 
         <Text style={styles.label}>Description</Text>
         <TextInput

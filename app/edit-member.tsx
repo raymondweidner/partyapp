@@ -24,6 +24,7 @@ import { getMembers, updateMember, getMemberAlertPreferences, updateMemberAlertP
 import { useAuth } from "../lib/auth";
 import { showAlert, safeBack } from "../lib/util";
 import { colors, globalStyles } from "../lib/theme";
+import { DropdownSelect } from "../lib/components/DropdownSelect";
 import { CustomHeaderLeft, useInfoModal } from "./_layout";
 
 export default function EditMember() {
@@ -45,6 +46,7 @@ export default function EditMember() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [profilePicData, setProfilePicData] = useState<string | null>(null);
+  const [mapType, setMapType] = useState<string>("google");
   const [updating, setUpdating] = useState(false);
 
   const [alertPreferences, setAlertPreferences] = useState<MemberAlertPreference[]>([]);
@@ -101,6 +103,7 @@ export default function EditMember() {
     setEmail(member.email || "");
     setPhone((member as any).phone || "");
     setProfilePicData(member.profile_pic_data || null);
+    setMapType(member.map_type || "google");
 
     if (member.id && user && isProfile) {
       setLoadingAlerts(true);
@@ -179,7 +182,7 @@ export default function EditMember() {
     try {
       const token = await user.getIdToken();
       // @ts-ignore
-      await updateMember({ ...selectedMember, name, email, phone, profile_pic_data: profilePicData }, token);
+      await updateMember({ ...selectedMember, name, email, phone, profile_pic_data: profilePicData, map_type: mapType }, token);
 
       showAlert("Success", "Member updated successfully!", [
         {
@@ -319,6 +322,23 @@ export default function EditMember() {
             keyboardType="phone-pad"
             placeholderTextColor={colors.textMuted}
           />
+
+          {isProfile && (
+            <>
+              <Text style={styles.label}>Preferred Map App</Text>
+              <View style={{ zIndex: 3000, marginBottom: 15 }}>
+                <DropdownSelect
+                  options={[
+                    { label: "Google Maps", value: "google" },
+                    { label: "Apple Maps", value: "apple" }
+                  ]}
+                  value={mapType}
+                  onSelect={setMapType}
+                  placeholder="Select Map App"
+                />
+              </View>
+            </>
+          )}
 
           <View style={styles.buttonContainer}>
             {updating ? (

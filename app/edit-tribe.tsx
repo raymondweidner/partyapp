@@ -36,6 +36,7 @@ import {
   updateTribe,
 } from "../lib/data/service";
 import { openEmailThread, safeBack, showAlert } from "../lib/util";
+import { DropdownSelect } from "../lib/components/DropdownSelect";
 import { colors, globalStyles } from "../lib/theme";
 import { CustomHeaderLeft, useCurrentMember, useInfoModal } from "./_layout";
 
@@ -55,6 +56,7 @@ export default function EditTribe() {
   // Form state
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [iconType, setIconType] = useState("😊");
   const [updating, setUpdating] = useState(false);
 
   // Members state
@@ -188,6 +190,7 @@ export default function EditTribe() {
       setSelectedTribe(tribe);
       setName(tribe.name || "");
       setDescription(tribe.description || "");
+      setIconType(tribe.icon_type || "😊");
       if (tribe.id) {
         fetchMembersAndTribeMembers(tribe.id);
       }
@@ -268,7 +271,7 @@ export default function EditTribe() {
     try {
       const token = await user.getIdToken();
       await updateTribe(
-        { ...selectedTribe, name, description } as Tribe & { id: string },
+        { ...selectedTribe, name, description, icon_type: iconType } as Tribe & { id: string },
         token,
       );
 
@@ -344,7 +347,7 @@ export default function EditTribe() {
           }}
         >
           <Text style={[styles.itemTitle, { flex: 1 }]} numberOfLines={1}>
-            {item.name || "Unnamed Tribe"}
+            {item.icon_type ? `${item.icon_type} ` : "😊 "}{item.name || "Unnamed Tribe"}
           </Text>
           <TouchableOpacity
             onPress={(e) => {
@@ -582,15 +585,44 @@ export default function EditTribe() {
           contentContainerStyle={{ paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.label}>Name</Text>
-          <TextInput
-            style={[styles.input, !isEditing && styles.readOnlyInput]}
-            value={name}
-            onChangeText={setName}
-            placeholder="Tribe Name"
-            placeholderTextColor={colors.textMuted}
-            editable={isEditing}
-          />
+          <View style={{ flexDirection: "row", gap: 10, zIndex: 6000, elevation: 6000 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Name</Text>
+              <TextInput
+                style={[styles.input, !isEditing && styles.readOnlyInput]}
+                value={name}
+                onChangeText={setName}
+                placeholder="Tribe Name"
+                placeholderTextColor={colors.textMuted}
+                editable={isEditing}
+              />
+            </View>
+            <View style={{ width: 90 }}>
+              <Text style={styles.label}>Icon</Text>
+              <DropdownSelect
+                options={[
+                  { label: "👨‍👩‍👧‍👦", value: "👨‍👩‍👧‍👦" },
+                  { label: "🏠", value: "🏠" },
+                  { label: "💼", value: "💼" },
+                  { label: "🏢", value: "🏢" },
+                  { label: "🎓", value: "🎓" },
+                  { label: "🎒", value: "🎒" },
+                  { label: "♾️", value: "♾️" },
+                  { label: "🤝", value: "🤝" },
+                  { label: "🪖", value: "🪖" },
+                  { label: "🎖️", value: "🎖️" },
+                  { label: "⚽", value: "⚽" },
+                  { label: "🏅", value: "🏅" },
+                  { label: "😊", value: "😊" },
+                  { label: "😃", value: "😃" },
+                ]}
+                value={iconType}
+                onSelect={setIconType}
+                placeholder="😊"
+                disabled={!isEditing}
+              />
+            </View>
+          </View>
 
           <Text style={styles.label}>Description</Text>
           <TextInput

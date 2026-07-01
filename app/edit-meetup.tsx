@@ -340,29 +340,43 @@ export default function EditMeetup() {
             editable={isEditing}
           />
 
-          <View style={{ zIndex: 6000, elevation: 6000 }}>
-            <Text style={styles.label}>Event Type</Text>
-            <DropdownSelect
-              value={EVENT_DEFAULTS.some(d => d.type === eventType) ? eventType : "custom"}
-              options={[
-                ...EVENT_DEFAULTS.map(def => ({ label: `${def.icon} ${def.type}`, value: def.type })),
-                { label: "Other (Custom)", value: "custom" }
-              ]}
-              onSelect={(val) => {
-                if (val !== "custom") {
-                  setEventType(val);
-                  const match = EVENT_DEFAULTS.find(d => d.type === val);
-                  if (match) setIconType(match.icon);
-                } else {
-                  setEventType("");
-                }
-              }}
-              placeholder="Select Event Type"
-              disabled={!isEditing}
-            />
+          <View style={{ flexDirection: 'row', zIndex: 6000, elevation: 6000, gap: 10 }}>
+            <View style={{ flex: 1, zIndex: 6000, elevation: 6000 }}>
+              <Text style={styles.label}>Event Type</Text>
+              <DropdownSelect
+                value={EVENT_DEFAULTS.some(d => d.type === eventType) ? eventType : "custom"}
+                options={[
+                  ...EVENT_DEFAULTS.map(def => ({ label: `${def.icon} ${def.type}`, value: def.type })),
+                  { label: "Other (Custom)", value: "custom" }
+                ]}
+                onSelect={(val) => {
+                  if (val !== "custom") {
+                    setEventType(val);
+                    const match = EVENT_DEFAULTS.find(d => d.type === val);
+                    if (match) setIconType(match.icon);
+                  } else {
+                    setEventType("");
+                  }
+                }}
+                placeholder="Select Event Type"
+                disabled={!isEditing}
+              />
+            </View>
+
+            <View style={{ width: 90, zIndex: 6001, elevation: 6001 }}>
+              <Text style={styles.label}>Icon</Text>
+              <DropdownSelect
+                value={iconType}
+                options={AVAILABLE_ICONS.map(icon => ({ label: icon, value: icon }))}
+                onSelect={setIconType}
+                placeholder="Icon"
+                disabled={!isEditing}
+              />
+            </View>
           </View>
+
           {(!EVENT_DEFAULTS.some(d => d.type === eventType)) && (
-            <View style={{ marginTop: 10 }}>
+            <View style={{ marginTop: 10, marginBottom: 20 }}>
               <TextInput
                 style={[styles.input, !isEditing && styles.readOnlyInput]}
                 value={eventType}
@@ -373,17 +387,6 @@ export default function EditMeetup() {
               />
             </View>
           )}
-
-          <View style={{ zIndex: 5000, elevation: 5000, marginBottom: 20 }}>
-            <Text style={styles.label}>Icon</Text>
-            <DropdownSelect
-              value={iconType}
-              options={AVAILABLE_ICONS.map(icon => ({ label: icon, value: icon }))}
-              onSelect={setIconType}
-              placeholder="Select an Icon"
-              disabled={!isEditing}
-            />
-          </View>
 
           {createdAt ? (
             <View style={{ marginBottom: 0 }}>

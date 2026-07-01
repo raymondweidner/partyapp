@@ -82,6 +82,36 @@ export const openEmailThread = async (
   }
 };
 
+export const openMapUrl = async (address: string, mapType: string = "google") => {
+  if (!address) return;
+  const query = encodeURIComponent(address);
+  
+  if (Platform.OS === "web") {
+    const url = mapType === "apple"
+      ? `https://maps.apple.com/?q=${query}`
+      : `https://www.google.com/maps/search/?api=1&query=${query}`;
+    window.open(url, '_blank');
+    return;
+  }
+
+  const url = mapType === "apple"
+    ? `maps://?q=${query}`
+    : `comgooglemaps://?q=${query}`;
+    
+  const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
+
+  try {
+    const canOpen = await Linking.canOpenURL(url);
+    if (canOpen) {
+      await Linking.openURL(url);
+    } else {
+      await Linking.openURL(fallbackUrl);
+    }
+  } catch (error) {
+    showAlert("Error", "Could not open map.");
+  }
+};
+
 export const handleNotificationPress = (
   notification: Notification,
   router: any,
