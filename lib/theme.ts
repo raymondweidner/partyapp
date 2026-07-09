@@ -4,7 +4,7 @@ export const colors = {
   background: '#FFFDF0', // Warm white
   surface: '#FFFFFF', // Pure white for cards/modals
   primary: '#60A5FA', // Pastel Blue
-  accent: '#34D399', // Darker Pastel Mint Green
+  accent: '#16a34a', // Verdant Green
   text: '#333333', // Dark gray for readability
   textSecondary: '#666666',
   textMuted: '#999999',
@@ -14,6 +14,7 @@ export const colors = {
   glassBackground: 'rgba(255, 255, 255, 0.7)',
   glassBorder: 'rgba(0, 0, 0, 0.05)',
   overlay: 'rgba(255,255,255,0.4)', // Translucent blur fallback
+  skyBlue: '#E0F2FE', // Lighter pastel sky blue for tiles
 };
 
 export const globalStyles = StyleSheet.create({
@@ -21,11 +22,27 @@ export const globalStyles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  contentContainer: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  formGroup: {
+    marginBottom: 24,
+  },
+  headerStyle: {
+    backgroundColor: colors.background,
+    shadowColor: 'transparent',
+    elevation: 0,
+  },
+  headerTitleStyle: {
+    fontFamily: "BricolageGrotesque_500Medium",
+    fontSize: 20,
+  },
   scrollContent: {
     padding: 20,
   },
   header: {
-    fontFamily: "Nunito_900Black",
+    fontFamily: "BricolageGrotesque_500Medium",
     fontSize: 34,
     marginBottom: 8,
     textAlign: "center",
@@ -43,26 +60,43 @@ export const globalStyles = StyleSheet.create({
     borderBottomColor: colors.borderLight,
   },
   sectionTitle: {
-    fontFamily: "Nunito_800ExtraBold",
+    fontFamily: "BricolageGrotesque_500Medium",
     fontSize: 22, 
     color: colors.text,
   },
   label: {
-    fontFamily: "Quicksand_700Bold",
-    fontSize: 15,
+    fontFamily: "Unbounded_700Bold",
+    fontSize: 13,
     marginBottom: 6,
     marginTop: 16,
     color: colors.textSecondary,
     letterSpacing: 0.5,
   },
   valueText: {
-    fontFamily: "Nunito_600SemiBold",
+    fontFamily: "Unbounded_800ExtraBold",
     fontSize: 16,
     color: colors.text,
     marginBottom: 4,
   },
+  attributeName: {
+    fontFamily: "Unbounded_700Bold",
+    color: "#999999",
+    fontSize: 12,
+    textTransform: "uppercase",
+    marginBottom: 2,
+  },
+  attributeValue: {
+    fontFamily: "Unbounded_800ExtraBold",
+    color: colors.text,
+    fontSize: 16,
+  },
+  attributeValuePrimary: {
+    fontFamily: "Unbounded_800ExtraBold",
+    color: colors.primary,
+    fontSize: 16,
+  },
   input: {
-    fontFamily: "Nunito_600SemiBold",
+    fontFamily: "Unbounded_600SemiBold",
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,
@@ -117,6 +151,21 @@ export const globalStyles = StyleSheet.create({
     color: "#F8F9FA", 
     fontSize: 16,
   },
+  secondaryButton: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    height: 52,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 24,
+  },
+  secondaryButtonText: {
+    fontFamily: "Nunito_800ExtraBold",
+    color: colors.primary,
+    fontSize: 16,
+  },
   dangerButton: {
     backgroundColor: colors.danger,
     height: 52,
@@ -129,6 +178,21 @@ export const globalStyles = StyleSheet.create({
     fontFamily: "Nunito_800ExtraBold",
     color: "#F8F9FA", 
     fontSize: 16,
+  },
+  backButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: colors.surface,
+    borderRadius: 8,
+    alignSelf: "flex-start",
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+  },
+  backButtonText: {
+    fontFamily: "Nunito_700Bold",
+    fontSize: 14,
+    color: colors.primary,
   },
   emptyText: {
     fontFamily: "Nunito_400Regular",
@@ -162,5 +226,35 @@ export const globalStyles = StyleSheet.create({
     marginBottom: 16,
     textAlign: "center",
     color: colors.text,
+  },
+  listContainer: {
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    marginBottom: 20,
+  },
+  listItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.borderLight,
+  },
+  listHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  listTitle: {
+    fontFamily: "BricolageGrotesque_500Medium",
+    fontSize: 20,
+    color: colors.text,
+  },
+  itemTitle: {
+    fontFamily: "Nunito_700Bold",
+    fontSize: 16,
+    color: colors.text,
+    marginBottom: 4,
   },
 });

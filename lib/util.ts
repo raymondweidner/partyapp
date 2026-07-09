@@ -87,18 +87,21 @@ export const openMapUrl = async (address: string, mapType: string = "google") =>
   const query = encodeURIComponent(address);
   
   if (Platform.OS === "web") {
-    const url = mapType === "apple"
-      ? `https://maps.apple.com/?q=${query}`
-      : `https://www.google.com/maps/search/?api=1&query=${query}`;
+    let url = `https://www.google.com/maps/search/?api=1&query=${query}`;
+    if (mapType === "apple") {
+      url = `https://maps.apple.com/?q=${query}`;
+    }
     window.open(url, '_blank');
     return;
   }
 
-  const url = mapType === "apple"
-    ? `maps://?q=${query}`
-    : `comgooglemaps://?q=${query}`;
-    
-  const fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
+  let url = `comgooglemaps://?q=${query}`;
+  let fallbackUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
+  
+  if (mapType === "apple") {
+    url = `maps://?q=${query}`;
+    fallbackUrl = `https://maps.apple.com/?q=${query}`;
+  }
 
   try {
     const canOpen = await Linking.canOpenURL(url);
@@ -119,7 +122,15 @@ export const handleNotificationPress = (
   onComplete?: () => void
 ) => {
   if (notification.resource_type && notification.action_mode) {
-    if (notification.action_mode.toUpperCase() === "GET" && notification.resource_id) {
+    if (notification.resource_type.toLowerCase() === 'oauth' && notification.action_mode.toLowerCase() === 'google_drive') {
+      const target = { pathname: "/edit-member", params: { id: notification.resource_id, profile: "true" } };
+      if (isLoggedIn) {
+        router.push(target as any);
+      } else {
+        setPendingRedirect(target);
+        router.replace("/login");
+      }
+    } else if (notification.action_mode.toUpperCase() === "GET" && notification.resource_id) {
       let targetPath = "";
       switch (notification.resource_type.toLowerCase()) {
         case "tribe":

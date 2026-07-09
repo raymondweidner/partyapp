@@ -34,7 +34,7 @@ export function DropdownSelect({
   }
 
   return (
-    <View style={{ zIndex: 1000, elevation: 1000, width: "100%" }}>
+    <View style={{ zIndex: isOpen ? 10000 : 1, elevation: isOpen ? 10000 : 1, width: "100%" }}>
       <TouchableOpacity
         style={[styles.input, styles.dropdownHeader]}
         onPress={() => setIsOpen(!isOpen)}
@@ -87,6 +87,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     backgroundColor: colors.surface,
+    opacity: 1,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,

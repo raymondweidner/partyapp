@@ -7,21 +7,27 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { useAuth } from "../lib/auth";
 import { CheckboxToggle } from "../lib/components/CheckboxToggle";
 import { DropdownSelect } from "../lib/components/DropdownSelect";
+import { GroupChatModal } from "../lib/components/GroupChatModal";
 import { NumberStepper } from "../lib/components/NumberStepper";
+import { RecurrencePicker, buildRecurrencePayload, defaultRecurrenceState } from "../lib/components/RecurrencePicker";
+import { AVAILABLE_ICONS, EVENT_DEFAULTS } from "../lib/constants";
+import { Member } from "../lib/data/Member";
 import {
+  createChat,
   createMeetup,
+  createTribalCouncil,
   getTribeMembersByMemberId,
-  getTribes,
+  getTribes
 } from "../lib/data/service";
 import { Tribe } from "../lib/data/Tribe";
-import { EVENT_DEFAULTS, AVAILABLE_ICONS } from "../lib/constants";
-import { showAlert, safeBack } from "../lib/util";
+import { TribeMember } from "../lib/data/TribeMember";
 import { colors, globalStyles } from "../lib/theme";
+import { safeBack, showAlert } from "../lib/util";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
 
 export default function CreateMeetup() {
@@ -39,13 +45,13 @@ export default function CreateMeetup() {
   const [details, setDetails] = useState("");
 
   const [decisionMethod, setDecisionMethod] = useState("most_available");
+  const [leaderTitleSelect, setLeaderTitleSelect] = useState("Tribal Chieftain");
+  const [leaderTitleCustom, setLeaderTitleCustom] = useState("");
 
   const [daysToDecideNum, setDaysToDecideNum] = useState("2");
   const [daysToDecideUnit, setDaysToDecideUnit] = useState("weeks");
 
-  const [isRecurring, setIsRecurring] = useState(false);
-  const [recurringNum, setRecurringNum] = useState("1");
-  const [recurringUnit, setRecurringUnit] = useState("years");
+  const [recurrenceState, setRecurrenceState] = useState(defaultRecurrenceState);
 
   const [tribes, setTribes] = useState<Tribe[]>([]);
   const [selectedTribeId, setSelectedTribeId] = useState<string>(
@@ -53,6 +59,14 @@ export default function CreateMeetup() {
   );
   const [formLoading, setFormLoading] = useState(false);
   const [tribesLoading, setTribesLoading] = useState(false);
+
+  // Tribal Council State
+  const [members, setMembers] = useState<Member[]>([]);
+  const [tribeMembers, setTribeMembers] = useState<TribeMember[]>([]);
+  const [councilMemberIds, setCouncilMemberIds] = useState<string[]>([]);
+  const [councilChatName, setCouncilChatName] = useState("");
+  const [councilChatUrl, setCouncilChatUrl] = useState("");
+  const [showCouncilChatModal, setShowCouncilChatModal] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -116,15 +130,7 @@ export default function CreateMeetup() {
     if (daysToDecideUnit === "months") multiplier = 30;
     const days_to_decide = numDays * multiplier;
 
-    let recurs_every_days = 0;
-    if (isRecurring) {
-      const rNum = parseInt(recurringNum, 10) || 0;
-      let rMult = 7;
-      if (recurringUnit === "weeks") rMult = 7;
-      if (recurringUnit === "months") rMult = 30;
-      if (recurringUnit === "years") rMult = 365;
-      recurs_every_days = rNum * rMult;
-    }
+    const recPayload = buildRecurrencePayload(recurrenceState);
 
     setFormLoading(true);
     try {
@@ -132,7 +138,7 @@ export default function CreateMeetup() {
       if (!user || !token) throw new Error("Not authenticated");
 
       // 'host_id' is technically a reference to Member inside Meetup Schema
-      await createMeetup(
+      const newMeetup = await createMeetup(
         {
           creator_id: member.id as any,
           tribe_id: selectedTribeId,
@@ -142,12 +148,42 @@ export default function CreateMeetup() {
           details,
           decision_method: decisionMethod,
           days_to_decide,
-          recurs_every_days,
+          leader_title: leaderTitleSelect === "Custom..." ? leaderTitleCustom : leaderTitleSelect,
+          ...recPayload,
           created_at: new Date().toISOString(),
           status: "Planning",
         },
         token,
       );
+
+      if (newMeetup.id) {
+        // Create Tribal Councils
+        await Promise.all(
+          councilMemberIds.map((cid) =>
+            createTribalCouncil(
+              {
+                meetup_id: newMeetup.id!,
+                member_id: cid,
+              },
+              token
+            )
+          )
+        );
+
+        // Create Chat if provided
+        if (councilChatName && councilChatUrl) {
+          await createChat(
+            {
+              name: councilChatName,
+              url: councilChatUrl,
+              is_council: true,
+              meetup_id: newMeetup.id,
+              tribe_id: selectedTribeId,
+            },
+            token
+          );
+        }
+      }
 
       showAlert("Success", "Planning Event Meetup created!", [
         { text: "OK", onPress: () => safeBack(router, "/") },
@@ -256,6 +292,31 @@ export default function CreateMeetup() {
           )}
         </View>
 
+        <View style={{ zIndex: 3000, elevation: 3000, marginTop: 24, marginBottom: 24 }}>
+          <Text style={styles.label}>Your Title</Text>
+          <DropdownSelect
+            value={leaderTitleSelect}
+            options={[
+              { label: "Tribal Chieftain", value: "Tribal Chieftain" },
+              { label: "Master of Ceremonies", value: "Master of Ceremonies" },
+              { label: "Grand Poobah", value: "Grand Poobah" },
+              { label: "Vibe Curator", value: "Vibe Curator" },
+              { label: "The Decider", value: "The Decider" },
+              { label: "Custom...", value: "Custom..." },
+            ]}
+            onSelect={setLeaderTitleSelect}
+          />
+          {leaderTitleSelect === "Custom..." && (
+            <TextInput
+              style={[styles.input, { marginTop: 10 }]}
+              value={leaderTitleCustom}
+              onChangeText={setLeaderTitleCustom}
+              placeholder="Enter your custom title..."
+              placeholderTextColor={colors.textMuted}
+            />
+          )}
+        </View>
+
         <Text style={styles.label}>Details</Text>
         <TextInput
           style={[styles.input, styles.textArea]}
@@ -307,35 +368,44 @@ export default function CreateMeetup() {
             marginBottom: 20,
           }}
         >
-          <CheckboxToggle
-            label="Recurring event?"
-            isChecked={isRecurring}
-            onPress={() => setIsRecurring(!isRecurring)}
-          />
+          <RecurrencePicker state={recurrenceState} onChange={setRecurrenceState} />
+        </View>
 
-          {isRecurring && (
-            <View>
-              <Text style={[styles.label, { marginBottom: 10, marginTop: 0 }]}>
-                Time till the next event:
-              </Text>
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <NumberStepper
-                  value={recurringNum}
-                  onChange={setRecurringNum}
+        {/* Tribal Council Section */}
+        <View style={{ marginTop: 24, marginBottom: 24, paddingTop: 24, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+          <Text style={{ fontSize: 20, fontFamily: "Unbounded_700Bold", color: colors.text, marginBottom: 16 }}>Tribal Council</Text>
+          <Text style={{ color: colors.textSecondary, marginBottom: 12 }}>
+            Select members who will act as the administrative Tribal Council for this meetup.
+          </Text>
+
+          <View style={{ marginBottom: 16 }}>
+            {tribeMembers.map((tm) => {
+              const mem = members.find((m) => m.id === tm.member_id);
+              if (!mem) return null;
+              const isSelected = councilMemberIds.includes(mem.id!);
+              return (
+                <CheckboxToggle
+                  key={mem.id}
+                  label={mem.name}
+                  isChecked={isSelected}
+                  onPress={() => {
+                    setCouncilMemberIds((prev) =>
+                      isSelected ? prev.filter((id) => id !== mem.id!) : [...prev, mem.id!]
+                    );
+                  }}
                 />
-                <View style={{ flex: 2 }}>
-                  <DropdownSelect
-                    value={recurringUnit}
-                    options={["weeks", "months", "years"].map((u) => ({
-                      label: u,
-                      value: u,
-                    }))}
-                    onSelect={setRecurringUnit}
-                  />
-                </View>
-              </View>
-            </View>
-          )}
+              );
+            })}
+          </View>
+
+          <TouchableOpacity
+            style={[styles.primaryButton, { backgroundColor: colors.surface }]}
+            onPress={() => setShowCouncilChatModal(true)}
+          >
+            <Text style={[styles.primaryButtonText, { color: colors.primary }]}>
+              {councilChatName ? `Chat: ${councilChatName}` : "+ Create Tribal Council Group Chat"}
+            </Text>
+          </TouchableOpacity>
         </View>
         {formLoading ? (
           <ActivityIndicator size="large" color="#007bff" />
@@ -347,6 +417,22 @@ export default function CreateMeetup() {
           </TouchableOpacity>
         )}
       </ScrollView>
+
+      {/* Council Chat Modal */}
+      <GroupChatModal
+        visible={showCouncilChatModal}
+        onClose={() => setShowCouncilChatModal(false)}
+        members={[]}
+        hideMemberSelection={true}
+        hideNameInput={true}
+        title="Tribal Council Group Chat"
+        defaultName={`${title || "Meetup"} Tribal Council Group Chat`}
+        onCreate={(_name, url) => {
+          setCouncilChatName(`${title || "Meetup"} Tribal Council Group Chat`);
+          setCouncilChatUrl(url);
+          setShowCouncilChatModal(false);
+        }}
+      />
     </View>
   );
 }

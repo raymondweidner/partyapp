@@ -7,10 +7,11 @@ import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplet
 import { colors, globalStyles } from '../theme';
 import { openMapUrl } from '../util';
 
-// NOTE: Replace with your actual Google Maps API Key
-const GOOGLE_MAPS_API_KEY = "AIzaSyAo-sW5eo87zuK3qg2Nv8ov_OJ2pU453yY";
+import secrets from '../../secrets.json';
 
-interface LocationPickerModalProps {
+const GOOGLE_MAPS_API_KEY = secrets.GOOGLE_MAPS_API_KEY;
+
+export interface LocationPickerModalProps {
   visible: boolean;
   onClose: () => void;
   onSelect: (address: string) => void;
@@ -18,7 +19,7 @@ interface LocationPickerModalProps {
   mapType?: string;
 }
 
-export function LocationPickerModal({ visible, onClose, onSelect, initialValue = "", mapType = "google" }: LocationPickerModalProps) {
+export function LocationPickerModal({ visible, onClose, onSelect, initialValue = "", mapType }: LocationPickerModalProps) {
   const [mode, setMode] = useState<"autocomplete" | "embedded">("autocomplete");
   const [loadingLoc, setLoadingLoc] = useState(false);
   const [region, setRegion] = useState({
@@ -176,7 +177,7 @@ export function LocationPickerModal({ visible, onClose, onSelect, initialValue =
                   </TouchableOpacity>
                   
                   {currentAddress ? (
-                    <TouchableOpacity onPress={() => openMapUrl(currentAddress, mapType)} style={{ marginTop: 15 }}>
+                    <TouchableOpacity onPress={() => openMapUrl(currentAddress)} style={{ marginTop: 15 }}>
                       <Text style={[styles.linkText, { color: colors.primary }]}>Open currently typed location in map?</Text>
                     </TouchableOpacity>
                   ) : null}
@@ -205,6 +206,7 @@ export function LocationPickerModal({ visible, onClose, onSelect, initialValue =
                       style={{ flex: 1 }}
                       region={region}
                       onRegionChangeComplete={handleRegionChangeComplete}
+                      mapType={(mapType as any) || "standard"}
                     >
                       <Marker coordinate={{ latitude: region.latitude, longitude: region.longitude }} />
                     </MapView>
@@ -228,7 +230,7 @@ export function LocationPickerModal({ visible, onClose, onSelect, initialValue =
                   </TouchableOpacity>
                   
                   {currentAddress ? (
-                    <TouchableOpacity onPress={() => openMapUrl(currentAddress, mapType)} style={{ marginTop: 15 }}>
+                    <TouchableOpacity onPress={() => openMapUrl(currentAddress)} style={{ marginTop: 15 }}>
                       <Text style={[styles.linkText, { color: colors.primary }]}>Open currently selected location in map?</Text>
                     </TouchableOpacity>
                   ) : null}

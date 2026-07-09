@@ -38,14 +38,14 @@ import {
 import { openEmailThread, safeBack, showAlert } from "../lib/util";
 import { DropdownSelect } from "../lib/components/DropdownSelect";
 import { colors, globalStyles } from "../lib/theme";
-import { CustomHeaderLeft, useCurrentMember, useInfoModal } from "./_layout";
+import { CustomHeaderLeft, useCurrentMember } from "./_layout";
 
 export default function EditTribe() {
   const router = useRouter();
   const { id: paramTribeId } = useLocalSearchParams<{ id?: string }>();
   const { user, loading: authLoading } = useAuth();
   const { member } = useCurrentMember();
-  const { showInfoModal } = useInfoModal();
+
 
   const [isEditing, setIsEditing] = useState(false);
 
@@ -332,12 +332,6 @@ export default function EditTribe() {
       <TouchableOpacity
         style={styles.item}
         onPress={() => handleSelectTribe(item)}
-        onLongPress={() => {
-          if (hasDesc) showInfoModal(item.name || "Tribe", cleanDesc);
-        }}
-        {...(Platform.OS === "web" && hasDesc
-          ? ({ title: cleanDesc } as any)
-          : {})}
       >
         <View
           style={{
@@ -349,25 +343,6 @@ export default function EditTribe() {
           <Text style={[styles.itemTitle, { flex: 1 }]} numberOfLines={1}>
             {item.icon_type ? `${item.icon_type} ` : "😊 "}{item.name || "Unnamed Tribe"}
           </Text>
-          <TouchableOpacity
-            onPress={(e) => {
-              e?.stopPropagation?.();
-              e?.preventDefault?.();
-              if (hasDesc) showInfoModal(item.name || "Tribe", cleanDesc);
-            }}
-            style={{ paddingLeft: 10 }}
-            disabled={!hasDesc}
-          >
-            <Text
-              style={{
-                color: hasDesc ? colors.accent : colors.textMuted,
-                fontSize: 14,
-                fontWeight: "bold",
-              }}
-            >
-              ⓘ
-            </Text>
-          </TouchableOpacity>
         </View>
       </TouchableOpacity>
     );
@@ -434,16 +409,8 @@ export default function EditTribe() {
     };
 
     return (
-      <TouchableOpacity
+      <View
         style={styles.memberItem}
-        onPress={() => {
-          showInfoModal(item.name || "Member", infoText, {
-            phone: cleanPhone,
-            email: cleanEmail,
-            memberId: item.id,
-          });
-        }}
-        {...(Platform.OS === "web" ? ({ title: infoText } as any) : {})}
       >
         <View style={styles.memberCardImageContainer}>
           {item.profile_pic_data ? (
@@ -464,38 +431,30 @@ export default function EditTribe() {
               </TouchableOpacity>
             )}
             {!isMe && isInvited && (
-              <TouchableOpacity
-                onPress={(e) => {
-                  e.stopPropagation();
-                  showInfoModal("Status", "Invite Sent");
-                }}
+              <View
                 style={{ paddingHorizontal: 5, backgroundColor: colors.surface, borderRadius: 10 }}
               >
                 <Text style={{ fontSize: 18 }}>⏳</Text>
-              </TouchableOpacity>
+              </View>
             )}
             {isMe && (
-              <TouchableOpacity
-                onPress={(e) => {
-                  e.stopPropagation();
-                  showInfoModal("Status", "You");
-                }}
+              <View
                 style={{ paddingHorizontal: 5, backgroundColor: colors.surface, borderRadius: 10 }}
               >
                 <Text style={{ fontSize: 18 }}>⭐</Text>
-              </TouchableOpacity>
+              </View>
             )}
           </View>
         </View>
         <Text style={styles.memberCardName} numberOfLines={1}>{item.name || "Unnamed"}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
           {isPending && (
-            <TouchableOpacity onPress={(e) => { e.stopPropagation(); showInfoModal("Status", "Pending App Join"); }}>
+            <View>
               <Text style={{ fontSize: 12 }}>✉️ </Text>
-            </TouchableOpacity>
+            </View>
           )}
         </View>
-      </TouchableOpacity>
+      </View>
     );
   };
 
@@ -527,14 +486,6 @@ export default function EditTribe() {
       <TouchableOpacity
         style={[styles.memberItem, isSelected && styles.memberItemSelected]}
         onPress={() => item.id && toggleMemberSelection(item.id)}
-        onLongPress={() => {
-          showInfoModal(item.name || "Member", infoText, {
-            phone: cleanPhone,
-            email: cleanEmail,
-            memberId: item.id,
-          });
-        }}
-        {...(Platform.OS === "web" ? ({ title: infoText } as any) : {})}
       >
         <View style={styles.memberCardImageContainer}>
           {item.profile_pic_data ? (
@@ -551,9 +502,9 @@ export default function EditTribe() {
         <Text style={styles.memberCardName} numberOfLines={1}>{item.name}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
           {isPending && (
-            <TouchableOpacity onPress={(e) => { e.stopPropagation(); showInfoModal("Status", "Pending App Join"); }}>
+            <View>
               <Text style={{ fontSize: 12 }}>✉️ </Text>
-            </TouchableOpacity>
+            </View>
           )}
         </View>
       </TouchableOpacity>
@@ -729,13 +680,7 @@ export default function EditTribe() {
                           params: { id: meetup.id, tribeId: selectedTribe.id },
                         })
                       }
-                      onLongPress={() => {
-                        showInfoModal(meetup.title || "Meetup", infoText);
-                      }}
-                      {...(Platform.OS === "web"
-                        ? ({ title: infoText } as any)
-                        : {})}
-                    >
+                      >
                       <View style={{ flex: 1 }}>
                         <Text style={styles.squareCardIcon}>
                           {meetup.icon_type || "🎉"}
@@ -751,23 +696,6 @@ export default function EditTribe() {
                         <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
                           {meetup.status || "Planning"}
                         </Text>
-                        <TouchableOpacity
-                          onPress={(e) => {
-                            e?.stopPropagation?.();
-                            e?.preventDefault?.();
-                            showInfoModal(meetup.title || "Meetup", infoText);
-                          }}
-                        >
-                          <Text
-                            style={{
-                              color: colors.accent,
-                              fontSize: 14,
-                              fontWeight: "bold",
-                            }}
-                          >
-                            ⓘ
-                          </Text>
-                        </TouchableOpacity>
                       </View>
                     </TouchableOpacity>
                   );

@@ -21,13 +21,12 @@ import {
 } from "../lib/data/service";
 import { showAlert } from "../lib/util";
 import { colors, globalStyles } from "../lib/theme";
-import { CustomHeaderLeft, useCurrentMember, useInfoModal } from "./_layout";
+import { CustomHeaderLeft, useCurrentMember } from "./_layout";
 
 export default function FindFriend() {
   const router = useRouter();
   const { user } = useAuth();
   const { member: currentMember } = useCurrentMember();
-  const { showInfoModal } = useInfoModal();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -243,7 +242,7 @@ export default function FindFriend() {
                 data={searchResults}
                 keyExtractor={(item) => item.id!}
                 renderItem={({ item }) => {
-                  const isPending = item.status === "invited";
+                  const isPending = item.status === "Invited";
                   return (
                     <TouchableOpacity
                       style={styles.resultItem}
@@ -254,14 +253,7 @@ export default function FindFriend() {
                       >
                         <Text style={styles.resultName}>{item.name}</Text>
                         {isPending && (
-                          <TouchableOpacity
-                            onPress={(e) => {
-                              e.stopPropagation();
-                              showInfoModal("Status", "Pending App Join");
-                            }}
-                          >
-                            <Text style={styles.resultName}> ✉️</Text>
-                          </TouchableOpacity>
+                          <Text style={styles.resultName}> ✉️</Text>
                         )}
                       </View>
                       <Text style={styles.resultEmail}>{item.email}</Text>

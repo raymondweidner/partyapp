@@ -3,8 +3,12 @@ import { BlurView } from "expo-blur";
 import { Animated } from "react-native";
 import { useFonts, Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold, Nunito_900Black } from '@expo-google-fonts/nunito';
 import { useFonts as useQuicksandFonts, Quicksand_700Bold } from '@expo-google-fonts/quicksand';
+import { useFonts as useFrauncesFonts, Fraunces_200ExtraLight } from '@expo-google-fonts/fraunces';
+import { useFonts as useBricolageFonts, BricolageGrotesque_500Medium } from '@expo-google-fonts/bricolage-grotesque';
+import { useFonts as useUnboundedFonts, Unbounded_700Bold, Unbounded_800ExtraBold } from '@expo-google-fonts/unbounded';
 import messaging from "@react-native-firebase/messaging";
 import { Stack, useGlobalSearchParams, usePathname, useRouter, useSegments } from "expo-router";
+import { useShareIntent } from "expo-share-intent";
 import { colors, globalStyles } from "../lib/theme";
 
 SplashScreen.preventAutoHideAsync();
@@ -45,7 +49,12 @@ import {
   getNotifications,
   getUserDeviceByToken,
   updateUserDevice,
+  getMeetups,
+  getPolls,
+  createPoll,
+  uploadMedia,
 } from "../lib/data/service";
+import { Meetup } from "../lib/data/Meetup";
 import "../lib/firebaseConfig";
 import { handleNotificationPress, openEmailThread, openWhatsAppDM, pendingRedirect, safeBack, setPendingRedirect, showAlert } from "../lib/util";
 
@@ -546,11 +555,24 @@ function RootLayoutNav() {
     Quicksand_700Bold,
   });
 
+  const [frauncesLoaded] = useFrauncesFonts({
+    Fraunces_200ExtraLight,
+  });
+
+  const [bricolageLoaded] = useBricolageFonts({
+    BricolageGrotesque_500Medium,
+  });
+
+  const [unboundedLoaded] = useUnboundedFonts({
+    Unbounded_700Bold,
+    Unbounded_800ExtraBold,
+  });
+
   useEffect(() => {
-    if (fontsLoaded && quicksandLoaded) {
+    if (fontsLoaded && quicksandLoaded && frauncesLoaded && bricolageLoaded && unboundedLoaded) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, quicksandLoaded]);
+  }, [fontsLoaded, quicksandLoaded, frauncesLoaded, bricolageLoaded, unboundedLoaded]);
 
   useEffect(() => {
     if (loading) return;
@@ -564,9 +586,9 @@ function RootLayoutNav() {
       router.replace("/login");
     } else if (user && inLogin) {
       if (pendingRedirect) {
-        const target = pendingRedirect;
-        setPendingRedirect(null);
+        const target = { ...pendingRedirect };
         router.replace(target);
+        setPendingRedirect(null);
       } else {
         router.replace("/");
       }
@@ -598,138 +620,6 @@ function RootLayoutNav() {
         />
       </Stack>
     </>
-  );
-}
-
-export const InfoModalContext = createContext<{
-  showInfoModal: (
-    title: string,
-    content: string,
-    options?: { phone?: string | null; email?: string | null; memberId?: string | null },
-  ) => void;
-}>({ showInfoModal: () => { } });
-
-export const useInfoModal = () => useContext(InfoModalContext);
-
-function InfoModalProvider({ children }: { children: React.ReactNode }) {
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
-  const [modalConfig, setModalConfig] = useState({
-    visible: false,
-    title: "",
-    content: "",
-    options: undefined as
-      | { phone?: string | null; email?: string | null; memberId?: string | null }
-      | undefined,
-  });
-
-  const showInfoModal = useCallback(
-    (
-      title: string,
-      content: string,
-      options?: { phone?: string | null; email?: string | null; memberId?: string | null },
-    ) => {
-      setModalConfig({ visible: true, title, content, options });
-    },
-    [],
-  );
-
-  const closeModal = useCallback(() => {
-    setModalConfig((prev) => ({ ...prev, visible: false }));
-  }, []);
-
-  useEffect(() => {
-    if (modalConfig.visible) {
-      Animated.parallel([
-        Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, friction: 8, tension: 100 }),
-        Animated.timing(opacityAnim, { toValue: 1, duration: 200, useNativeDriver: true })
-      ]).start();
-    } else {
-      scaleAnim.setValue(0.8);
-      opacityAnim.setValue(0);
-    }
-  }, [modalConfig.visible]);
-
-  const phone = modalConfig.options?.phone;
-  const email = modalConfig.options?.email;
-  const targetMemberId = modalConfig.options?.memberId;
-  const { member } = useCurrentMember();
-  const router = useRouter();
-
-  return (
-    <InfoModalContext.Provider value={{ showInfoModal }}>
-      {children}
-      <Modal
-        visible={modalConfig.visible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={closeModal}
-      >
-        <BlurView intensity={20} tint="light" style={layoutStyles.modalOverlay}>
-          <TouchableOpacity
-            style={StyleSheet.absoluteFill}
-            activeOpacity={1}
-            onPress={closeModal}
-          />
-          <Animated.View style={[layoutStyles.modalContent, { transform: [{ scale: scaleAnim }], opacity: opacityAnim }]}>
-            {!!modalConfig.title && (
-              <Text style={layoutStyles.modalTitle}>{modalConfig.title}</Text>
-            )}
-            <Text style={layoutStyles.modalText}>{modalConfig.content}</Text>
-            {modalConfig.options && (
-              <View style={{ flexDirection: "row", marginTop: 20, gap: 10, flexWrap: "wrap" }}>
-                <TouchableOpacity
-                  style={[
-                    layoutStyles.dmButton,
-                    { flex: 1, minWidth: 100, marginTop: 0, backgroundColor: colors.primary },
-                    !email && layoutStyles.dmButtonDisabled,
-                  ]}
-                  disabled={!email}
-                  onPress={() => {
-                    if (email) {
-                      closeModal();
-                      openEmailThread([email], "", member?.email);
-                    }
-                  }}
-                >
-                  <Text style={layoutStyles.dmButtonText}>📧 Email</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    layoutStyles.dmButton,
-                    { flex: 1, minWidth: 100, marginTop: 0 },
-                    !phone && layoutStyles.dmButtonDisabled,
-                  ]}
-                  disabled={!phone}
-                  onPress={() => {
-                    if (phone) {
-                      closeModal();
-                      openWhatsAppDM(phone);
-                    }
-                  }}
-                >
-                  <Text style={layoutStyles.dmButtonText}>💬 WhatsApp</Text>
-                </TouchableOpacity>
-                {targetMemberId && targetMemberId === member?.id && (
-                  <TouchableOpacity
-                    style={[
-                      layoutStyles.dmButton,
-                      { flex: 1, minWidth: 100, marginTop: 0, backgroundColor: colors.accent },
-                    ]}
-                    onPress={() => {
-                      closeModal();
-                      router.push(`/edit-member?id=${targetMemberId}`);
-                    }}
-                  >
-                    <Text style={layoutStyles.dmButtonText}>✏️ Edit</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
-          </Animated.View>
-        </BlurView>
-      </Modal>
-    </InfoModalContext.Provider>
   );
 }
 
@@ -830,13 +720,140 @@ export default function RootLayout() {
       <UserDeviceProvider>
         <CurrentMemberProvider>
           <NotificationsProvider>
-            <InfoModalProvider>
-              <RootLayoutNav />
-            </InfoModalProvider>
+            <RootLayoutNav />
+            <ShareIntentHandler />
           </NotificationsProvider>
         </CurrentMemberProvider>
       </UserDeviceProvider>
     </AuthProvider>
+  );
+}
+
+function ShareIntentHandler() {
+  const { hasShareIntent, shareIntent, resetShareIntent, error } = useShareIntent();
+  const { user } = useAuth();
+  const { member } = useCurrentMember();
+  
+  const [meetups, setMeetups] = useState<Meetup[]>([]);
+  const [pollsByMeetup, setPollsByMeetup] = useState<Record<string, import("../lib/data/Poll").Poll[]>>({});
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const shareData: any = shareIntent;
+  
+  useEffect(() => {
+    if (hasShareIntent && user && shareData?.value) {
+      loadData();
+    }
+  }, [hasShareIntent, user, shareIntent]);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const token = await user!.getIdToken();
+      const fetchedMeetups = await getMeetups(token);
+      setMeetups(fetchedMeetups);
+      
+      const pollsMap: Record<string, import("../lib/data/Poll").Poll[]> = {};
+      for (const m of fetchedMeetups) {
+        const fetchedPolls = await getPolls(token, m.id!);
+        pollsMap[m.id!] = fetchedPolls.filter(p => p.status?.toLowerCase() === "posting");
+      }
+      setPollsByMeetup(pollsMap);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpload = async (meetupId: string, pollId?: string) => {
+    if (!user || !member || !shareData?.value) return;
+    setUploading(true);
+    try {
+      const token = await user.getIdToken();
+      let targetPollId = pollId;
+      
+      if (!targetPollId) {
+        const now = new Date();
+        const entryDeadline = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
+        const voteDeadline = new Date(entryDeadline.getTime() + 3 * 24 * 60 * 60 * 1000);
+        
+        const newPoll = await createPoll({
+          meetup_id: meetupId,
+          creator_id: member.id!,
+          title: "Shared Media Poll",
+          details: "Created from shared media.",
+          entry_deadline: entryDeadline.toISOString(),
+          vote_deadline: voteDeadline.toISOString(),
+        }, token);
+        targetPollId = newPoll.id;
+      }
+
+      if (targetPollId) {
+        // Find if this share Intent has a mimeType. Use image/jpeg fallback
+        const mimeType = shareData.mimeType || "image/jpeg";
+        const filename = shareData.value.split("/").pop() || "shared.jpg";
+        
+        // uploadMedia handles file uploading via formData
+        await uploadMedia(shareData.value, filename, mimeType, meetupId, targetPollId, token);
+        showAlert("Success", "Media uploaded to the poll!");
+        resetShareIntent();
+      }
+    } catch (err) {
+      console.error(err);
+      showAlert("Error", "Failed to upload shared media.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  if (!hasShareIntent || !shareData?.value) return null;
+
+  return (
+    <Modal visible={true} transparent={true} animationType="slide">
+      <BlurView intensity={80} style={layoutStyles.modalOverlay}>
+        <View style={[layoutStyles.modalContent, { maxHeight: "90%" }]}>
+          <Text style={layoutStyles.modalTitle}>Share to PartyApp</Text>
+          
+          {loading || uploading ? (
+            <ActivityIndicator size="large" color={colors.primary} />
+          ) : (
+            <ScrollView>
+              {shareData.value && (
+                <Image source={{ uri: shareData.value }} style={{ width: "100%", height: 200, borderRadius: 10, marginBottom: 20 }} resizeMode="cover" />
+              )}
+              
+              {meetups.map(m => (
+                <View key={m.id} style={{ marginBottom: 20 }}>
+                  <Text style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 18, marginBottom: 10 }}>{m.title}</Text>
+                  
+                  {pollsByMeetup[m.id!]?.map(p => (
+                    <TouchableOpacity
+                      key={p.id}
+                      style={[globalStyles.primaryButton, { marginBottom: 10 }]}
+                      onPress={() => handleUpload(m.id!, p.id!)}
+                    >
+                      <Text style={globalStyles.primaryButtonText}>Add to: {p.title}</Text>
+                    </TouchableOpacity>
+                  ))}
+                  
+                  <TouchableOpacity
+                    style={[globalStyles.secondaryButton, { marginBottom: 10 }]}
+                    onPress={() => handleUpload(m.id!)}
+                  >
+                    <Text style={globalStyles.secondaryButtonText}>+ Create New Poll</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
+          <TouchableOpacity style={[globalStyles.secondaryButton, { marginTop: 20 }]} onPress={() => resetShareIntent()}>
+            <Text style={globalStyles.secondaryButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </BlurView>
+    </Modal>
   );
 }
 
@@ -860,9 +877,10 @@ const layoutStyles = StyleSheet.create({
     textAlign: "center",
   },
   modalText: {
-    fontSize: 16,
+    fontSize: 18,
+    fontFamily: "Fraunces_200ExtraLight",
     color: colors.text,
-    lineHeight: 22,
+    lineHeight: 24,
   },
   dmButton: {
     marginTop: 20,

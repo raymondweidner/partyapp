@@ -149,27 +149,27 @@ export default function UpdateAvailability() {
             <TouchableOpacity
               style={[
                 styles.statusButton,
-                status === "yes" && styles.statusSelected,
+                status === "Yes" && styles.statusSelected,
               ]}
-              onPress={() => setStatus("yes")}
+              onPress={() => setStatus("Yes")}
             >
               <Text style={styles.statusText}>✅ Yes</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.statusButton,
-                status === "maybe" && styles.statusSelected,
+                status === "Maybe" && styles.statusSelected,
               ]}
-              onPress={() => setStatus("maybe")}
+              onPress={() => setStatus("Maybe")}
             >
               <Text style={styles.statusText}>🤔 Maybe</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[
                 styles.statusButton,
-                status === "no" && styles.statusSelected,
+                status === "No" && styles.statusSelected,
               ]}
-              onPress={() => setStatus("no")}
+              onPress={() => setStatus("No")}
             >
               <Text style={styles.statusText}>❌ No</Text>
             </TouchableOpacity>

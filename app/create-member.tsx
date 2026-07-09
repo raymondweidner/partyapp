@@ -1,5 +1,5 @@
 // NOTE: Please rename this file to create-member.tsx
-import { Stack, useRouter } from "expo-router";
+import { Stack, useRouter, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -10,13 +10,14 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../lib/auth";
-import { createMember, createMemberContact } from "../lib/data/service";
+import { createMember, createMemberContact, createTribeMember } from "../lib/data/service";
 import { showAlert, safeBack } from "../lib/util";
 import { colors, globalStyles } from "../lib/theme";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
 
 export default function CreateMember() {
   const router = useRouter();
+  const { tribeId } = useLocalSearchParams<{ tribeId?: string }>();
   const { user, loading: authLoading } = useAuth();
   const { member: currentMember } = useCurrentMember();
   const [name, setName] = useState("");
@@ -69,7 +70,7 @@ export default function CreateMember() {
       );
 
       showAlert("Success", "Invitation sent successfully!", [
-        { text: "OK", onPress: () => safeBack(router, "/") },
+        { text: "OK", onPress: () => safeBack(router, tribeId ? `/edit-tribe?id=${tribeId}` : "/") },
       ]);
     } catch (error: any) {
       showAlert(

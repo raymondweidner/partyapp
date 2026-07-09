@@ -1,9 +1,10 @@
 import { getResourceEndpoint } from "../util";
-
+import { Platform } from "react-native";
 import { Availability } from "./Availability";
 import { Chat } from "./Chat";
 import { ChatMember } from "./ChatMember";
 import { Meetup } from "./Meetup";
+import { MeetupEvent } from "./MeetupEvent";
 import { Member } from "./Member";
 import { MemberContact } from "./MemberContact";
 import { Proposal } from "./Proposal";
@@ -12,6 +13,13 @@ import { TribeMember } from "./TribeMember";
 import { UserDevice } from "./UserDevice";
 import { Notification } from "./Notification";
 import { MemberAlertPreference } from "./MemberAlertPreference";
+import { Poll } from "./Poll";
+import { PollEntry } from "./PollEntry";
+import { PollVote } from "./PollVote";
+import { PollWinner } from "./PollWinner";
+import { HelpRegistry } from "./HelpRegistry";
+import { RegistryItem } from "./RegistryItem";
+import { TribalCouncil } from "./TribalCouncil";
 
 const getHeaders = (token: string) => ({
   "Content-Type": "application/json",
@@ -34,6 +42,19 @@ export const getMemberAlertPreferences = async (
     return Array.isArray(data) ? data : [data];
   }
   return [];
+};
+
+export const createMemberAlertPreference = async (
+  pref: Omit<MemberAlertPreference, "id">,
+  authToken: string,
+): Promise<MemberAlertPreference> => {
+  const response = await fetch(`${getResourceEndpoint()}/member_alert_preference`, {
+    method: "POST",
+    headers: getHeaders(authToken),
+    body: JSON.stringify(pref),
+  });
+  if (!response.ok) throw new Error("Failed to create preference");
+  return response.json();
 };
 
 export const updateMemberAlertPreference = async (
@@ -494,13 +515,13 @@ export const getMemberContacts = async (
   };
 
   sourceContacts.forEach((contact) => {
-    if (contact.status === "accepted") result.acceptedSources.push(contact);
-    else if (contact.status === "invited") result.invitedSources.push(contact);
+    if (contact.status === "Accepted") result.acceptedSources.push(contact);
+    else if (contact.status === "Invited") result.invitedSources.push(contact);
   });
 
   subjectContacts.forEach((contact) => {
-    if (contact.status === "accepted") result.acceptedSubjects.push(contact);
-    else if (contact.status === "invited") result.invitedSubjects.push(contact);
+    if (contact.status === "Accepted") result.acceptedSubjects.push(contact);
+    else if (contact.status === "Invited") result.invitedSubjects.push(contact);
   });
 
   return result;
@@ -666,4 +687,492 @@ export const deleteNotification = async (
     },
   );
   if (!response.ok) throw new Error("Failed to delete notification");
+};
+
+// Poll Services
+export const getPolls = async (
+  authToken: string,
+  meetupId?: string,
+): Promise<Poll[]> => {
+  let url = `${getResourceEndpoint()}/poll`;
+  if (meetupId) {
+    url += `?meetup_id=${encodeURIComponent(meetupId)}`;
+  }
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${authToken}` },
+  });
+  if (!response.ok) {
+    if (response.status === 404) return [];
+    throw new Error("Failed to fetch polls");
+  }
+  return response.json();
+};
+
+export const getPollEntries = async (
+  authToken: string,
+  pollId?: string,
+): Promise<PollEntry[]> => {
+  let url = `${getResourceEndpoint()}/poll_entry`;
+  if (pollId) {
+    url += `?poll_id=${encodeURIComponent(pollId)}`;
+  }
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${authToken}` },
+  });
+  if (!response.ok) {
+    if (response.status === 404) return [];
+    throw new Error("Failed to fetch poll entries");
+  }
+  return response.json();
+};
+
+export const getPollVotes = async (
+  authToken: string,
+  pollId?: string,
+): Promise<PollVote[]> => {
+  let url = `${getResourceEndpoint()}/poll_vote`;
+  if (pollId) {
+    url += `?poll_id=${encodeURIComponent(pollId)}`;
+  }
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${authToken}` },
+  });
+  if (!response.ok) {
+    if (response.status === 404) return [];
+    throw new Error("Failed to fetch poll votes");
+  }
+  return response.json();
+};
+
+export const createPoll = async (
+  poll: Omit<Poll, "id">,
+  authToken: string,
+): Promise<Poll> => {
+  const response = await fetch(`${getResourceEndpoint()}/poll`, {
+    method: "POST",
+    headers: getHeaders(authToken),
+    body: JSON.stringify(poll),
+  });
+  if (!response.ok) throw new Error("Failed to create poll");
+  return response.json();
+};
+
+export const getPoll = async (
+  pollId: string,
+  authToken: string,
+): Promise<Poll> => {
+  const response = await fetch(`${getResourceEndpoint()}/poll/${pollId}`, {
+    headers: { Authorization: `Bearer ${authToken}` },
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch poll");
+  }
+  return response.json();
+};
+
+export const updatePollEntry = async (entry: Partial<PollEntry>, authToken: string): Promise<PollEntry> => {
+  const { id, ...data } = entry;
+  const res = await fetch(`${getResourceEndpoint()}/poll_entry/${id}`, {
+    method: "PUT",
+    headers: getHeaders(authToken),
+    body: JSON.stringify(data),
+  });
+  return res.json();
+};
+
+export const deletePollEntry = async (authToken: string, id: string): Promise<void> => {
+  await fetch(`${getResourceEndpoint()}/poll_entry/${id}`, {
+    method: "DELETE",
+    headers: getHeaders(authToken),
+  });
+};
+
+export const updatePoll = async (
+  poll: Poll & { id: string },
+  authToken: string,
+): Promise<Poll> => {
+  const response = await fetch(`${getResourceEndpoint()}/poll/${poll.id}`, {
+    method: "PUT",
+    headers: getHeaders(authToken),
+    body: JSON.stringify(poll),
+  });
+  if (!response.ok) throw new Error("Failed to update poll");
+  return response.json();
+};
+
+// PollVote Services
+export const createPollVote = async (
+  vote: Omit<PollVote, "id">,
+  authToken: string,
+): Promise<PollVote> => {
+  const response = await fetch(`${getResourceEndpoint()}/poll_vote`, {
+    method: "POST",
+    headers: getHeaders(authToken),
+    body: JSON.stringify(vote),
+  });
+  if (!response.ok) throw new Error("Failed to create poll vote");
+  return response.json();
+};
+
+export const updatePollVote = async (
+  vote: PollVote & { id: string },
+  authToken: string,
+): Promise<PollVote> => {
+  const response = await fetch(`${getResourceEndpoint()}/poll_vote/${vote.id}`, {
+    method: "PUT",
+    headers: getHeaders(authToken),
+    body: JSON.stringify(vote),
+  });
+  if (!response.ok) throw new Error("Failed to update poll vote");
+  return response.json();
+};
+
+export const deletePollVote = async (
+  voteId: string,
+  authToken: string,
+): Promise<void> => {
+  const response = await fetch(`${getResourceEndpoint()}/poll_vote/${voteId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${authToken}` },
+  });
+  if (!response.ok) throw new Error("Failed to delete poll vote");
+};
+
+// PollWinner Services
+export const getPollWinners = async (
+  authToken: string,
+  pollId?: string,
+): Promise<PollWinner[]> => {
+  let url = `${getResourceEndpoint()}/poll_winner`;
+  if (pollId) {
+    url += `?poll_id=${encodeURIComponent(pollId)}`;
+  }
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${authToken}` },
+  });
+  if (!response.ok) {
+    if (response.status === 404) return [];
+    throw new Error("Failed to fetch poll winners");
+  }
+  return response.json();
+};
+
+export const createPollWinner = async (
+  winner: Omit<PollWinner, "id">,
+  authToken: string,
+): Promise<PollWinner> => {
+  const response = await fetch(`${getResourceEndpoint()}/poll_winner`, {
+    method: "POST",
+    headers: getHeaders(authToken),
+    body: JSON.stringify(winner),
+  });
+  if (!response.ok) throw new Error("Failed to create poll winner");
+  return response.json();
+};
+
+export const updatePollWinner = async (
+  winner: PollWinner & { id?: string },
+  authToken: string,
+): Promise<PollWinner> => {
+  const idToUpdate = winner.id;
+  if (!idToUpdate) throw new Error("No ID provided for winner update");
+
+  const response = await fetch(
+    `${getResourceEndpoint()}/poll_winner/${idToUpdate}`,
+    {
+      method: "PUT",
+      headers: getHeaders(authToken),
+      body: JSON.stringify(winner),
+    },
+  );
+  if (!response.ok) throw new Error("Failed to update poll winner");
+  return response.json();
+};
+
+// MeetupEvent Services
+export const getMeetupEvents = async (
+  meetupId: string,
+  authToken: string,
+): Promise<MeetupEvent[]> => {
+  const response = await fetch(
+    `${getResourceEndpoint()}/meetup_event?meetup_id=${encodeURIComponent(meetupId)}`,
+    {
+      headers: { Authorization: `Bearer ${authToken}` },
+    },
+  );
+  if (response.ok) {
+    const data = await response.json();
+    return Array.isArray(data) ? data : [data];
+  }
+  return [];
+};
+
+export const createMeetupEvent = async (
+  meetupEvent: Omit<MeetupEvent, "id">,
+  authToken: string,
+): Promise<MeetupEvent> => {
+  const response = await fetch(`${getResourceEndpoint()}/meetup_event`, {
+    method: "POST",
+    headers: getHeaders(authToken),
+    body: JSON.stringify(meetupEvent),
+  });
+  if (!response.ok) throw new Error("Failed to create meetup event");
+  return response.json();
+};
+
+export const updateMeetupEvent = async (
+  meetupEvent: MeetupEvent & { id: string },
+  authToken: string,
+): Promise<MeetupEvent> => {
+  const response = await fetch(
+    `${getResourceEndpoint()}/meetup_event/${meetupEvent.id}`,
+    {
+      method: "PUT",
+      headers: getHeaders(authToken),
+      body: JSON.stringify(meetupEvent),
+    },
+  );
+  if (!response.ok) throw new Error("Failed to update meetup event");
+  return response.json();
+};
+
+export const deleteMeetupEvent = async (
+  meetupEventId: string,
+  authToken: string,
+): Promise<void> => {
+  const response = await fetch(
+    `${getResourceEndpoint()}/meetup_event/${meetupEventId}`,
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${authToken}` },
+    },
+  );
+  if (!response.ok) throw new Error("Failed to delete meetup event");
+};
+
+export const deletePollWinner = async (
+  winnerId: string,
+  authToken: string,
+): Promise<void> => {
+  const response = await fetch(`${getResourceEndpoint()}/poll_winner/${winnerId}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${authToken}` },
+  });
+  if (!response.ok) throw new Error("Failed to delete poll winner");
+};
+
+// Media Services
+export const uploadMedia = async (
+  uri: string,
+  filename: string,
+  mimeType: string,
+  meetupId: string,
+  pollId: string,
+  authToken: string,
+  caption?: string
+): Promise<{ success: boolean; fileId?: string }> => {
+  const formData = new FormData();
+  if (Platform.OS === 'web') {
+    const response = await fetch(uri);
+    const blob = await response.blob();
+    formData.append("file", blob, filename);
+  } else {
+    formData.append("file", {
+      uri,
+      name: filename,
+      type: mimeType,
+    } as any);
+  }
+
+  let url = `${getResourceEndpoint()}/media/${encodeURIComponent(filename)}?meetup_id=${encodeURIComponent(meetupId)}`;
+  if (pollId) {
+    url += `&poll_id=${encodeURIComponent(pollId)}`;
+  }
+  if (caption) {
+    url += `&caption=${encodeURIComponent(caption)}`;
+  }
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${authToken}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to upload media: ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
+// HelpRegistry Services
+export const getHelpRegistries = async (
+  authToken: string,
+  proposalId?: string,
+  meetupEventId?: string
+): Promise<HelpRegistry[]> => {
+  let url = `${getResourceEndpoint()}/help_registry`;
+  if (proposalId) {
+    url += `?proposal_id=${encodeURIComponent(proposalId)}`;
+  } else if (meetupEventId) {
+    url += `?meetup_event_id=${encodeURIComponent(meetupEventId)}`;
+  }
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${authToken}` },
+  });
+  if (!response.ok) {
+    if (response.status === 404) return [];
+    throw new Error("Failed to fetch help registries");
+  }
+  return response.json();
+};
+
+export const getHelpRegistry = async (
+  id: string,
+  authToken: string
+): Promise<HelpRegistry> => {
+  const response = await fetch(`${getResourceEndpoint()}/help_registry/${id}`, {
+    headers: { Authorization: `Bearer ${authToken}` },
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch help registry");
+  }
+  return response.json();
+};
+
+export const createHelpRegistry = async (
+  registry: Omit<HelpRegistry, "id">,
+  authToken: string
+): Promise<HelpRegistry> => {
+  const response = await fetch(`${getResourceEndpoint()}/help_registry`, {
+    method: "POST",
+    headers: getHeaders(authToken),
+    body: JSON.stringify(registry),
+  });
+  if (!response.ok) throw new Error("Failed to create help registry");
+  return response.json();
+};
+
+export const updateHelpRegistry = async (
+  registry: HelpRegistry & { id: string },
+  authToken: string
+): Promise<HelpRegistry> => {
+  const response = await fetch(`${getResourceEndpoint()}/help_registry/${registry.id}`, {
+    method: "PUT",
+    headers: getHeaders(authToken),
+    body: JSON.stringify(registry),
+  });
+  if (!response.ok) throw new Error("Failed to update help registry");
+  return response.json();
+};
+
+export const deleteHelpRegistry = async (
+  id: string,
+  authToken: string
+): Promise<void> => {
+  const response = await fetch(`${getResourceEndpoint()}/help_registry/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${authToken}` },
+  });
+  if (!response.ok) throw new Error("Failed to delete help registry");
+};
+
+// RegistryItem Services
+export const getRegistryItems = async (
+  authToken: string,
+  helpRegistryId: string
+): Promise<RegistryItem[]> => {
+  const response = await fetch(
+    `${getResourceEndpoint()}/registry_item?help_registry_id=${encodeURIComponent(helpRegistryId)}`,
+    {
+      headers: { Authorization: `Bearer ${authToken}` },
+    }
+  );
+  if (!response.ok) {
+    if (response.status === 404) return [];
+    throw new Error("Failed to fetch registry items");
+  }
+  return response.json();
+};
+
+export const createRegistryItem = async (
+  item: Omit<RegistryItem, "id">,
+  authToken: string
+): Promise<RegistryItem> => {
+  const response = await fetch(`${getResourceEndpoint()}/registry_item`, {
+    method: "POST",
+    headers: getHeaders(authToken),
+    body: JSON.stringify(item),
+  });
+  if (!response.ok) throw new Error("Failed to create registry item");
+  return response.json();
+};
+
+export const updateRegistryItem = async (
+  item: RegistryItem & { id: string },
+  authToken: string
+): Promise<RegistryItem> => {
+  const response = await fetch(`${getResourceEndpoint()}/registry_item/${item.id}`, {
+    method: "PUT",
+    headers: getHeaders(authToken),
+    body: JSON.stringify(item),
+  });
+  if (!response.ok) throw new Error("Failed to update registry item");
+  return response.json();
+};
+
+export const deleteRegistryItem = async (
+  id: string,
+  authToken: string
+): Promise<void> => {
+  const response = await fetch(`${getResourceEndpoint()}/registry_item/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${authToken}` },
+  });
+  if (!response.ok) throw new Error("Failed to delete registry item");
+};
+
+// TribalCouncil Services
+export const getTribalCouncils = async (
+  meetupId: string,
+  authToken: string
+): Promise<TribalCouncil[]> => {
+  const response = await fetch(
+    `${getResourceEndpoint()}/tribal_council?meetup_id=${encodeURIComponent(meetupId)}`,
+    {
+      headers: { Authorization: `Bearer ${authToken}` },
+    }
+  );
+  if (!response.ok) {
+    if (response.status === 404) return [];
+    throw new Error("Failed to fetch tribal councils");
+  }
+  const data = await response.json();
+  return Array.isArray(data) ? data : [data];
+};
+
+export const createTribalCouncil = async (
+  council: Omit<TribalCouncil, "id">,
+  authToken: string
+): Promise<TribalCouncil> => {
+  const response = await fetch(`${getResourceEndpoint()}/tribal_council`, {
+    method: "POST",
+    headers: getHeaders(authToken),
+    body: JSON.stringify(council),
+  });
+  if (!response.ok) throw new Error("Failed to create tribal council");
+  return response.json();
+};
+
+export const deleteTribalCouncil = async (
+  id: string,
+  authToken: string
+): Promise<void> => {
+  const response = await fetch(`${getResourceEndpoint()}/tribal_council/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${authToken}` },
+  });
+  if (!response.ok) throw new Error("Failed to delete tribal council");
 };

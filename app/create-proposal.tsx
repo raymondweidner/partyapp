@@ -23,7 +23,8 @@ export default function CreateProposal() {
   const { user, loading: authLoading } = useAuth();
   const { member } = useCurrentMember();
 
-  const [date, setDate] = useState(new Date());
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date(Date.now() + 60 * 60 * 1000));
   const [location, setLocation] = useState("");
   const [locationModalVisible, setLocationModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -34,8 +35,8 @@ export default function CreateProposal() {
   }, [user, authLoading, router]);
 
   const handleCreate = async () => {
-    if (!date || !location) {
-      showAlert("Validation Error", "Date and location are required.");
+    if (!startDate || !endDate || !location) {
+      showAlert("Validation Error", "Start Date, End Date, and location are required.");
       return;
     }
     if (!member?.id || !meetupId) return;
@@ -47,7 +48,8 @@ export default function CreateProposal() {
         {
           host_id: member.id,
           meetup_id: meetupId,
-          date: date.toISOString(),
+          start_at: startDate.toISOString(),
+          end_at: endDate.toISOString(),
           location,
           status: "pending",
         } as any,
@@ -83,8 +85,11 @@ export default function CreateProposal() {
             </Text>
           </View>
 
-          <Text style={styles.label}>Date</Text>
-          <DateTimePickerField date={date} onChange={setDate} />
+          <Text style={styles.label}>Starting</Text>
+          <DateTimePickerField date={startDate} onChange={setStartDate} />
+
+          <Text style={styles.label}>Until</Text>
+          <DateTimePickerField date={endDate} onChange={setEndDate} />
 
           <Text style={styles.label}>Location</Text>
           <TouchableOpacity

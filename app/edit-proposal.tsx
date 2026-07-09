@@ -7,32 +7,36 @@ import {
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  DeviceEventEmitter,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
-  View,
-  DeviceEventEmitter,
+  View
 } from "react-native";
 import { useAuth } from "../lib/auth";
 import { DateTimePickerField } from "../lib/components/DateTimePickerField";
+import { LocationPickerModal } from "../lib/components/LocationPickerModal";
 import { Availability } from "../lib/data/Availability";
+import { HelpRegistry } from "../lib/data/HelpRegistry";
 import { Meetup } from "../lib/data/Meetup";
 import { Member } from "../lib/data/Member";
 import { Proposal } from "../lib/data/Proposal";
-import { LocationPickerModal } from "../lib/components/LocationPickerModal";
 import {
   getAvailabilities,
+  getHelpRegistries,
   getMeetups,
   getMembers,
   getProposals,
+  getRegistryItems,
   getTribeMembers,
+  getTribalCouncils,
   updateProposal,
 } from "../lib/data/service";
-import { showAlert, openMapUrl } from "../lib/util";
+import { TribalCouncil } from "../lib/data/TribalCouncil";
 import { colors, globalStyles } from "../lib/theme";
-import { CustomHeaderLeft, useCurrentMember, useInfoModal } from "./_layout";
+import { openMapUrl, showAlert } from "../lib/util";
+import { CustomHeaderLeft, useCurrentMember } from "./_layout";
 
 export default function EditProposal() {
   const router = useRouter();
@@ -43,13 +47,14 @@ export default function EditProposal() {
     }>();
   const { user, loading: authLoading } = useAuth();
   const { member } = useCurrentMember();
-  const { showInfoModal } = useInfoModal();
+
 
   const [proposal, setProposal] = useState<Proposal | null>(null);
   const [meetup, setMeetup] = useState<Meetup | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  const [date, setDate] = useState(new Date());
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date(Date.now() + 60 * 60 * 1000));
   const [location, setLocation] = useState("");
   const [locationModalVisible, setLocationModalVisible] = useState(false);
 
@@ -60,24 +65,42 @@ export default function EditProposal() {
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(false);
 
+  const [registries, setRegistries] = useState<(HelpRegistry & { incompleteCount: number })[]>([]);
+  const [registryTab, setRegistryTab] = useState<"Please Help!" | "Complete">("Please Help!");
+  const [tribalCouncils, setTribalCouncils] = useState<TribalCouncil[]>([]);
+
   const fetchDetails = useCallback(async () => {
     if (!user || !paramProposalId || !paramMeetupId) return;
     setLoading(true);
     try {
       const token = await user.getIdToken();
-      const [proposalsData, meetupsData, membersData] = await Promise.all([
+      const [proposalsData, meetupsData, membersData, councilsData] = await Promise.all([
         getProposals(token, undefined, paramMeetupId),
         getMeetups(token),
         getMembers(token),
+        getTribalCouncils(token, paramMeetupId),
       ]);
+      setTribalCouncils(councilsData);
 
       const found = proposalsData.find((p) => p.id === paramProposalId);
       if (found) {
         setProposal(found);
-        setDate(
-          (found as any).date ? new Date((found as any).date) : new Date(),
+        setStartDate(
+          (found as any).start_at ? new Date((found as any).start_at) : new Date(),
+        );
+        setEndDate(
+          (found as any).end_at ? new Date((found as any).end_at) : new Date(Date.now() + 60 * 60 * 1000),
         );
         setLocation((found as any).location || "");
+
+        const regs = await getHelpRegistries(token, paramProposalId, undefined);
+        const regsWithCounts = await Promise.all(regs.map(async (r) => {
+          if (!r.id) return { ...r, incompleteCount: 0 };
+          const rItems = await getRegistryItems(token, r.id);
+          const incCount = rItems.filter(i => i.status !== 'Complete' && i.status !== 'Cancelled').length;
+          return { ...r, incompleteCount: incCount };
+        }));
+        setRegistries(regsWithCounts);
       }
 
       setMembers(membersData);
@@ -124,8 +147,8 @@ export default function EditProposal() {
   const handleUpdate = async () => {
     if (!proposal || !user) return;
 
-    if (!date || !location) {
-      showAlert("Validation Error", "Date and location are required.");
+    if (!startDate || !endDate || !location) {
+      showAlert("Validation Error", "Start time, end time, and location are required.");
       return;
     }
 
@@ -135,7 +158,8 @@ export default function EditProposal() {
       await updateProposal(
         {
           ...proposal,
-          date: date.toISOString(),
+          start_at: startDate.toISOString(),
+          end_at: endDate.toISOString(),
           location,
         } as any,
         token,
@@ -159,8 +183,11 @@ export default function EditProposal() {
 
   const handleCancel = () => {
     if (proposal) {
-      setDate(
-        (proposal as any).date ? new Date((proposal as any).date) : new Date(),
+      setStartDate(
+        (proposal as any).start_at ? new Date((proposal as any).start_at) : new Date(),
+      );
+      setEndDate(
+        (proposal as any).end_at ? new Date((proposal as any).end_at) : new Date(Date.now() + 60 * 60 * 1000),
       );
       setLocation((proposal as any).location || "");
     }
@@ -199,10 +226,16 @@ export default function EditProposal() {
               </Text>
             </View>
 
-            <Text style={styles.label}>Date</Text>
+            <Text style={styles.label}>Starting</Text>
             <DateTimePickerField
-              date={date}
-              onChange={setDate}
+              date={startDate}
+              onChange={setStartDate}
+            />
+
+            <Text style={styles.label}>Until</Text>
+            <DateTimePickerField
+              date={endDate}
+              onChange={setEndDate}
             />
 
             <Text style={styles.label}>Location</Text>
@@ -225,14 +258,21 @@ export default function EditProposal() {
         ) : (
           <View style={{ padding: 24, borderWidth: 1, borderColor: colors.borderLight, borderRadius: 16, alignItems: "center", backgroundColor: colors.surface, marginTop: 16 }}>
             <View style={{ marginBottom: 12, alignItems: "center" }}>
-              <Text style={{ fontFamily: "Quicksand_700Bold", color: "#999999", fontSize: 12, textTransform: "uppercase", marginBottom: 2 }}>When</Text>
-              <Text style={{ fontFamily: "Nunito_600SemiBold", color: colors.text, fontSize: 16 }}>
-                {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} on {date.toLocaleDateString()}
+              <Text style={globalStyles.attributeName}>Starting</Text>
+              <Text style={globalStyles.attributeValue}>
+                {startDate.toLocaleString([], { dateStyle: 'long', timeStyle: 'short' })}
               </Text>
             </View>
 
             <View style={{ marginBottom: 12, alignItems: "center" }}>
-              <Text style={{ fontFamily: "Quicksand_700Bold", color: "#999999", fontSize: 12, textTransform: "uppercase", marginBottom: 2 }}>Where</Text>
+              <Text style={globalStyles.attributeName}>Until</Text>
+              <Text style={globalStyles.attributeValue}>
+                {endDate.toLocaleString([], { dateStyle: 'long', timeStyle: 'short' })}
+              </Text>
+            </View>
+
+            <View style={{ marginBottom: 12, alignItems: "center" }}>
+              <Text style={globalStyles.attributeName}>Where</Text>
               <TouchableOpacity
                 onPress={() => {
                   if (location) {
@@ -241,21 +281,21 @@ export default function EditProposal() {
                       "Would you like to open this location in your Maps app?",
                       [
                         { text: "Cancel", style: "cancel" },
-                        { text: "Open", onPress: () => openMapUrl(location, member?.map_type) }
+                        { text: "Open", onPress: () => openMapUrl(location) }
                       ]
                     );
                   }
                 }}
               >
-                <Text style={{ fontFamily: "Nunito_600SemiBold", color: colors.primary, fontSize: 16 }}>
+                <Text style={globalStyles.attributeValuePrimary}>
                   {location || "TBD"}
                 </Text>
               </TouchableOpacity>
             </View>
 
-            <View style={{ alignItems: "center" }}>
-              <Text style={{ fontFamily: "Quicksand_700Bold", color: "#999999", fontSize: 12, textTransform: "uppercase", marginBottom: 2 }}>Who</Text>
-              <Text style={{ fontFamily: "Nunito_600SemiBold", color: colors.text, fontSize: 16 }}>
+            <View style={{ marginBottom: 12, alignItems: "center" }}>
+              <Text style={globalStyles.attributeName}>Who</Text>
+              <Text style={globalStyles.attributeValue}>
                 {host?.name || "Unknown"}
               </Text>
             </View>
@@ -316,16 +356,16 @@ export default function EditProposal() {
             const avail = availabilities.find((a) => a.member_id === m.id);
             const status = avail ? avail.status : "unknown";
             let icon = "❔";
-            if (status === "yes") icon = "✅";
-            else if (status === "no") icon = "❌";
-            else if (status === "maybe") icon = "🤔";
+            if (status === "Yes") icon = "✅";
+            else if (status === "No") icon = "❌";
+            else if (status === "Maybe") icon = "🤔";
 
             const isVotingMethod =
               meetup?.decision_method === "single_choice_voting";
             let tooltipText = "Unknown";
-            if (status === "yes") tooltipText = "Available";
-            else if (status === "no") tooltipText = "Unavailable";
-            else if (status === "maybe") tooltipText = "Unsure";
+            if (status === "Yes") tooltipText = "Available";
+            else if (status === "No") tooltipText = "Unavailable";
+            else if (status === "Maybe") tooltipText = "Unsure";
             if (isVotingMethod && (avail as any)?.vote) {
               icon += " 🗳️";
               tooltipText += " (Voted)";
@@ -334,35 +374,88 @@ export default function EditProposal() {
             return (
               <View key={m.id} style={styles.availabilityItem}>
                 <Text style={styles.itemTitle}>{m.name}</Text>
-                <TouchableOpacity
-                  onPress={() =>
-                    showInfoModal("Availability Status", tooltipText)
-                  }
-                >
+                <View>
                   <Text style={{ fontSize: 20 }}>{icon}</Text>
-                </TouchableOpacity>
+                </View>
               </View>
             );
           })}
 
-          <View style={{ marginTop: 20 }}>
-            <TouchableOpacity
-              style={[
-                styles.primaryButton,
-                { backgroundColor: "rgba(157, 78, 221, 0.2)", shadowOpacity: 0, elevation: 0 },
-              ]}
-              onPress={() =>
-                router.push({
-                  pathname: "/update-availability",
-                  params: { proposalId: paramProposalId },
-                })
-              }
-            >
-              <Text style={[styles.primaryButtonText, { color: colors.primary }]}>
-                Update Availability
-              </Text>
-            </TouchableOpacity>
-          </View>
+          {meetup?.status === "Planning" && (
+            <View style={{ marginTop: 20 }}>
+              <TouchableOpacity
+                style={[
+                  styles.primaryButton,
+                  { backgroundColor: "rgba(157, 78, 221, 0.2)", shadowOpacity: 0, elevation: 0 },
+                ]}
+                onPress={() =>
+                  router.push({
+                    pathname: "/update-availability",
+                    params: { proposalId: paramProposalId },
+                  })
+                }
+              >
+                <Text style={[styles.primaryButtonText, { color: colors.primary }]}>
+                  Update Availability
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+        {(() => {
+          const isCouncilMember = tribalCouncils.some(c => c.member_id === member?.id) || meetup?.creator_id === member?.id;
+          const visibleRegistries = registries.filter(r => !r.is_council || isCouncilMember);
+
+          return (
+            <View style={{ marginTop: 30 }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                <Text style={styles.sectionTitle}>Help Registries</Text>
+                {isCouncilMember && (
+                  <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={() => router.push({ pathname: "/edit-registry", params: { proposalId: paramProposalId } })}
+                  >
+                    <Text style={styles.addButtonText}>+ Add Registry</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <View style={styles.tabContainer}>
+                {["Please Help!", "Complete"].map(tab => (
+                  <TouchableOpacity
+                    key={tab}
+                    style={[styles.tab, registryTab === tab && styles.activeTab]}
+                    onPress={() => setRegistryTab(tab as any)}
+                  >
+                    <Text style={[styles.tabText, registryTab === tab && styles.activeTabText]}>{tab}</Text>
+                    <View style={styles.tabBadge}>
+                      <Text style={styles.tabBadgeText}>
+                        {tab === "Please Help!" ? visibleRegistries.filter(r => r.incompleteCount > 0).length : visibleRegistries.filter(r => r.incompleteCount === 0).length}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {visibleRegistries.filter(r => registryTab === "Complete" ? r.incompleteCount === 0 : r.incompleteCount > 0).length === 0 ? (
+                <Text style={{ color: colors.textMuted, fontStyle: "italic", marginTop: 15 }}>No registries found.</Text>
+              ) : (
+                visibleRegistries.filter(r => registryTab === "Complete" ? r.incompleteCount === 0 : r.incompleteCount > 0).map(reg => (
+                  <TouchableOpacity
+                    key={reg.id}
+                    style={styles.registryCard}
+                    onPress={() => router.push({ pathname: "/edit-registry", params: { id: reg.id } })}
+                  >
+                    <Text style={styles.registryName}>{reg.name}</Text>
+                    <Text style={styles.registryCount}>
+                      {reg.incompleteCount} incomplete item{reg.incompleteCount !== 1 ? 's' : ''}
+                    </Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </View>
+          );
+        })()}
         </View>
       </ScrollView>
     </View>
@@ -386,4 +479,31 @@ const styles = StyleSheet.create({
   },
   primaryButton: globalStyles.primaryButton,
   primaryButtonText: globalStyles.primaryButtonText,
+  sectionTitle: { fontSize: 20, fontWeight: "bold", color: colors.text },
+  addButton: { backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  addButtonText: { color: "#fff", fontWeight: "bold" },
+  tabContainer: { flexDirection: "row", gap: 10, marginVertical: 15 },
+  tab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  activeTab: { backgroundColor: colors.primary, borderColor: colors.primary },
+  tabText: { color: colors.text, fontWeight: "bold" },
+  activeTabText: { color: "#fff" },
+  registryCard: { backgroundColor: colors.surface, padding: 16, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
+  registryName: { fontSize: 16, color: colors.text, fontWeight: "bold", marginBottom: 4 },
+  registryCount: { fontSize: 14, color: colors.primary },
+  tabBadge: {
+    backgroundColor: "colors.border",
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginLeft: 6,
+    minWidth: 20,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "colors.border",
+  },
+  tabBadgeText: {
+    color: "#ccc",
+    fontSize: 12,
+    fontWeight: "bold",
+  },
 });

@@ -5,27 +5,25 @@ import {
   FlatList,
   Image,
   Modal,
-  Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { useAuth } from "../lib/auth";
+import { DropdownSelect } from "../lib/components/DropdownSelect";
 import { Member } from "../lib/data/Member";
 import {
   createTribe,
   createTribeMember,
   getMembers,
 } from "../lib/data/service";
-import { safeBack, showAlert } from "../lib/util";
-import { DropdownSelect } from "../lib/components/DropdownSelect";
 import { colors, globalStyles } from "../lib/theme";
+import { safeBack, showAlert } from "../lib/util";
 import {
   CurrentMemberContext,
   CustomHeaderLeft,
-  useInfoModal,
 } from "./_layout";
 export const useCurrentMember = () => useContext(CurrentMemberContext);
 
@@ -33,7 +31,7 @@ export default function CreateTribe() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { member } = useCurrentMember();
-  const { showInfoModal } = useInfoModal();
+
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [iconType, setIconType] = useState("😊");
@@ -256,7 +254,7 @@ export default function CreateTribe() {
                     cleanPhone.length > 0 &&
                     cleanPhone !== "undefined" &&
                     cleanPhone !== "null";
-                  const isPending = item.status === "invited";
+                  const isPending = item.status === "Invited";
                   const statusText = isPending ? "Pending App Join" : "Active";
                   const infoText = [
                     hasEmail ? `Email: ${cleanEmail}` : null,
@@ -273,17 +271,6 @@ export default function CreateTribe() {
                         isSelected && styles.memberItemSelected,
                       ]}
                       onPress={() => item.id && toggleMemberSelection(item.id)}
-                      onLongPress={() => {
-                        if (hasInfo)
-                          showInfoModal(item.name || "Member", infoText, {
-                            phone: cleanPhone,
-                            email: cleanEmail,
-                            memberId: item.id,
-                          });
-                      }}
-                      {...(Platform.OS === "web" && hasInfo
-                        ? ({ title: infoText } as any)
-                        : {})}
                     >
                       <View style={styles.memberCardImageContainer}>
                         {item.profile_pic_data ? (

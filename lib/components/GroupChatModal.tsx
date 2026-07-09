@@ -25,6 +25,8 @@ export function GroupChatModal({
   creating = false,
   defaultSelectedIds = [],
   defaultName = "",
+  hideMemberSelection = false,
+  hideNameInput = false,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -34,6 +36,8 @@ export function GroupChatModal({
   creating?: boolean;
   defaultSelectedIds?: string[];
   defaultName?: string;
+  hideMemberSelection?: boolean;
+  hideNameInput?: boolean;
 }) {
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
@@ -119,6 +123,7 @@ export function GroupChatModal({
             </Text>
           </View>
 
+          {!hideNameInput && (
           <TextInput
             style={styles.modalInput}
             placeholder="Chat Name"
@@ -126,6 +131,7 @@ export function GroupChatModal({
             onChangeText={setName}
             placeholderTextColor={colors.textMuted}
           />
+        )}
 
           <TextInput
             style={styles.modalInput}
@@ -136,7 +142,9 @@ export function GroupChatModal({
             autoCapitalize="none"
           />
 
-          <View style={styles.searchContainer}>
+          {!hideMemberSelection && (
+            <>
+              <View style={styles.searchContainer}>
             <Text style={styles.searchIcon}>🔍</Text>
             <TextInput
               style={styles.modalSearchInput}
@@ -189,6 +197,8 @@ export function GroupChatModal({
               <Text style={styles.emptyText}>No matching members.</Text>
             }
           />
+            </>
+          )}
 
           {creating ? (
             <ActivityIndicator

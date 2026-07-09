@@ -2,15 +2,17 @@ import { initializeApp } from "firebase/app";
 import { connectAuthEmulator, getAuth } from "firebase/auth";
 import { Platform } from "react-native";
 
+import secrets from '../secrets.json';
+
 const firebaseConfig = {
-  apiKey: "AIzaSyCt0f73Wph2hUtLOz87JHQAfZmU_VmQlCo",
-  authDomain: "partyparty-6918c.firebaseapp.com",
-  databaseURL: "https://partyparty-6918c-default-rtdb.firebaseio.com",
-  projectId: "partyparty-6918c",
-  storageBucket: "partyparty-6918c.firebasestorage.app",
-  messagingSenderId: "395288752355",
-  appId: "1:395288752355:web:65e78a2909ac721ed715d6",
-  measurementId: "G-432F11C5Q8"
+  apiKey: secrets.FIREBASE_API_KEY,
+  authDomain: secrets.FIREBASE_AUTH_DOMAIN,
+  databaseURL: secrets.FIREBASE_DATABASE_URL,
+  projectId: secrets.FIREBASE_PROJECT_ID,
+  storageBucket: secrets.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: secrets.FIREBASE_MESSAGING_SENDER_ID,
+  appId: secrets.FIREBASE_APP_ID,
+  measurementId: secrets.FIREBASE_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);
