@@ -7,9 +7,7 @@ import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplet
 import { colors, globalStyles } from '../theme';
 import { openMapUrl } from '../util';
 
-import secrets from '../../secrets.json';
-
-const GOOGLE_MAPS_API_KEY = secrets.GOOGLE_MAPS_API_KEY;
+const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "";
 
 export interface LocationPickerModalProps {
   visible: boolean;

@@ -1,6 +1,6 @@
 // NOTE: Please rename this file to edit-member.tsx
 import * as AuthSession from 'expo-auth-session';
-import secrets from '../secrets.json';
+
 import * as ImageManipulator from "expo-image-manipulator";
 import * as ImagePicker from "expo-image-picker";
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
@@ -69,7 +69,7 @@ export default function EditMember() {
   const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
-      clientId: secrets.GOOGLE_AUTH_CLIENT_ID,
+      clientId: process.env.EXPO_PUBLIC_GOOGLE_AUTH_CLIENT_ID || "",
       scopes: ['https://www.googleapis.com/auth/drive.file'],
       redirectUri: AuthSession.makeRedirectUri(),
       extraParams: {
@@ -85,8 +85,8 @@ export default function EditMember() {
       const { code } = response.params;
       AuthSession.exchangeCodeAsync(
         {
-          clientId: secrets.GOOGLE_AUTH_CLIENT_ID,
-          clientSecret: secrets.GOOGLE_AUTH_CLIENT_SECRET,
+          clientId: process.env.EXPO_PUBLIC_GOOGLE_AUTH_CLIENT_ID || "",
+          clientSecret: process.env.EXPO_PUBLIC_GOOGLE_AUTH_CLIENT_SECRET || "",
           code,
           redirectUri: AuthSession.makeRedirectUri(),
           extraParams: {

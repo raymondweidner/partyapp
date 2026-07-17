@@ -2,17 +2,15 @@ import { initializeApp } from "firebase/app";
 import { connectAuthEmulator, getAuth } from "firebase/auth";
 import { Platform } from "react-native";
 
-import secrets from '../secrets.json';
-
 const firebaseConfig = {
-  apiKey: secrets.FIREBASE_API_KEY,
-  authDomain: secrets.FIREBASE_AUTH_DOMAIN,
-  databaseURL: secrets.FIREBASE_DATABASE_URL,
-  projectId: secrets.FIREBASE_PROJECT_ID,
-  storageBucket: secrets.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: secrets.FIREBASE_MESSAGING_SENDER_ID,
-  appId: secrets.FIREBASE_APP_ID,
-  measurementId: secrets.FIREBASE_MEASUREMENT_ID
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  databaseURL: process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);
