@@ -33,7 +33,10 @@ export const showAlert = (
 };
 
 export const getResourceEndpoint = () => {
-  return "http://localhost:5008";
+  if (__DEV__) {
+    return "http://localhost:5008";
+  }
+  return "https://partyparty-395288752355.us-east5.run.app";
 };
 
 export const openWhatsAppDM = async (phone: string) => {

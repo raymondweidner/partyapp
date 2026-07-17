@@ -20,6 +20,7 @@ import { PollWinner } from "./PollWinner";
 import { HelpRegistry } from "./HelpRegistry";
 import { RegistryItem } from "./RegistryItem";
 import { TribalCouncil } from "./TribalCouncil";
+import { EventCheckIn } from "./EventCheckIn";
 
 const getHeaders = (token: string) => ({
   "Content-Type": "application/json",
@@ -75,6 +76,55 @@ export const updateMemberAlertPreference = async (
     return response.json();
   } else {
     throw new Error("No ID provided for preference update");
+  }
+};
+
+// EventCheckIn Services
+export const getEventCheckIns = async (
+  eventId: string,
+  authToken: string,
+): Promise<EventCheckIn[]> => {
+  const response = await fetch(
+    `${getResourceEndpoint()}/event_check_in?meetup_event_id=${encodeURIComponent(eventId)}`,
+    {
+      headers: { Authorization: `Bearer ${authToken}` },
+    },
+  );
+  if (response.ok) {
+    const data = await response.json();
+    return Array.isArray(data) ? data : [data];
+  }
+  return [];
+};
+
+export const checkInEvent = async (
+  eventId: string,
+  latitude: number,
+  longitude: number,
+  authToken: string,
+): Promise<EventCheckIn> => {
+  const response = await fetch(`${getResourceEndpoint()}/meetup_event/${eventId}/checkin`, {
+    method: "POST",
+    headers: getHeaders(authToken),
+    body: JSON.stringify({ latitude, longitude }),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || "Failed to check in");
+  }
+  return response.json();
+};
+
+export const checkOutEvent = async (
+  eventId: string,
+  authToken: string,
+): Promise<void> => {
+  const response = await fetch(`${getResourceEndpoint()}/meetup_event/${eventId}/checkout`, {
+    method: "POST",
+    headers: getHeaders(authToken),
+  });
+  if (!response.ok) {
+    throw new Error("Failed to check out");
   }
 };
 

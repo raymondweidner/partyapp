@@ -1,0 +1,36 @@
+name: Deploy iOS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  fingerprint:
+    type: fingerprint
+    environment: production
+
+  ios_update:
+    name: Over-The-Air Update (iOS)
+    needs: [fingerprint]
+    if: ${{ !needs.fingerprint.outputs.ios_fingerprint_changed }}
+    type: update
+    params:
+      branch: production
+      message: ${{ github.event.head_commit.message }}
+
+  ios_build:
+    name: Build iOS
+    needs: [fingerprint]
+    if: ${{ needs.fingerprint.outputs.ios_fingerprint_changed }}
+    type: build
+    params:
+      platform: ios
+      profile: production
+
+  ios_submit:
+    name: Submit iOS to TestFlight
+    needs: [ios_build]
+    type: submit
+    params:
+      build_id: ${{ needs.ios_build.outputs.build_id }}
