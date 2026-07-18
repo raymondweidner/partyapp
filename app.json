@@ -71,6 +71,7 @@
           "isAndroidBackgroundLocationEnabled": true
         }
       ],
+      "./plugins/withFirebasePodfile",
       "expo-font",
       "expo-web-browser"
     ],
