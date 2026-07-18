@@ -21,10 +21,13 @@ const withFirebasePodfile = (config) => {
 `;
 
       if (contents.includes('post_install do |installer|')) {
+        console.log('[withFirebasePodfile] Found post_install block, injecting fix...');
         contents = contents.replace(
-          /post_install do \\|installer\\|/,
+          'post_install do |installer|',
           `post_install do |installer|\n${postInstallBlock}`
         );
+      } else {
+        console.warn('[withFirebasePodfile] WARNING: Could not find post_install block in Podfile!');
       }
 
       await fs.promises.writeFile(file, contents, 'utf-8');
