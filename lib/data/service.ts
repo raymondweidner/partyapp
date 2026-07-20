@@ -197,7 +197,8 @@ export const getMembers = async (authToken: string): Promise<Member[]> => {
   });
   if (!response.ok) {
     if (response.status === 404) return [];
-    throw new Error("Failed to fetch members");
+    const text = await response.text().catch(() => "");
+    throw new Error(`Failed to fetch members: ${response.status} ${response.statusText} - ${text}`);
   }
   return response.json();
 };
