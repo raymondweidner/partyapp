@@ -1,8 +1,4 @@
 import { useLocalSearchParams } from "expo-router";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-} from "firebase/auth";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -58,8 +54,7 @@ export default function Login() {
   const onSignIn = async () => {
     setLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
+      const userCredential = await auth.signInWithEmailAndPassword(
         email,
         password,
       );
@@ -93,8 +88,7 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
+      const userCredential = await auth.createUserWithEmailAndPassword(
         email,
         password,
       );

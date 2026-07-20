@@ -1,6 +1,6 @@
 import { BlurView } from "expo-blur";
 import { useFocusEffect, useRouter } from "expo-router";
-import { signOut } from "firebase/auth";
+// removed signOut from firebase/auth
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -280,7 +280,7 @@ export default function Home() {
         const token = await user.getIdToken();
         await deleteUserDevice(deviceId, token);
       }
-      await signOut(auth);
+      await auth.signOut();
     } catch (e: any) {
       showAlert("Error", e.message);
     }
