@@ -455,7 +455,12 @@ export default function Home() {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={{ marginBottom: 10 }}>
-          <Text style={styles.header}>TribeVibe</Text>
+          <Text style={styles.header}>
+            Tribal
+            <Text style={{ color: 'transparent', textShadowColor: colors.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 }}>
+              Vibe
+            </Text>
+          </Text>
           <Text style={styles.greeting}>Welcome back, {currentMember?.name || "Fam"}!</Text>
         </View>
 
@@ -480,7 +485,7 @@ export default function Home() {
                       })
                     }
                   >
-                    <View style={{ flex: 1 }}>
+                    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
                       <Text style={styles.squareCardIcon}>
                         {t.icon_type || "😊"}
                       </Text>
@@ -649,25 +654,29 @@ export default function Home() {
               );
             })()}
 
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>🙌 Fam</Text>
-              <View style={styles.headerButtonsRow}>
+            <View style={{ marginTop: 20, marginBottom: 16, borderBottomWidth: 1, borderBottomColor: "rgba(0, 0, 0, 0.08)", paddingBottom: 5 }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <Text style={styles.sectionTitle}>🙌 Fam</Text>
+                <View style={styles.headerButtonsRow}>
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => router.push("/find-friend" as any)}
+                  >
+                    <Text style={styles.actionButtonText}>🙌 Find</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => router.push("/create-member" as any)}
+                  >
+                    <Text style={styles.actionButtonText}>
+                      🚪 Invite
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+              <View style={{ alignItems: "flex-end" }}>
                 <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => router.push("/find-friend" as any)}
-                >
-                  <Text style={styles.actionButtonText}>🙌 Find My Fam!</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.actionButton}
-                  onPress={() => router.push("/create-member" as any)}
-                >
-                  <Text style={styles.actionButtonText}>
-                    🚪 Invite to TribeVibe!
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.actionButton}
+                  style={[styles.actionButton, { backgroundColor: colors.primary }]}
                   onPress={openEmailModal}
                 >
                   <Text style={styles.actionButtonText}>📧 Email Fam</Text>
@@ -1004,16 +1013,19 @@ const styles = StyleSheet.create({
     width: 150,
     height: 150,
     marginRight: 15,
-    justifyContent: "space-between",
+    justifyContent: "center",
+    alignItems: "center",
   },
   squareCardTitle: {
     fontSize: 16,
     fontWeight: "bold",
     color: colors.text,
+    textAlign: "center",
   },
   squareCardIcon: {
     fontSize: 32,
     marginBottom: 8,
+    textAlign: "center",
   },
   memberCardName: {
     fontSize: 12,
