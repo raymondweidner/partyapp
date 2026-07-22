@@ -210,7 +210,7 @@ export default function Login() {
         <View style={styles.headerContainer}>
           <Text style={styles.logoText}>
             Tribal
-            <Text style={{ opacity: 0.3, textShadowColor: colors.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 10 }}>
+            <Text style={{ color: colors.primary, opacity: 0.85, textShadowColor: colors.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 6 }}>
               Vibe
             </Text>
           </Text>

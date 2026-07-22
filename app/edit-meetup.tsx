@@ -992,7 +992,7 @@ export default function EditMeetup() {
           {!isEditing && (
               <View style={{ marginTop: 32, borderTopWidth: 1, borderTopColor: colors.borderLight, paddingTop: 24 }}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <Text style={{ fontSize: 24, fontFamily: "Unbounded_700Bold", color: colors.text }}>Polls</Text>
+                  <Text style={{ fontSize: 24, fontFamily: "Besley_700Bold", color: colors.text }}>Polls</Text>
                   {selectedMeetup.status !== "Completed" && (
                     <TouchableOpacity
                       onPress={() => router.push(`/create-poll?meetupId=${selectedMeetup.id}` as any)}
@@ -1079,7 +1079,7 @@ export default function EditMeetup() {
           return (
             <View style={{ marginTop: 30, borderTopWidth: 1, borderTopColor: colors.borderLight, paddingTop: 24 }}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <Text style={{ fontSize: 24, fontFamily: "Unbounded_700Bold", color: colors.text }}>Help Registries</Text>
+                <Text style={{ fontSize: 24, fontFamily: "Besley_700Bold", color: colors.text }}>Help Registries</Text>
                 {isCouncilMember && relevantEventId && (
                   <TouchableOpacity
                     style={styles.addButton}
@@ -1134,7 +1134,7 @@ export default function EditMeetup() {
           {selectedMeetup.status === "Planning" && (
             <View style={styles.proposalsContainer}>
               <View style={styles.proposalsHeader}>
-                <Text style={{ fontSize: 24, fontFamily: "Unbounded_700Bold", color: colors.text }}>
+                <Text style={{ fontSize: 24, fontFamily: "Besley_700Bold", color: colors.text }}>
                   Proposals
                 </Text>
                 {selectedMeetup.status === "Planning" && (
@@ -1317,7 +1317,7 @@ export default function EditMeetup() {
           {!isEditing && (
             <View style={[styles.proposalsContainer, { marginTop: 24 }]}>
               <View style={styles.proposalsHeader}>
-                <Text style={{ fontSize: 24, fontFamily: "Unbounded_700Bold", color: colors.text }}>
+                <Text style={{ fontSize: 24, fontFamily: "Besley_700Bold", color: colors.text }}>
                   Past Events
                 </Text>
               </View>
@@ -1350,7 +1350,7 @@ export default function EditMeetup() {
           {!isEditing && (
             <View style={{ marginTop: 24, marginBottom: 24, paddingTop: 24, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <Text style={{ fontSize: 24, fontFamily: "Unbounded_700Bold", color: colors.text }}>Tribal Council</Text>
+                <Text style={{ fontSize: 24, fontFamily: "Besley_700Bold", color: colors.text }}>Tribal Council</Text>
                 {(selectedMeetup as any).creator_id === member?.id && (
                   <TouchableOpacity
                     style={styles.addButton}
@@ -1569,7 +1569,7 @@ export default function EditMeetup() {
           <Modal visible={showCouncilEditModal} transparent animationType="slide">
             <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
               <View style={{ backgroundColor: colors.background, padding: 20, borderRadius: 12 }}>
-                <Text style={{ fontSize: 20, fontFamily: "Unbounded_700Bold", color: colors.text, marginBottom: 16 }}>
+                <Text style={{ fontSize: 20, fontFamily: "Besley_700Bold", color: colors.text, marginBottom: 16 }}>
                   Edit Tribal Council
                 </Text>
                 

@@ -5,7 +5,7 @@ import { useFonts, Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito
 import { useFonts as useQuicksandFonts, Quicksand_700Bold } from '@expo-google-fonts/quicksand';
 import { useFonts as useFrauncesFonts, Fraunces_200ExtraLight } from '@expo-google-fonts/fraunces';
 import { useFonts as useBricolageFonts, BricolageGrotesque_500Medium } from '@expo-google-fonts/bricolage-grotesque';
-import { useFonts as useUnboundedFonts, Unbounded_700Bold, Unbounded_800ExtraBold } from '@expo-google-fonts/unbounded';
+import { useFonts as useBesleyFonts, Besley_600SemiBold, Besley_700Bold, Besley_800ExtraBold } from '@expo-google-fonts/besley';
 import messaging from "@react-native-firebase/messaging";
 import { Stack, useGlobalSearchParams, usePathname, useRouter, useSegments } from "expo-router";
 import { useShareIntent } from "expo-share-intent";
@@ -336,7 +336,7 @@ function Header() {
   if (!member?.name) return null;
 
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", marginRight: 15 }}>
+    <View style={{ flexDirection: "column", alignItems: "center", marginRight: 15 }}>
       <TouchableOpacity
         onPress={() =>
           router.push({
@@ -351,6 +351,7 @@ function Header() {
           <Text style={{ fontSize: 24 }}>👤</Text>
         )}
       </TouchableOpacity>
+      <Text style={{ fontSize: 10, marginTop: 2, fontFamily: "Nunito_700Bold", color: "#333" }}>{member.name}</Text>
     </View>
   );
 }
@@ -524,16 +525,17 @@ function RootLayoutNav() {
     BricolageGrotesque_500Medium,
   });
 
-  const [unboundedLoaded] = useUnboundedFonts({
-    Unbounded_700Bold,
-    Unbounded_800ExtraBold,
+  const [besleyLoaded] = useBesleyFonts({
+    Besley_600SemiBold,
+    Besley_700Bold,
+    Besley_800ExtraBold,
   });
 
   useEffect(() => {
-    if (fontsLoaded && quicksandLoaded && frauncesLoaded && bricolageLoaded && unboundedLoaded) {
+    if (fontsLoaded && quicksandLoaded && frauncesLoaded && bricolageLoaded && besleyLoaded) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, quicksandLoaded, frauncesLoaded, bricolageLoaded, unboundedLoaded]);
+  }, [fontsLoaded, quicksandLoaded, frauncesLoaded, bricolageLoaded, besleyLoaded]);
 
   useEffect(() => {
     if (loading) return;

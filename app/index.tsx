@@ -457,7 +457,7 @@ export default function Home() {
         <View style={{ marginBottom: 10 }}>
           <Text style={styles.header}>
             Tribal
-            <Text style={{ opacity: 0.3, textShadowColor: colors.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 10 }}>
+            <Text style={{ color: colors.primary, opacity: 0.85, textShadowColor: colors.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 6 }}>
               Vibe
             </Text>
           </Text>
@@ -958,7 +958,7 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: "row",
     marginBottom: 16,
-    backgroundColor: "colors.glassBorder",
+    backgroundColor: "#F4FAFF",
     borderRadius: 12,
     padding: 4,
   },
@@ -971,16 +971,21 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activeTab: {
-    backgroundColor: "colors.border",
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "colors.border",
+    borderColor: colors.primary,
   },
   tabText: {
     fontSize: 14,
     color: "#888",
     fontWeight: "600",
   },
-  activeTabText: { color: colors.primary },
+  activeTabText: { 
+    color: "#2563EB",
+    textShadowColor: "rgba(255, 215, 0, 0.6)",
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 3,
+  },
   memberCard: {
     width: 80,
     margin: 10,

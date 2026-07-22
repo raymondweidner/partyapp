@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
 
 export const colors = {
-  background: '#FFFDF0', // Warm white
+  background: '#F0FDF4', // Faint green
   surface: '#FFFFFF', // Pure white for cards/modals
   primary: '#60A5FA', // Pastel Blue
   accent: '#16a34a', // Verdant Green
@@ -60,7 +60,7 @@ export const globalStyles = StyleSheet.create({
     borderBottomColor: colors.borderLight,
   },
   sectionPanel: {
-    backgroundColor: '#FFF9C4',
+    backgroundColor: '#FFFCF5',
     borderWidth: 1,
     borderColor: '#D7CCC8',
     borderRadius: 16,
@@ -74,7 +74,7 @@ export const globalStyles = StyleSheet.create({
     textAlign: "center",
   },
   label: {
-    fontFamily: "Unbounded_700Bold",
+    fontFamily: "Besley_700Bold",
     fontSize: 13,
     marginBottom: 6,
     marginTop: 16,
@@ -82,30 +82,30 @@ export const globalStyles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   valueText: {
-    fontFamily: "Unbounded_800ExtraBold",
+    fontFamily: "Besley_800ExtraBold",
     fontSize: 16,
     color: colors.text,
     marginBottom: 4,
   },
   attributeName: {
-    fontFamily: "Unbounded_700Bold",
+    fontFamily: "Besley_700Bold",
     color: "#999999",
     fontSize: 12,
     textTransform: "uppercase",
     marginBottom: 2,
   },
   attributeValue: {
-    fontFamily: "Unbounded_800ExtraBold",
+    fontFamily: "Besley_800ExtraBold",
     color: colors.text,
     fontSize: 16,
   },
   attributeValuePrimary: {
-    fontFamily: "Unbounded_800ExtraBold",
+    fontFamily: "Besley_800ExtraBold",
     color: colors.primary,
     fontSize: 16,
   },
   input: {
-    fontFamily: "Unbounded_600SemiBold",
+    fontFamily: "Besley_600SemiBold",
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,

@@ -452,7 +452,6 @@ export default function EditProposal() {
             </View>
           );
         })()}
-        </View>
       </ScrollView>
     </View>
   );

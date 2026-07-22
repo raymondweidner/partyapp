@@ -373,7 +373,7 @@ export default function CreateMeetup() {
 
         {/* Tribal Council Section */}
         <View style={{ marginTop: 24, marginBottom: 24, paddingTop: 24, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
-          <Text style={{ fontSize: 20, fontFamily: "Unbounded_700Bold", color: colors.text, marginBottom: 16 }}>Tribal Council</Text>
+          <Text style={{ fontSize: 20, fontFamily: "Besley_700Bold", color: colors.text, marginBottom: 16 }}>Tribal Council</Text>
           <Text style={{ color: colors.textSecondary, marginBottom: 12 }}>
             Select members who will act as the administrative Tribal Council for this meetup.
           </Text>
