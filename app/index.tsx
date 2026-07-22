@@ -8,6 +8,7 @@ import {
   Image,
   Linking,
   Platform,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -153,9 +154,11 @@ export default function Home() {
     setIsEmailModalVisible(false);
   };
 
-  const fetchData = useCallback(async () => {
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchData = useCallback(async (isRefresh = false) => {
     if (!user) return;
-    setLoading(true);
+    if (!isRefresh) setLoading(true);
     try {
       const token = await user.getIdToken();
       const [allMembersData, chatsData, chatMembersData] = await Promise.all([
@@ -451,9 +454,19 @@ export default function Home() {
     );
   };
 
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchData(true).finally(() => setRefreshing(false));
+  }, [fetchData]);
+
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+        }
+      >
         <View style={{ marginBottom: 10 }}>
           <Text style={styles.header}>
             Tribal
@@ -492,6 +505,11 @@ export default function Home() {
                       <Text style={styles.squareCardTitle} numberOfLines={2}>
                         {t.name || "Unnamed"}
                       </Text>
+                      {hasDetails && (
+                        <Text style={{ fontSize: 10, fontStyle: 'italic', color: colors.textSecondary, textAlign: 'center', marginTop: 4 }} numberOfLines={2}>
+                          {cleanDetails}
+                        </Text>
+                      )}
                     </View>
                   </TouchableOpacity>
                 );

@@ -39,7 +39,7 @@ import { useAuth } from "../lib/auth";
 import { DropdownSelect } from "../lib/components/DropdownSelect";
 import { colors, globalStyles } from "../lib/theme";
 import { safeBack, showAlert } from "../lib/util";
-import { CustomHeaderLeft } from "./_layout";
+import { CustomHeaderLeft, useCurrentMember } from "./_layout";
 
 export default function EditMember() {
   const router = useRouter();
@@ -48,6 +48,7 @@ export default function EditMember() {
     profile?: string;
   }>();
   const { user, loading: authLoading } = useAuth();
+  const { refreshMember } = useCurrentMember();
 
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(false);
@@ -296,7 +297,10 @@ export default function EditMember() {
         {
           text: "OK",
           onPress: () => {
-            if (paramMemberId) {
+            if (isProfile) {
+              refreshMember();
+              router.replace("/");
+            } else if (paramMemberId) {
               safeBack(router, "/");
             } else {
               setSelectedMember(null);

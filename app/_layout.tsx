@@ -336,7 +336,7 @@ function Header() {
   if (!member?.name) return null;
 
   return (
-    <View style={{ flexDirection: "column", alignItems: "center", marginRight: 15 }}>
+    <View style={{ flexDirection: "column", alignItems: "center", marginRight: 15, paddingBottom: Platform.OS === "ios" ? 10 : 0 }}>
       <TouchableOpacity
         onPress={() =>
           router.push({
