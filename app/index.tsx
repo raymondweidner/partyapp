@@ -467,8 +467,9 @@ export default function Home() {
           <ActivityIndicator size="large" color="#007bff" />
         ) : (
           <>
-            {renderSectionHeader("🏕️ Tribes", "/create-tribe")}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.listContainer} nestedScrollEnabled>
+            <View style={globalStyles.sectionPanel}>
+              {renderSectionHeader("🏕️ Tribes", "/create-tribe")}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.listContainer} nestedScrollEnabled>
               {tribes.map((t) => {
                 const cleanDetails = t.description ? String(t.description).trim() : "";
                 const hasDetails = cleanDetails.length > 0 && cleanDetails !== "undefined" && cleanDetails !== "null";
@@ -499,9 +500,11 @@ export default function Home() {
             {tribes.length === 0 && (
               <Text style={styles.emptyText}>No tribes found.</Text>
             )}
+            </View>
 
-                        <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>🎉 Meetups</Text>
+                        <View style={globalStyles.sectionPanel}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>🎉 Meetups</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <TouchableOpacity
                   onPress={() => setMeetupsExpanded(!meetupsExpanded)}
@@ -652,10 +655,12 @@ export default function Home() {
                 </>
               );
             })()}
+            </View>
 
-            <View style={{ marginTop: 20, marginBottom: 16, borderBottomWidth: 1, borderBottomColor: "rgba(0, 0, 0, 0.08)", paddingBottom: 5 }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                <Text style={styles.sectionTitle}>🙌 Fam</Text>
+            <View style={globalStyles.sectionPanel}>
+              <View style={{ marginBottom: 16, borderBottomWidth: 1, borderBottomColor: "rgba(0, 0, 0, 0.08)", paddingBottom: 5 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                  <Text style={styles.sectionTitle}>🙌 Fam</Text>
                 <View style={styles.headerButtonsRow}>
                   <TouchableOpacity
                     style={styles.actionButton}
@@ -766,9 +771,11 @@ export default function Home() {
                 <Text style={{ color: colors.primary, fontStyle: "italic", fontSize: 16, textDecorationLine: "underline" }}>Email Fam</Text>
               </TouchableOpacity>
             </View>
+            </View>
 
-            {renderSectionHeader("💬 Group Chats", openGroupChatModal)}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.listContainer} nestedScrollEnabled>
+            <View style={globalStyles.sectionPanel}>
+              {renderSectionHeader("💬 Group Chats", openGroupChatModal)}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.listContainer} nestedScrollEnabled>
               {chats.map((chat) => {
                 const membersOfChat = chatMembers
                   .filter((cm) => cm.chat_id === chat.id)
@@ -799,6 +806,7 @@ export default function Home() {
             {chats.length === 0 && (
               <Text style={styles.emptyText}>No group chats found.</Text>
             )}
+            </View>
           </>
         )}
 
@@ -858,7 +866,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "colors.border",
   },
-  sectionTitle: { fontSize: 22, fontWeight: "800", color: colors.text },
+  sectionTitle: { fontSize: 22, fontWeight: "800", color: colors.text, textAlign: "center" },
   addButton: {
     backgroundColor: colors.primary,
     paddingHorizontal: 12,

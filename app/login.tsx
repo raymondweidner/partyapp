@@ -208,7 +208,12 @@ export default function Login() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerContainer}>
-          <Text style={styles.logoText}>TribeVibe</Text>
+          <Text style={styles.logoText}>
+            Tribal
+            <Text style={{ opacity: 0.3, textShadowColor: colors.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 10 }}>
+              Vibe
+            </Text>
+          </Text>
           <Text style={styles.subtitle}>
             {invitedMember
               ? "You've been invited to join the Fam!"

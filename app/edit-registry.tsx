@@ -235,7 +235,7 @@ export default function EditRegistry() {
         )}
 
         {registry?.id && (
-          <View style={{ marginTop: 30 }}>
+          <View style={globalStyles.sectionPanel}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
               <Text style={styles.sectionTitle}>Registry Items</Text>
               <TouchableOpacity
@@ -324,6 +324,8 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: "bold",
     color: colors.text,
+    textAlign: "center",
+    marginBottom: 15,
   },
   addButton: {
     backgroundColor: colors.primary,

@@ -331,66 +331,27 @@ function NotificationsProvider({ children }: { children: React.ReactNode }) {
 
 function Header() {
   const { member } = useCurrentMember();
-  const { notifications } = useNotifications();
-  const [modalVisible, setModalVisible] = useState(false);
   const router = useRouter();
 
-  return (
-    <>
-      <View style={{ flexDirection: "row", alignItems: "center", marginRight: 15 }}>
-        {member?.name ? (
-          <TouchableOpacity
-            onPress={() =>
-              router.push({
-                pathname: "/edit-member",
-                params: { id: member.id, profile: "true" },
-              })
-            }
-            style={{ flexDirection: "row", alignItems: "center", marginRight: 15 }}
-          >
-            {member.profile_pic_data ? (
-              <Image source={{ uri: member.profile_pic_data }} style={{ width: 32, height: 32, borderRadius: 16, marginRight: 8, borderWidth: 1, borderColor: '#007bff' }} />
-            ) : (
-              <Text style={{ fontSize: 24, marginRight: 8 }}>👤</Text>
-            )}
-            <Text style={{ fontWeight: "bold", fontSize: 16 }}>{member.name}</Text>
-          </TouchableOpacity>
-        ) : null}
-        <TouchableOpacity
-          onPress={() => {
-            if (notifications.length > 0) {
-              setModalVisible(true);
-            }
-          }}
-          disabled={notifications.length === 0}
-          style={{ position: "relative", marginLeft: 5 }}
-        >
-          <Text style={{ fontSize: 24, opacity: notifications.length > 0 ? 1 : 0.5 }}>🔔</Text>
-          {notifications.length > 0 && (
-            <View style={{
-              position: 'absolute',
-              top: -5,
-              right: -10,
-              backgroundColor: 'red',
-              borderRadius: 10,
-              paddingHorizontal: 5,
-              paddingVertical: 1,
-              justifyContent: 'center',
-              alignItems: 'center'
-            }}>
-              <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
-                {notifications.length > 99 ? '99+' : notifications.length}
-              </Text>
-            </View>
-          )}
-        </TouchableOpacity>
-      </View>
+  if (!member?.name) return null;
 
-      <NotificationsModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-      />
-    </>
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", marginRight: 15 }}>
+      <TouchableOpacity
+        onPress={() =>
+          router.push({
+            pathname: "/edit-member",
+            params: { id: member.id, profile: "true" },
+          })
+        }
+      >
+        {member.profile_pic_data ? (
+          <Image source={{ uri: member.profile_pic_data }} style={{ width: 32, height: 32, borderRadius: 16, borderWidth: 1, borderColor: '#007bff' }} />
+        ) : (
+          <Text style={{ fontSize: 24 }}>👤</Text>
+        )}
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -603,22 +564,74 @@ function RootLayoutNav() {
     );
   }
 
+function BottomNotificationBar() {
+  const { notifications } = useNotifications();
+  const [modalVisible, setModalVisible] = useState(false);
+
+  if (notifications.length === 0) return null;
+
+  return (
+    <>
+      <View style={{ position: 'absolute', bottom: 40, left: 0, right: 0, alignItems: 'center' }}>
+        <TouchableOpacity
+          onPress={() => setModalVisible(true)}
+          style={{
+            backgroundColor: 'rgba(255,255,255,0.85)',
+            padding: 10,
+            borderRadius: 30,
+            flexDirection: 'row',
+            alignItems: 'center',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.2,
+            shadowRadius: 4,
+            elevation: 4
+          }}
+        >
+          <Text style={{ fontSize: 24 }}>🔔</Text>
+          <View style={{
+            position: 'absolute',
+            top: -2,
+            right: -2,
+            backgroundColor: 'red',
+            borderRadius: 10,
+            paddingHorizontal: 5,
+            paddingVertical: 1,
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}>
+            <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
+              {notifications.length > 99 ? '99+' : notifications.length}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+      <NotificationsModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+      />
+    </>
+  );
+}
+
   return (
     <>
       <FCMHandler />
       <Stack
         screenOptions={{
+          headerTitle: "",
           headerRight: () => <Header />,
           headerLeft: ({ canGoBack }) =>
             canGoBack ? <CustomHeaderLeft /> : null,
         }}
       >
-        <Stack.Screen name="index" options={{ title: "Home" }} />
+        <Stack.Screen name="index" options={{ title: "" }} />
         <Stack.Screen
           name="login"
           options={{ title: "Login", headerShown: false }}
         />
       </Stack>
+      <BottomNotificationBar />
     </>
   );
 }

@@ -178,9 +178,9 @@ export default function EventDetails() {
           const isCouncilMember = tribalCouncils.some(c => c.member_id === member?.id) || meetup?.creator_id === member?.id;
           
           return (
-            <View style={{ marginTop: 8, borderTopWidth: 1, borderTopColor: colors.borderLight, paddingTop: 24 }}>
+            <View style={globalStyles.sectionPanel}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <Text style={{ fontSize: 24, fontFamily: "Unbounded_700Bold", color: colors.text }}>Event Polls</Text>
+            <Text style={styles.sectionTitle}>Event Polls</Text>
             {isCouncilMember && (
               <TouchableOpacity
                 style={styles.addButton}
@@ -248,8 +248,8 @@ export default function EventDetails() {
           const visibleRegistries = registries.filter(r => !r.is_council || isCouncilMember);
 
           return (
-            <View style={{ marginTop: 30 }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <View style={globalStyles.sectionPanel}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <Text style={styles.sectionTitle}>Help Registries</Text>
                 {isCouncilMember && (
                   <TouchableOpacity
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  sectionTitle: { fontSize: 20, fontWeight: "bold", color: colors.text },
+  sectionTitle: { fontSize: 20, fontWeight: "bold", color: colors.text, textAlign: "center", marginBottom: 15 },
   addButton: { backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   addButtonText: { color: "#fff", fontWeight: "bold" },
   tabContainer: { flexDirection: "row", gap: 10, marginVertical: 15 },

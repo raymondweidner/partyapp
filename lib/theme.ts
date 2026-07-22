@@ -59,10 +59,19 @@ export const globalStyles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.borderLight,
   },
+  sectionPanel: {
+    backgroundColor: '#FFF9C4',
+    borderWidth: 1,
+    borderColor: '#D7CCC8',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+  },
   sectionTitle: {
     fontFamily: "BricolageGrotesque_500Medium",
     fontSize: 22, 
     color: colors.text,
+    textAlign: "center",
   },
   label: {
     fontFamily: "Unbounded_700Bold",
