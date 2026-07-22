@@ -457,7 +457,7 @@ export default function Home() {
         <View style={{ marginBottom: 10 }}>
           <Text style={styles.header}>
             Tribal
-            <Text style={{ color: 'rgba(255, 255, 255, 0.05)', textShadowColor: colors.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 }}>
+            <Text style={{ opacity: 0.3, textShadowColor: colors.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 10 }}>
               Vibe
             </Text>
           </Text>
@@ -762,11 +762,8 @@ export default function Home() {
             )}
 
             <View style={{ alignItems: 'center', marginTop: 10, marginBottom: 20 }}>
-              <TouchableOpacity
-                style={[styles.actionButton, { backgroundColor: colors.accent, shadowColor: colors.accent }]}
-                onPress={openEmailModal}
-              >
-                <Text style={styles.actionButtonText}>📧 Email Fam</Text>
+              <TouchableOpacity onPress={openEmailModal}>
+                <Text style={{ color: colors.primary, fontStyle: "italic", fontSize: 16, textDecorationLine: "underline" }}>Email Fam</Text>
               </TouchableOpacity>
             </View>
 
