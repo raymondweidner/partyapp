@@ -457,11 +457,10 @@ export default function Home() {
         <View style={{ marginBottom: 10 }}>
           <Text style={styles.header}>
             Tribal
-            <Text style={{ color: 'transparent', textShadowColor: colors.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 }}>
+            <Text style={{ color: 'rgba(255, 255, 255, 0.05)', textShadowColor: colors.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 }}>
               Vibe
             </Text>
           </Text>
-          <Text style={styles.greeting}>Welcome back, {currentMember?.name || "Fam"}!</Text>
         </View>
 
         {loading ? (
@@ -674,14 +673,6 @@ export default function Home() {
                   </TouchableOpacity>
                 </View>
               </View>
-              <View style={{ alignItems: "flex-end" }}>
-                <TouchableOpacity
-                  style={[styles.actionButton, { backgroundColor: colors.primary }]}
-                  onPress={openEmailModal}
-                >
-                  <Text style={styles.actionButtonText}>📧 Email Fam</Text>
-                </TouchableOpacity>
-              </View>
             </View>
 
             <View style={styles.tabContainer}>
@@ -769,6 +760,15 @@ export default function Home() {
             {famTab === "outgoing" && outgoingInvites.length === 0 && (
               <Text style={styles.emptyText}>No outgoing invites.</Text>
             )}
+
+            <View style={{ alignItems: 'center', marginTop: 10, marginBottom: 20 }}>
+              <TouchableOpacity
+                style={[styles.actionButton, { backgroundColor: colors.accent, shadowColor: colors.accent }]}
+                onPress={openEmailModal}
+              >
+                <Text style={styles.actionButtonText}>📧 Email Fam</Text>
+              </TouchableOpacity>
+            </View>
 
             {renderSectionHeader("💬 Group Chats", openGroupChatModal)}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.listContainer} nestedScrollEnabled>
@@ -933,13 +933,13 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   actionButton: {
-    backgroundColor: colors.accent,
+    backgroundColor: colors.primary,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
     flexDirection: "row",
     alignItems: "center",
-    shadowColor: colors.accent,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -1010,8 +1010,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     padding: 16,
-    width: 150,
-    height: 150,
+    width: 120,
+    height: 120,
     marginRight: 15,
     justifyContent: "center",
     alignItems: "center",
