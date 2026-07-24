@@ -11,17 +11,18 @@ import {
   FlatList,
   Linking,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { RecurrencePicker, buildRecurrencePayload, defaultRecurrenceState, getRecurrenceString, parseMeetupToRecurrenceState } from "../lib/components/RecurrencePicker";
 import { AVAILABLE_ICONS, EVENT_DEFAULTS } from "../lib/constants";
 import { Availability } from "../lib/data/Availability";
+import { Chat } from "../lib/data/Chat";
+import { HelpRegistry } from "../lib/data/HelpRegistry";
 import { Meetup } from "../lib/data/Meetup";
 import { MeetupEvent } from "../lib/data/MeetupEvent";
 import { Member } from "../lib/data/Member";
@@ -29,10 +30,13 @@ import { Poll } from "../lib/data/Poll";
 import { PollEntry } from "../lib/data/PollEntry";
 import { PollVote } from "../lib/data/PollVote";
 import { Proposal } from "../lib/data/Proposal";
-import { TribalCouncil } from "../lib/data/TribalCouncil";
-import { Chat } from "../lib/data/Chat";
 import {
+  createChat,
+  createTribalCouncil,
+  deleteTribalCouncil,
   getAvailabilities,
+  getChats,
+  getHelpRegistries,
   getMeetupEvents,
   getMeetups,
   getMembers,
@@ -40,26 +44,21 @@ import {
   getPollVotes,
   getPolls,
   getProposals,
+  getRegistryItems,
+  getTribalCouncils,
   getTribeMembers,
   getTribes,
   updateMeetup,
   updateProposal,
-  getTribalCouncils,
-  getChats,
-  createChat,
-  createTribalCouncil,
-  deleteTribalCouncil,
-  getHelpRegistries,
-  getRegistryItems,
 } from "../lib/data/service";
-import { HelpRegistry } from "../lib/data/HelpRegistry";
+import { TribalCouncil } from "../lib/data/TribalCouncil";
 import { Tribe } from "../lib/data/Tribe";
 import { TribeMember } from "../lib/data/TribeMember";
 
 import { useAuth } from "../lib/auth";
 import { DropdownSelect } from "../lib/components/DropdownSelect";
-import { NumberStepper } from "../lib/components/NumberStepper";
 import { GroupChatModal } from "../lib/components/GroupChatModal";
+import { NumberStepper } from "../lib/components/NumberStepper";
 import { colors, globalStyles } from "../lib/theme";
 import { openMapUrl, safeBack, showAlert } from "../lib/util";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
@@ -190,12 +189,12 @@ export default function EditMeetup() {
             }
             const regsResults = await Promise.all(regPromises);
             const allRegs = regsResults.flat();
-            
+
             const regsWithCounts = await Promise.all(allRegs.map(async (r) => {
-               if (!r.id) return { ...r, incompleteCount: 0 };
-               const rItems = await getRegistryItems(token, r.id);
-               const incCount = rItems.filter(i => i.status !== 'Complete' && i.status !== 'Cancelled').length;
-               return { ...r, incompleteCount: incCount };
+              if (!r.id) return { ...r, incompleteCount: 0 };
+              const rItems = await getRegistryItems(token, r.id);
+              const incCount = rItems.filter(i => i.status !== 'Complete' && i.status !== 'Cancelled').length;
+              return { ...r, incompleteCount: incCount };
             }));
             setRegistries(regsWithCounts);
           } catch (e) {
@@ -276,12 +275,12 @@ export default function EditMeetup() {
         }
         const regsResults = await Promise.all(regPromises);
         const allRegs = regsResults.flat();
-        
+
         const regsWithCounts = await Promise.all(allRegs.map(async (r) => {
-           if (!r.id) return { ...r, incompleteCount: 0 };
-           const rItems = await getRegistryItems(token, r.id);
-           const incCount = rItems.filter(i => i.status !== 'Complete' && i.status !== 'Cancelled').length;
-           return { ...r, incompleteCount: incCount };
+          if (!r.id) return { ...r, incompleteCount: 0 };
+          const rItems = await getRegistryItems(token, r.id);
+          const incCount = rItems.filter(i => i.status !== 'Complete' && i.status !== 'Cancelled').length;
+          return { ...r, incompleteCount: incCount };
         }));
         setRegistries(regsWithCounts);
       } catch (e) {
@@ -983,7 +982,7 @@ export default function EditMeetup() {
               </TouchableOpacity>
             </View>
           ) : (selectedMeetup as any).creator_id === member?.id ? (
-            <View style={{ marginTop: 20 }}>
+            <View style={{ marginTop: -32, marginBottom: 54, zIndex: 1 }}>
               {selectedMeetup.status === "Cancelled" ? null :
                 selectedMeetup.status === "Completed" && !selectedMeetup.recurrence_type ? null : (
                   <TouchableOpacity
@@ -997,149 +996,149 @@ export default function EditMeetup() {
           ) : null}
 
           {!isEditing && selectedMeetup.root_folder_id && (
-              <View style={globalStyles.sectionPanel}>
-                <View style={globalStyles.sectionHeader}>
-                  <Text style={globalStyles.sectionTitle}>📊 Polls</Text>
-                  {selectedMeetup.status !== "Completed" && (
-                    <TouchableOpacity
-                      onPress={() => router.push(`/create-poll?meetupId=${selectedMeetup.id}` as any)}
-                      style={styles.addButton}
-                    >
-                      <Text style={styles.addButtonText}>+ Add</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16, borderBottomWidth: 1, borderBottomColor: colors.borderLight }}>
-                  <TouchableOpacity
-                    onPress={() => setPollTab("posting")}
-                    style={[styles.tab, pollTab === "posting" && styles.activeTab]}
-                  >
-                    <Text style={[styles.tabText, pollTab === "posting" && styles.activeTabText]}>Still Posting</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => setPollTab("voting")}
-                    style={[styles.tab, pollTab === "voting" && styles.activeTab]}
-                  >
-                    <Text style={[styles.tabText, pollTab === "voting" && styles.activeTabText]}>Now Voting</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => setPollTab("completed")}
-                    style={[styles.tab, pollTab === "completed" && styles.activeTab]}
-                  >
-                    <Text style={[styles.tabText, pollTab === "completed" && styles.activeTabText]}>Completed</Text>
-                  </TouchableOpacity>
-                </ScrollView>
-
-                <View style={{ gap: 12 }}>
-                  {polls
-                    .filter((p) => (p.status || "Posting").toLowerCase() === pollTab && !p.meetup_event_id)
-                    .map((poll) => {
-                      const entryCount = pollEntries.filter((e) => e.poll_id === poll.id).length;
-                      const voteCount = pollVotes.filter((v) => v.poll_id === poll.id).length;
-
-                      let daysLeftText = "";
-                      if (pollTab === "posting" && poll.entry_deadline) {
-                        const days = Math.max(0, Math.ceil((new Date(poll.entry_deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)));
-                        daysLeftText = `${days} ${days === 1 ? 'day' : 'days'} left • `;
-                      } else if (pollTab === "voting" && poll.vote_deadline) {
-                        const days = Math.max(0, Math.ceil((new Date(poll.vote_deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)));
-                        daysLeftText = `${days} ${days === 1 ? 'day' : 'days'} left • `;
-                      }
-
-                      return (
-                        <TouchableOpacity
-                          key={poll.id}
-                          style={styles.proposalItem}
-                          onPress={() => router.push(`/edit-poll?id=${poll.id}` as any)}
-                        >
-                          <Text style={{ fontSize: 18, fontFamily: "Nunito_700Bold", color: colors.text, marginBottom: 4 }}>
-                            {poll.icon_type ? `${poll.icon_type} ` : ""}{poll.title}
-                          </Text>
-                          <Text style={{ fontSize: 14, color: colors.textSecondary }}>
-                            {daysLeftText}{entryCount} {entryCount === 1 ? "entry" : "entries"}
-                            {pollTab !== "posting" && ` • ${voteCount} ${voteCount === 1 ? "vote" : "votes"}`}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  {polls.filter((p) => (p.status || "Posting").toLowerCase() === pollTab && !p.meetup_event_id).length === 0 && (
-                    <Text style={{ textAlign: "center", color: colors.textMuted, fontStyle: "italic", marginTop: 12, marginBottom: 12 }}>No polls found.</Text>
-                  )}
-                </View>
-
-        {(() => {
-          if ((selectedMeetup?.status || "").toLowerCase() === "planning") return null;
-
-          const isCouncilMember = tribalCouncils.some(c => c.member_id === member?.id) || selectedMeetup?.creator_id === member?.id;
-          const isFinalized = ["upcoming", "scheduled", "ongoing"].includes((selectedMeetup?.status || "").toLowerCase());
-          const currentEvent = isFinalized && meetupEvents.length > 0
-            ? [...meetupEvents].sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime())[0]
-            : null;
-          const acceptedProposal = proposals.find(p => p.status === "Accepted");
-          
-          let relevantEventId = currentEvent?.id;
-          let relevantProposalId = acceptedProposal?.id;
-          
-          const visibleRegistries = registries.filter(r => (!r.is_council || isCouncilMember) && relevantEventId && r.meetup_event_id === relevantEventId);
-
-          return (
             <View style={globalStyles.sectionPanel}>
               <View style={globalStyles.sectionHeader}>
-                <Text style={globalStyles.sectionTitle}>📋 Help Registries</Text>
-                {isCouncilMember && relevantEventId && (
+                <Text style={globalStyles.sectionTitle}>📊 Polls</Text>
+                {selectedMeetup.status !== "Completed" && (
                   <TouchableOpacity
+                    onPress={() => router.push(`/create-poll?meetupId=${selectedMeetup.id}` as any)}
                     style={styles.addButton}
-                    onPress={() => {
-                      router.push({ pathname: "/edit-registry", params: { meetupEventId: relevantEventId } });
-                    }}
                   >
                     <Text style={styles.addButtonText}>+ Add</Text>
                   </TouchableOpacity>
                 )}
               </View>
 
-              <View style={{ flexDirection: "row", marginBottom: 16, borderBottomWidth: 1, borderBottomColor: colors.borderLight }}>
-                {["Please Help!", "Complete"].map(tab => (
-                  <TouchableOpacity
-                    key={tab}
-                    style={[styles.tab, registryTab === tab && styles.activeTab]}
-                    onPress={() => setRegistryTab(tab as any)}
-                  >
-                    <Text style={[styles.tabText, registryTab === tab && styles.activeTabText]}>{tab}</Text>
-                    <View style={styles.tabBadge}>
-                      <Text style={styles.tabBadgeText}>
-                        {tab === "Please Help!" ? visibleRegistries.filter(r => r.incompleteCount > 0).length : visibleRegistries.filter(r => r.incompleteCount === 0).length}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                ))}
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16, borderBottomWidth: 1, borderBottomColor: colors.borderLight }}>
+                <TouchableOpacity
+                  onPress={() => setPollTab("posting")}
+                  style={[styles.tab, pollTab === "posting" && styles.activeTab]}
+                >
+                  <Text style={[styles.tabText, pollTab === "posting" && styles.activeTabText]}>Still Posting</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setPollTab("voting")}
+                  style={[styles.tab, pollTab === "voting" && styles.activeTab]}
+                >
+                  <Text style={[styles.tabText, pollTab === "voting" && styles.activeTabText]}>Now Voting</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setPollTab("completed")}
+                  style={[styles.tab, pollTab === "completed" && styles.activeTab]}
+                >
+                  <Text style={[styles.tabText, pollTab === "completed" && styles.activeTabText]}>Completed</Text>
+                </TouchableOpacity>
+              </ScrollView>
+
+              <View style={{ gap: 12 }}>
+                {polls
+                  .filter((p) => (p.status || "Posting").toLowerCase() === pollTab && !p.meetup_event_id)
+                  .map((poll) => {
+                    const entryCount = pollEntries.filter((e) => e.poll_id === poll.id).length;
+                    const voteCount = pollVotes.filter((v) => v.poll_id === poll.id).length;
+
+                    let daysLeftText = "";
+                    if (pollTab === "posting" && poll.entry_deadline) {
+                      const days = Math.max(0, Math.ceil((new Date(poll.entry_deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)));
+                      daysLeftText = `${days} ${days === 1 ? 'day' : 'days'} left • `;
+                    } else if (pollTab === "voting" && poll.vote_deadline) {
+                      const days = Math.max(0, Math.ceil((new Date(poll.vote_deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)));
+                      daysLeftText = `${days} ${days === 1 ? 'day' : 'days'} left • `;
+                    }
+
+                    return (
+                      <TouchableOpacity
+                        key={poll.id}
+                        style={styles.proposalItem}
+                        onPress={() => router.push(`/edit-poll?id=${poll.id}` as any)}
+                      >
+                        <Text style={{ fontSize: 18, fontFamily: "Nunito_700Bold", color: colors.text, marginBottom: 4 }}>
+                          {poll.icon_type ? `${poll.icon_type} ` : ""}{poll.title}
+                        </Text>
+                        <Text style={{ fontSize: 14, color: colors.textSecondary }}>
+                          {daysLeftText}{entryCount} {entryCount === 1 ? "entry" : "entries"}
+                          {pollTab !== "posting" && ` • ${voteCount} ${voteCount === 1 ? "vote" : "votes"}`}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                {polls.filter((p) => (p.status || "Posting").toLowerCase() === pollTab && !p.meetup_event_id).length === 0 && (
+                  <Text style={{ textAlign: "center", color: colors.textMuted, fontStyle: "italic", marginTop: 12, marginBottom: 12 }}>No polls found.</Text>
+                )}
               </View>
 
-              {visibleRegistries.filter(r => registryTab === "Complete" ? r.incompleteCount === 0 : r.incompleteCount > 0).length === 0 ? (
-                <Text style={{ textAlign: "center", color: colors.textMuted, fontStyle: "italic", marginTop: 12, marginBottom: 12 }}>No registries found.</Text>
-              ) : (
-                visibleRegistries.filter(r => registryTab === "Complete" ? r.incompleteCount === 0 : r.incompleteCount > 0).map(reg => (
-                  <TouchableOpacity
-                    key={reg.id}
-                    style={styles.proposalItem}
-                    onPress={() => router.push({ pathname: "/edit-registry", params: { id: reg.id } })}
-                  >
-                    <Text style={{ fontSize: 18, fontFamily: "Nunito_700Bold", color: colors.text, marginBottom: 4 }}>{reg.name}</Text>
-                    <Text style={{ fontSize: 14, color: colors.textSecondary }}>
-                      {reg.incompleteCount} incomplete item{reg.incompleteCount !== 1 ? 's' : ''}
-                    </Text>
-                  </TouchableOpacity>
-                ))
-              )}
+              {(() => {
+                if ((selectedMeetup?.status || "").toLowerCase() === "planning") return null;
+
+                const isCouncilMember = tribalCouncils.some(c => c.member_id === member?.id) || selectedMeetup?.creator_id === member?.id;
+                const isFinalized = ["upcoming", "scheduled", "ongoing"].includes((selectedMeetup?.status || "").toLowerCase());
+                const currentEvent = isFinalized && meetupEvents.length > 0
+                  ? [...meetupEvents].sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime())[0]
+                  : null;
+                const acceptedProposal = proposals.find(p => p.status === "Accepted");
+
+                let relevantEventId = currentEvent?.id;
+                let relevantProposalId = acceptedProposal?.id;
+
+                const visibleRegistries = registries.filter(r => (!r.is_council || isCouncilMember) && relevantEventId && r.meetup_event_id === relevantEventId);
+
+                return (
+                  <View style={globalStyles.sectionPanel}>
+                    <View style={globalStyles.sectionHeader}>
+                      <Text style={globalStyles.sectionTitle}>📋 Help Registries</Text>
+                      {isCouncilMember && relevantEventId && (
+                        <TouchableOpacity
+                          style={styles.addButton}
+                          onPress={() => {
+                            router.push({ pathname: "/edit-registry", params: { meetupEventId: relevantEventId } });
+                          }}
+                        >
+                          <Text style={styles.addButtonText}>+ Add</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+
+                    <View style={{ flexDirection: "row", marginBottom: 16, borderBottomWidth: 1, borderBottomColor: colors.borderLight }}>
+                      {["Please Help!", "Complete"].map(tab => (
+                        <TouchableOpacity
+                          key={tab}
+                          style={[styles.tab, registryTab === tab && styles.activeTab]}
+                          onPress={() => setRegistryTab(tab as any)}
+                        >
+                          <Text style={[styles.tabText, registryTab === tab && styles.activeTabText]}>{tab}</Text>
+                          <View style={styles.tabBadge}>
+                            <Text style={styles.tabBadgeText}>
+                              {tab === "Please Help!" ? visibleRegistries.filter(r => r.incompleteCount > 0).length : visibleRegistries.filter(r => r.incompleteCount === 0).length}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+
+                    {visibleRegistries.filter(r => registryTab === "Complete" ? r.incompleteCount === 0 : r.incompleteCount > 0).length === 0 ? (
+                      <Text style={{ textAlign: "center", color: colors.textMuted, fontStyle: "italic", marginTop: 12, marginBottom: 12 }}>No registries found.</Text>
+                    ) : (
+                      visibleRegistries.filter(r => registryTab === "Complete" ? r.incompleteCount === 0 : r.incompleteCount > 0).map(reg => (
+                        <TouchableOpacity
+                          key={reg.id}
+                          style={styles.proposalItem}
+                          onPress={() => router.push({ pathname: "/edit-registry", params: { id: reg.id } })}
+                        >
+                          <Text style={{ fontSize: 18, fontFamily: "Nunito_700Bold", color: colors.text, marginBottom: 4 }}>{reg.name}</Text>
+                          <Text style={{ fontSize: 14, color: colors.textSecondary }}>
+                            {reg.incompleteCount} incomplete item{reg.incompleteCount !== 1 ? 's' : ''}
+                          </Text>
+                        </TouchableOpacity>
+                      ))
+                    )}
+                  </View>
+                );
+              })()}
             </View>
-          );
-        })()}
-              </View>
-            )}
+          )}
 
           {selectedMeetup.status === "Planning" && (
-            <View style={globalStyles.sectionPanel}>
+            <View style={[globalStyles.sectionPanel, { marginBottom: 24 }]}>
               <View style={globalStyles.sectionHeader}>
                 <Text style={globalStyles.sectionTitle}>
                   💡 Proposals
@@ -1584,7 +1583,7 @@ export default function EditMeetup() {
                 <Text style={{ fontSize: 20, fontFamily: "Besley_700Bold", color: colors.text, marginBottom: 16 }}>
                   Edit Tribal Council
                 </Text>
-                
+
                 <ScrollView style={{ maxHeight: 300, marginBottom: 16 }}>
                   {tribeMembers.map((tm) => {
                     const mem = members.find((m) => m.id === tm.member_id);
