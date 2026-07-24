@@ -73,8 +73,8 @@ export const globalStyles = StyleSheet.create({
     elevation: 2,
   },
   sectionTitle: {
-    fontFamily: "Nunito_800ExtraBold",
-    fontSize: 20, 
+    fontSize: 22,
+    fontWeight: "800",
     color: colors.text,
     textAlign: "left",
   },

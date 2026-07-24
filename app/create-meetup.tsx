@@ -42,8 +42,8 @@ export default function CreateMeetup() {
 
   // Form State
   const [title, setTitle] = useState("");
-  const [eventType, setEventType] = useState("");
-  const [iconType, setIconType] = useState("🎉");
+  const [eventType, setEventType] = useState("get-together");
+  const [iconType, setIconType] = useState("🍻");
   const [details, setDetails] = useState("");
 
   const [decisionMethod, setDecisionMethod] = useState("most_available");
@@ -327,6 +327,13 @@ export default function CreateMeetup() {
           <DropdownSelect
             value={leaderTitleSelect}
             options={[
+              { label: "Mama Bear", value: "Mama Bear" },
+              { label: "Papa Bear", value: "Papa Bear" },
+              { label: "Oh Wise One", value: "Oh Wise One" },
+              { label: "Queen Bee", value: "Queen Bee" },
+              { label: "Boss Lady", value: "Boss Lady" },
+              { label: "Chief Trouble Maker", value: "Chief Trouble Maker" },
+              { label: "Her Royal Highness", value: "Her Royal Highness" },
               { label: "Tribal Chieftain", value: "Tribal Chieftain" },
               { label: "Master of Ceremonies", value: "Master of Ceremonies" },
               { label: "Grand Poobah", value: "Grand Poobah" },

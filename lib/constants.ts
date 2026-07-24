@@ -13,6 +13,13 @@ export const EVENT_DEFAULTS = [
   { type: "birthday", icon: "🎂" },
   { type: "wedding", icon: "💍" },
   { type: "shower party", icon: "👶" },
+  { type: "camping", icon: "🏕️" },
+  { type: "museum", icon: "🏛️" },
+  { type: "day on the town", icon: "🏙️" },
+  { type: "potluck", icon: "🍲" },
+  { type: "sports event", icon: "🏟️" },
+  { type: "play sports", icon: "⚽" },
+  { type: "mystery", icon: "🕵️" },
 ];
 
 export const AVAILABLE_ICONS = [

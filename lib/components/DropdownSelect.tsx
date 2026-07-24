@@ -5,6 +5,7 @@ import {
     Text,
     TouchableOpacity,
     View,
+    TextInput,
 } from "react-native";
 import { colors, globalStyles } from "../theme";
 
@@ -22,6 +23,7 @@ export function DropdownSelect({
   placeholder?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const selectedLabel =
     options.find((o) => o.value === value)?.label || placeholder;
 
@@ -33,19 +35,32 @@ export function DropdownSelect({
     );
   }
 
+  const filteredOptions = options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()));
+
   return (
     <View style={{ zIndex: isOpen ? 10000 : 1, elevation: isOpen ? 10000 : 1, width: "100%" }}>
       <TouchableOpacity
         style={[styles.input, styles.dropdownHeader]}
-        onPress={() => setIsOpen(!isOpen)}
+        onPress={() => {
+          setIsOpen(!isOpen);
+          if (!isOpen) setSearch("");
+        }}
       >
         <Text style={styles.itemTitle}>{selectedLabel}</Text>
         <Text style={{ fontSize: 16, color: colors.textSecondary }}>{isOpen ? "▲" : "▼"}</Text>
       </TouchableOpacity>
       {isOpen && (
         <View style={styles.dropdownListContainer}>
+          <TextInput
+            style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: colors.borderLight, fontSize: 16, color: colors.text }}
+            placeholder="Filter..."
+            placeholderTextColor={colors.textMuted}
+            value={search}
+            onChangeText={setSearch}
+            autoFocus
+          />
           <ScrollView style={styles.dropdownList} nestedScrollEnabled>
-            {options.map((opt) => (
+            {filteredOptions.map((opt) => (
               <TouchableOpacity
                 key={opt.value}
                 style={styles.dropdownItem}
@@ -91,7 +106,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 12,
-    maxHeight: 200,
+    maxHeight: 250,
     zIndex: 1000,
     elevation: 10,
     shadowColor: "#000",

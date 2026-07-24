@@ -498,6 +498,9 @@ export default function EditTribe() {
   };
 
   const sortedMembers = [...allMembers].sort((a, b) => {
+    if (member && a.id === member.id) return -1;
+    if (member && b.id === member.id) return 1;
+
     const aSelected = selectedMemberIds.includes(a.id!);
     const bSelected = selectedMemberIds.includes(b.id!);
     if (aSelected && !bSelected) return -1;
@@ -575,7 +578,7 @@ export default function EditTribe() {
           ) : (
             <View style={{ alignItems: "center", marginVertical: 24 }}>
               <Text style={{ fontSize: 72, marginBottom: 12 }}>{iconType || "😊"}</Text>
-              <Text style={{ fontSize: 32, fontFamily: "Nunito_900Black", color: colors.text, textAlign: "center", marginBottom: 8 }}>{name}</Text>
+              <Text style={{ fontSize: 32, fontFamily: "BricolageGrotesque_500Medium", color: colors.text, textAlign: "center", marginBottom: 8 }}>{name}</Text>
               {description ? (
                 <Text style={{ fontSize: 16, color: colors.textSecondary, textAlign: "center", paddingHorizontal: 20 }}>{description}</Text>
               ) : null}

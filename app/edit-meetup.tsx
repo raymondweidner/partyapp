@@ -660,6 +660,13 @@ export default function EditMeetup() {
                 <DropdownSelect
                   value={leaderTitleSelect}
                   options={[
+                    { label: "Mama Bear", value: "Mama Bear" },
+                    { label: "Papa Bear", value: "Papa Bear" },
+                    { label: "Oh Wise One", value: "Oh Wise One" },
+                    { label: "Queen Bee", value: "Queen Bee" },
+                    { label: "Boss Lady", value: "Boss Lady" },
+                    { label: "Chief Trouble Maker", value: "Chief Trouble Maker" },
+                    { label: "Her Royal Highness", value: "Her Royal Highness" },
                     { label: "Tribal Chieftain", value: "Tribal Chieftain" },
                     { label: "Master of Ceremonies", value: "Master of Ceremonies" },
                     { label: "Grand Poobah", value: "Grand Poobah" },
@@ -754,18 +761,18 @@ export default function EditMeetup() {
                     );
                   })()}
                 </View>
+                {details ? (
+                  <Text style={{ fontSize: 18, fontFamily: "Fraunces_200ExtraLight", color: colors.textSecondary, textAlign: "center", paddingHorizontal: 20, marginBottom: 32 }}>{details}</Text>
+                ) : <View style={{ marginBottom: 32 }} />}
                 {(() => {
                   const tribe = tribes.find(t => t.id === selectedMeetup.tribe_id);
                   if (!tribe) return null;
                   return (
-                    <Text style={{ fontSize: 16, color: colors.textSecondary, textAlign: "center", marginBottom: 12, fontWeight: "600" }}>
+                    <Text style={{ fontSize: 18, fontFamily: "BricolageGrotesque_500Medium", color: colors.textSecondary, textAlign: "center", marginBottom: 24 }}>
                       {tribe.icon_type} {tribe.name}
                     </Text>
                   );
                 })()}
-                {details ? (
-                  <Text style={{ fontSize: 18, fontFamily: "Fraunces_200ExtraLight", color: colors.textSecondary, textAlign: "center", paddingHorizontal: 20, marginBottom: 24 }}>{details}</Text>
-                ) : <View style={{ marginBottom: 24 }} />}
               </View>
 
               <View style={{ backgroundColor: colors.surface, padding: 20, borderRadius: 16, borderWidth: 1, borderColor: colors.borderLight }}>
@@ -990,9 +997,9 @@ export default function EditMeetup() {
           ) : null}
 
           {!isEditing && selectedMeetup.root_folder_id && (
-              <View style={{ marginTop: 32, borderTopWidth: 1, borderTopColor: colors.borderLight, paddingTop: 24 }}>
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <Text style={{ fontSize: 24, fontFamily: "Besley_700Bold", color: colors.text }}>Polls</Text>
+              <View style={globalStyles.sectionPanel}>
+                <View style={globalStyles.sectionHeader}>
+                  <Text style={globalStyles.sectionTitle}>📊 Polls</Text>
                   {selectedMeetup.status !== "Completed" && (
                     <TouchableOpacity
                       onPress={() => router.push(`/create-poll?meetupId=${selectedMeetup.id}` as any)}
@@ -1077,9 +1084,9 @@ export default function EditMeetup() {
           const visibleRegistries = registries.filter(r => (!r.is_council || isCouncilMember) && relevantEventId && r.meetup_event_id === relevantEventId);
 
           return (
-            <View style={{ marginTop: 30, borderTopWidth: 1, borderTopColor: colors.borderLight, paddingTop: 24 }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <Text style={{ fontSize: 24, fontFamily: "Besley_700Bold", color: colors.text }}>Help Registries</Text>
+            <View style={globalStyles.sectionPanel}>
+              <View style={globalStyles.sectionHeader}>
+                <Text style={globalStyles.sectionTitle}>📋 Help Registries</Text>
                 {isCouncilMember && relevantEventId && (
                   <TouchableOpacity
                     style={styles.addButton}
@@ -1132,10 +1139,10 @@ export default function EditMeetup() {
             )}
 
           {selectedMeetup.status === "Planning" && (
-            <View style={styles.proposalsContainer}>
-              <View style={styles.proposalsHeader}>
-                <Text style={{ fontSize: 24, fontFamily: "Besley_700Bold", color: colors.text }}>
-                  Proposals
+            <View style={globalStyles.sectionPanel}>
+              <View style={globalStyles.sectionHeader}>
+                <Text style={globalStyles.sectionTitle}>
+                  💡 Proposals
                 </Text>
                 {selectedMeetup.status === "Planning" && (
                   <TouchableOpacity
@@ -1315,10 +1322,10 @@ export default function EditMeetup() {
           )}
 
           {!isEditing && (
-            <View style={[styles.proposalsContainer, { marginTop: 24 }]}>
-              <View style={styles.proposalsHeader}>
-                <Text style={{ fontSize: 24, fontFamily: "Besley_700Bold", color: colors.text }}>
-                  Past Events
+            <View style={globalStyles.sectionPanel}>
+              <View style={globalStyles.sectionHeader}>
+                <Text style={globalStyles.sectionTitle}>
+                  🕰️ Past Events
                 </Text>
               </View>
               {(() => {
@@ -1348,9 +1355,9 @@ export default function EditMeetup() {
 
           {/* Tribal Council Section */}
           {!isEditing && (
-            <View style={{ marginTop: 24, marginBottom: 24, paddingTop: 24, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <Text style={{ fontSize: 24, fontFamily: "Besley_700Bold", color: colors.text }}>Tribal Council</Text>
+            <View style={globalStyles.sectionPanel}>
+              <View style={globalStyles.sectionHeader}>
+                <Text style={globalStyles.sectionTitle}>👑 Tribal Council</Text>
                 {(selectedMeetup as any).creator_id === member?.id && (
                   <TouchableOpacity
                     style={styles.addButton}
@@ -1365,40 +1372,45 @@ export default function EditMeetup() {
               </View>
 
               {/* Creator as leader */}
-              <View style={{ marginBottom: 16, alignItems: "center" }}>
+              <View style={{ marginBottom: 16 }}>
                 {(() => {
                   const creatorMember = members.find((m) => m.id === (selectedMeetup as any).creator_id);
                   if (creatorMember) {
                     return (
                       <View style={{ marginBottom: 8 }}>
+                        <Text style={[globalStyles.attributeName, { marginBottom: 4 }]}>
+                          {selectedMeetup.leader_title || "Tribal Chieftain"}
+                        </Text>
                         <TouchableOpacity onPress={() => router.push(`/edit-member?id=${creatorMember.id}` as any)}>
-                          <Text style={{ color: colors.primary, fontSize: 18, fontWeight: "bold", textAlign: "center" }}>
-                            {selectedMeetup.leader_title || "Tribal Chieftain"} {creatorMember.name}
+                          <Text style={globalStyles.attributeValue}>
+                            {creatorMember.name}
                           </Text>
                         </TouchableOpacity>
                       </View>
                     );
                   }
-                  return <Text style={{ color: colors.text, textAlign: "center" }}>Unknown</Text>;
+                  return <Text style={{ color: colors.text }}>Unknown</Text>;
                 })()}
               </View>
 
               {/* Council Members */}
-              <View style={{ marginBottom: 16, alignItems: "center" }}>
-                <Text style={{ color: colors.textSecondary, marginBottom: 8, textAlign: "center" }}>Council Members</Text>
-                {tribalCouncils.length === 0 ? (
-                  <Text style={{ color: colors.textMuted, textAlign: "center" }}>No council members</Text>
-                ) : (
-                  tribalCouncils.map((c) => {
+              <View style={{ marginBottom: 16 }}>
+                <Text style={[globalStyles.attributeName, { marginBottom: 4 }]}>Council Members</Text>
+                {(() => {
+                  const regularCouncils = tribalCouncils.filter(c => c.member_id !== (selectedMeetup as any).creator_id);
+                  if (regularCouncils.length === 0) {
+                    return <Text style={{ color: colors.textMuted }}>No council members</Text>;
+                  }
+                  return regularCouncils.map((c) => {
                     const mem = members.find((m) => m.id === c.member_id);
                     if (!mem) return null;
                     return (
-                      <TouchableOpacity key={c.id} onPress={() => router.push(`/edit-member?id=${mem.id}` as any)} style={{ marginBottom: 8 }}>
-                        <Text style={{ color: colors.primary, fontSize: 16, textAlign: "center" }}>{mem.name}</Text>
+                      <TouchableOpacity key={c.id} onPress={() => router.push(`/edit-member?id=${mem.id}` as any)} style={{ marginBottom: 4 }}>
+                        <Text style={globalStyles.attributeValue}>{mem.name}</Text>
                       </TouchableOpacity>
                     );
-                  })
-                )}
+                  });
+                })()}
               </View>
 
               {/* Council Chat */}
@@ -1416,10 +1428,10 @@ export default function EditMeetup() {
                     if (isCouncil || (selectedMeetup as any).creator_id === member?.id) {
                       return (
                         <TouchableOpacity
-                          style={[styles.primaryButton, { backgroundColor: colors.surface, paddingVertical: 8, paddingHorizontal: 20 }]}
+                          style={styles.addButton}
                           onPress={() => setShowCouncilChatModal(true)}
                         >
-                          <Text style={[styles.primaryButtonText, { color: colors.primary }]}>+ Create Council Chat</Text>
+                          <Text style={styles.addButtonText}>+ Create Council Chat</Text>
                         </TouchableOpacity>
                       );
                     }
@@ -1722,11 +1734,11 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   addButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    shadowColor: colors.primary,
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -1736,6 +1748,7 @@ const styles = StyleSheet.create({
     color: "#F8F9FA",
     fontSize: 12,
     fontWeight: "bold",
+    fontFamily: "Nunito_700Bold",
   },
   proposalItem: {
     padding: 15,
