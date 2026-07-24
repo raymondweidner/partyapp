@@ -85,6 +85,26 @@ export const openEmailThread = async (
   }
 };
 
+export const openWhatsApp = async (phone: string, message: string) => {
+  if (!phone) {
+    showAlert("Error", "No phone number provided.");
+    return;
+  }
+  const cleanPhone = phone.replace(/\D/g, "");
+  const url = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
+  
+  try {
+    const supported = await Linking.canOpenURL(url);
+    if (supported) {
+      await Linking.openURL(url);
+    } else {
+      await Linking.openURL(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`);
+    }
+  } catch (error) {
+    showAlert("Error", "Could not open WhatsApp.");
+  }
+};
+
 export const openMapUrl = async (address: string, mapType: string = "google") => {
   if (!address) return;
   const query = encodeURIComponent(address);

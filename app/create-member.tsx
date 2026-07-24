@@ -1,4 +1,3 @@
-// NOTE: Please rename this file to create-member.tsx
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import {
@@ -11,7 +10,7 @@ import {
 } from "react-native";
 import { useAuth } from "../lib/auth";
 import { createMember, createMemberContact, createTribeMember } from "../lib/data/service";
-import { showAlert, safeBack } from "../lib/util";
+import { showAlert, safeBack, openWhatsApp } from "../lib/util";
 import { colors, globalStyles } from "../lib/theme";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
 
@@ -55,8 +54,15 @@ export default function CreateMember() {
         throw new Error("Current member context missing.");
       }
 
+      const memberPayload: any = { name, email, status: "invited" };
+      if (phone.trim()) {
+        memberPayload.phone = phone.trim();
+      } else {
+        memberPayload.phone = null;
+      }
+
       const newMember = await createMember(
-        { name, email, phone, status: "invited" } as any,
+        memberPayload,
         token,
       );
 
@@ -69,9 +75,22 @@ export default function CreateMember() {
         token,
       );
 
-      showAlert("Success", "Invitation sent successfully!", [
-        { text: "OK", onPress: () => safeBack(router, tribeId ? `/edit-tribe?id=${tribeId}` : "/") },
-      ]);
+      const buttons: any[] = [
+        { text: "OK", onPress: () => safeBack(router, tribeId ? `/edit-tribe?id=${tribeId}` : "/") }
+      ];
+
+      if (phone.trim()) {
+        buttons.unshift({
+          text: "Send via WhatsApp",
+          onPress: () => {
+            const message = `Hi ${name.trim()}, you've been invited to join the Fam! Join here: https://app.partyapp.com/login?invite=${encodeURIComponent(email)}`;
+            openWhatsApp(phone, message);
+            safeBack(router, tribeId ? `/edit-tribe?id=${tribeId}` : "/");
+          }
+        });
+      }
+
+      showAlert("Success", "Invitation sent successfully!", buttons);
     } catch (error: any) {
       showAlert(
         "Error",
