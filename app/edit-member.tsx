@@ -102,7 +102,9 @@ export default function EditMember() {
         if (refreshToken && selectedMember && selectedMember.id && user) {
           try {
             const token = await user.getIdToken();
-            await updateMember({ ...selectedMember, id: selectedMember.id, google_refresh_token: refreshToken }, token);
+            const updatedMember = { ...selectedMember, id: selectedMember.id, google_refresh_token: refreshToken };
+            await updateMember(updatedMember, token);
+            setSelectedMember(updatedMember);
 
             // Trigger root folder sync for objects owned by this user
             try {
@@ -263,7 +265,9 @@ export default function EditMember() {
       if (!selectedMember || !selectedMember.id || !user) return;
       try {
         const token = await user.getIdToken();
-        await updateMember({ ...selectedMember, id: selectedMember.id, google_refresh_token: null as any, root_folder_id: null as any }, token);
+        const updatedMember = { ...selectedMember, id: selectedMember.id, google_refresh_token: null as any, root_folder_id: null as any };
+        await updateMember(updatedMember, token);
+        setSelectedMember(updatedMember);
 
         // Trigger root folder removal for objects owned by this user
         try {
@@ -407,6 +411,12 @@ export default function EditMember() {
   };
 
   if (selectedMember) {
+    const hasChanges =
+      name !== (selectedMember.name || "") ||
+      email !== (selectedMember.email || "") ||
+      phone !== ((selectedMember as any).phone || "") ||
+      mapType !== (selectedMember.map_type || "google") ||
+      profilePicData !== (selectedMember.profile_pic_data || null);
     return (
       <View style={styles.container}>
         <Stack.Screen
@@ -475,10 +485,11 @@ export default function EditMember() {
                 <ActivityIndicator size="large" color="#007bff" />
               ) : (
                 <TouchableOpacity
-                  style={styles.primaryButton}
+                  style={[styles.primaryButton, !hasChanges && { opacity: 0.5 }]}
                   onPress={handleUpdate}
+                  disabled={!hasChanges}
                 >
-                  <Text style={styles.primaryButtonText}>Update Member</Text>
+                  <Text style={styles.primaryButtonText}>Update Profile</Text>
                 </TouchableOpacity>
               )}
             </View>
