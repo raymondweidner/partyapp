@@ -46,8 +46,8 @@ export default function CreateProposal() {
       const token = await user?.getIdToken();
       await createProposal(
         {
-          host_id: member.id,
           meetup_id: meetupId,
+          host_id: member?.id as string,
           start_at: startDate.toISOString(),
           end_at: endDate.toISOString(),
           location,

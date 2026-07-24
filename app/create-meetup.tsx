@@ -182,7 +182,6 @@ export default function CreateMeetup() {
           ...recPayload,
           created_at: new Date().toISOString(),
           status: "Planning",
-          root_folder_id: member.root_folder_id,
         },
         token,
       );
