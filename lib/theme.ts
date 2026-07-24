@@ -3,10 +3,10 @@ import { StyleSheet } from 'react-native';
 export const colors = {
   background: '#FDFBF7', 
   surface: '#FFFFFF', 
-  primary: '#2C2C2C', 
+  primary: '#404040', 
   accent: '#7A8B73', 
   accentDark: '#5C6B55',
-  text: '#2C2C2C', 
+  text: '#404040', 
   textSecondary: '#555555',
   textMuted: '#7B7B7B',
   danger: '#FCA5A5', 

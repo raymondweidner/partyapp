@@ -578,7 +578,7 @@ export default function EditTribe() {
           ) : (
             <View style={{ alignItems: "center", marginVertical: 24 }}>
               <Text style={{ fontSize: 72, marginBottom: 12 }}>{iconType || "😊"}</Text>
-              <Text style={{ fontSize: 32, fontFamily: "BricolageGrotesque_500Medium", color: colors.text, textAlign: "center", marginBottom: 8 }}>{name}</Text>
+              <Text style={{ fontSize: 32, fontFamily: "BricolageGrotesque_500Medium", color: colors.accent, textAlign: "center", marginBottom: 8 }}>{name}</Text>
               {description ? (
                 <Text style={{ fontSize: 16, color: colors.textSecondary, textAlign: "center", paddingHorizontal: 20 }}>{description}</Text>
               ) : null}
@@ -984,18 +984,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   editButton: {
-    marginTop: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 5,
-    backgroundColor: colors.primary,
-    borderRadius: 5,
-    shadowColor: colors.primary,
+    backgroundColor: colors.accent,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 2,
   },
-  editButtonText: { color: "#F8F9FA", fontWeight: "bold" },
+  editButtonText: {
+    color: "#F8F9FA",
+    fontSize: 12,
+    fontWeight: "bold",
+    fontFamily: "Nunito_700Bold",
+  },
   modalOverlay: globalStyles.modalOverlay,
   modalContent: globalStyles.modalContent,
   modalTitle: globalStyles.modalTitle,

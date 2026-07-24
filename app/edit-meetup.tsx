@@ -741,7 +741,7 @@ export default function EditMeetup() {
               <View style={{ alignItems: "center", marginTop: 24 }}>
                 <Text style={{ fontSize: 72, marginBottom: 12 }}>{iconType || "🎉"}</Text>
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 8, flexWrap: "wrap", gap: 12 }}>
-                  <Text style={{ fontSize: 32, fontFamily: "BricolageGrotesque_500Medium", color: colors.text, textAlign: "center" }}>{title}</Text>
+                  <Text style={{ fontSize: 32, fontFamily: "BricolageGrotesque_500Medium", color: colors.accent, textAlign: "center" }}>{title}</Text>
                   {(() => {
                     let bgColor = colors.accent;
                     let textColor = "#F8F9FA";
