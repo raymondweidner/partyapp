@@ -23,6 +23,7 @@ import { auth } from "../lib/firebaseConfig";
 import { showAlert } from "../lib/util";
 import { colors, globalStyles } from "../lib/theme";
 import { useCurrentMember } from "./_layout";
+import PhoneInput from "../lib/components/PhoneInput";
 
 export default function Login() {
   const { invite } = useLocalSearchParams<{ invite?: string }>();
@@ -207,23 +208,22 @@ export default function Login() {
         contentContainerStyle={styles.inner}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headerContainer}>
-          <Text style={styles.logoText}>
-            Tribal
-            <Text style={{ color: colors.primary, opacity: 0.85, textShadowColor: colors.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 6 }}>
-              Vibe
-            </Text>
-          </Text>
-          <Text style={styles.subtitle}>
-            {invitedMember
-              ? "You've been invited to join the Fam!"
-              : isSignUp
-                ? "Create your account to get started"
-                : "Welcome back, sign in to continue"}
-          </Text>
-        </View>
-
         <View style={styles.formCard}>
+          <View style={styles.headerContainer}>
+            <Text style={styles.logoText}>
+              Tribal
+              <Text style={{ color: colors.accent, opacity: 0.85, textShadowColor: colors.accent, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 6 }}>
+                Vibe
+              </Text>
+            </Text>
+            <Text style={styles.subtitle}>
+              {invitedMember
+                ? "You've been invited to join the Fam!"
+                : isSignUp
+                  ? "Create your account to get started"
+                  : "Welcome back, sign in to continue"}
+            </Text>
+          </View>
           {isSignUp && (
             <>
               <TextInput
@@ -233,13 +233,10 @@ export default function Login() {
                 onChangeText={setName}
                 placeholderTextColor={colors.textMuted}
               />
-              <TextInput
-                style={styles.input}
-                placeholder="Phone Number"
+              <PhoneInput
                 value={phone}
                 onChangeText={setPhone}
-                keyboardType="phone-pad"
-                placeholderTextColor={colors.textMuted}
+                defaultCountry="US"
               />
             </>
           )}
@@ -278,7 +275,7 @@ export default function Login() {
                     onPress={onSignUp}
                   >
                     <Text style={styles.primaryButtonText}>
-                      {invitedMember ? "Join the Fam!" : "Create Account"}
+                      {invitedMember ? "Join the Fam!" : "Sign Up"}
                     </Text>
                   </TouchableOpacity>
 
@@ -302,13 +299,24 @@ export default function Login() {
                   >
                     <Text style={styles.primaryButtonText}>Sign In</Text>
                   </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={styles.linkButton}
+                    onPress={() => {}}
+                  >
+                    <Text style={styles.linkButtonText}>
+                      Forgot password?
+                    </Text>
+                  </TouchableOpacity>
+
+                  <View style={styles.separator} />
 
                   <TouchableOpacity
-                    style={styles.secondaryButton}
+                    style={styles.linkButton}
                     onPress={() => setIsSignUp(true)}
                   >
-                    <Text style={styles.secondaryButtonText}>
-                      Create Account
+                    <Text style={styles.bottomLinkText}>
+                      Don't have an account? <Text style={styles.bottomLinkTextBold}>Sign Up</Text>
                     </Text>
                   </TouchableOpacity>
                 </>
@@ -328,7 +336,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 32,
   },
-  logoText: globalStyles.header,
+  logoText: {
+    ...globalStyles.header,
+    marginBottom: 0,
+    color: colors.accent,
+  },
   subtitle: {
     fontSize: 16,
     color: colors.textSecondary,
@@ -347,14 +359,36 @@ const styles = StyleSheet.create({
   primaryButton: globalStyles.primaryButton,
   primaryButtonText: globalStyles.primaryButtonText,
   secondaryButton: {
-    height: 52,
-    borderRadius: 12,
+    height: 40,
     justifyContent: "center",
     alignItems: "center",
+    marginTop: 8,
   },
   secondaryButtonText: {
-    color: colors.primary,
-    fontSize: 16,
-    fontWeight: "600",
+    color: colors.textSecondary,
+    fontSize: 14,
+    textDecorationLine: "underline",
+  },
+  linkButton: {
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  linkButtonText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    textDecorationLine: "underline",
+  },
+  separator: {
+    height: 1,
+    backgroundColor: colors.borderLight,
+    marginVertical: 12,
+    marginHorizontal: -24,
+  },
+  bottomLinkText: {
+    color: colors.text,
+    fontSize: 14,
+  },
+  bottomLinkTextBold: {
+    fontWeight: "bold",
   },
 });

@@ -596,51 +596,53 @@ export default function EditTribe() {
             </View>
           )}
 
-          <View style={styles.sectionHeaderRow}>
-            <Text style={[styles.label, { marginTop: 30, marginBottom: 10 }]}>
-              Tribe Members
-            </Text>
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              <TouchableOpacity
-                onPress={openGroupChatModal}
-                style={styles.editButton}
-              >
-                <Text style={styles.editButtonText}>💬 Groupchat</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={openEmailModal}
-                style={styles.editButton}
-              >
-                <Text style={styles.editButtonText}>📧 Email</Text>
-              </TouchableOpacity>
-              {isEditing && (
+          <View style={globalStyles.sectionPanel}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>
+                🙌 Tribe Members
+              </Text>
+              <View style={{ flexDirection: "row", gap: 8 }}>
                 <TouchableOpacity
-                  onPress={() => setIsModalVisible(true)}
+                  onPress={openGroupChatModal}
                   style={styles.editButton}
                 >
-                  <Text style={styles.editButtonText}>Edit</Text>
+                  <Text style={styles.editButtonText}>💬 Chat</Text>
                 </TouchableOpacity>
-              )}
+                <TouchableOpacity
+                  onPress={openEmailModal}
+                  style={styles.editButton}
+                >
+                  <Text style={styles.editButtonText}>📧 Email</Text>
+                </TouchableOpacity>
+                {isEditing && (
+                  <TouchableOpacity
+                    onPress={() => setIsModalVisible(true)}
+                    style={styles.editButton}
+                  >
+                    <Text style={styles.editButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
+            {membersLoading && <ActivityIndicator size="small" />}
+
+            {!membersLoading && currentMembers.length === 0 ? (
+              <Text style={styles.emptyText}>No members in this tribe.</Text>
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
+                {currentMembers.map((item) => (
+                  <React.Fragment key={item.id}>
+                    {renderCurrentMemberItem({ item })}
+                  </React.Fragment>
+                ))}
+              </ScrollView>
+            )}
           </View>
-          {membersLoading && <ActivityIndicator size="small" />}
 
-          {!membersLoading && currentMembers.length === 0 ? (
-            <Text style={styles.emptyText}>No members in this tribe.</Text>
-          ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
-              {currentMembers.map((item) => (
-                <React.Fragment key={item.id}>
-                  {renderCurrentMemberItem({ item })}
-                </React.Fragment>
-              ))}
-            </ScrollView>
-          )}
-
-          <View style={styles.meetupsContainer}>
-            <View style={styles.meetupsHeader}>
-              <Text style={[styles.label, { marginTop: 0, marginBottom: 0 }]}>
-                Tribe Meetups
+          <View style={globalStyles.sectionPanel}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>
+                🎉 Tribe Meetups
               </Text>
               <TouchableOpacity
                 style={styles.addButton}
@@ -651,7 +653,7 @@ export default function EditTribe() {
                   })
                 }
               >
-                <Text style={styles.addButtonText}>+</Text>
+                <Text style={styles.addButtonText}>+ Add</Text>
               </TouchableOpacity>
             </View>
 
@@ -778,14 +780,36 @@ export default function EditTribe() {
                   />
                 )}
                 <View style={styles.modalButtons}>
-                  <TouchableOpacity
-                    style={styles.primaryButton}
-                    onPress={() => setIsModalVisible(false)}
-                  >
-                    <Text style={styles.primaryButtonText}>
-                      Update Membership
-                    </Text>
-                  </TouchableOpacity>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                    <TouchableOpacity
+                      style={[
+                        styles.primaryButton,
+                        {
+                          flex: 1,
+                          marginRight: 10,
+                          backgroundColor: "#f0f0f0",
+                          shadowOpacity: 0,
+                          elevation: 0,
+                        },
+                      ]}
+                      onPress={() => {
+                        setSelectedMemberIds(tribeMembers.map((tm) => tm.member_id));
+                        setIsModalVisible(false);
+                      }}
+                    >
+                      <Text style={[styles.primaryButtonText, { color: colors.textSecondary }]}>
+                        Cancel
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.primaryButton, { flex: 1, marginLeft: 10 }]}
+                      onPress={() => setIsModalVisible(false)}
+                    >
+                      <Text style={styles.primaryButtonText}>
+                        Done
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
             </View>
@@ -920,19 +944,34 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 10,
+    marginBottom: 16,
+    paddingBottom: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  sectionTitle: { fontSize: 22, fontWeight: "800", color: colors.text, textAlign: "center" },
   addButton: {
-    backgroundColor: colors.primary,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center",
+    backgroundColor: colors.accent,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 2,
+    flexDirection: "row",
     alignItems: "center",
   },
   addButtonText: {
-    color: colors.background,
-    fontSize: 24,
-    fontWeight: "bold",
-    marginTop: -2,
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
   },
   squareCard: {
     backgroundColor: colors.glassBackground,

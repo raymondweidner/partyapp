@@ -1577,6 +1577,8 @@ export default function EditMeetup() {
                   {tribeMembers.map((tm) => {
                     const mem = members.find((m) => m.id === tm.member_id);
                     if (!mem) return null;
+                    const isCreator = mem.id === (selectedMeetup as any).creator_id;
+                    if (isCreator) return null;
                     const isSelected = councilMemberIds.includes(mem.id!);
                     return (
                       <TouchableOpacity

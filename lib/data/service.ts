@@ -566,13 +566,15 @@ export const getMemberContacts = async (
   };
 
   sourceContacts.forEach((contact) => {
-    if (contact.status === "Accepted") result.acceptedSources.push(contact);
-    else if (contact.status === "Invited") result.invitedSources.push(contact);
+    const status = contact.status?.toLowerCase();
+    if (status === "accepted") result.acceptedSources.push(contact);
+    else if (status === "invited") result.invitedSources.push(contact);
   });
 
   subjectContacts.forEach((contact) => {
-    if (contact.status === "Accepted") result.acceptedSubjects.push(contact);
-    else if (contact.status === "Invited") result.invitedSubjects.push(contact);
+    const status = contact.status?.toLowerCase();
+    if (status === "accepted") result.acceptedSubjects.push(contact);
+    else if (status === "invited") result.invitedSubjects.push(contact);
   });
 
   return result;

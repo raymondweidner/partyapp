@@ -25,6 +25,7 @@ export function GroupChatModal({
   creating = false,
   defaultSelectedIds = [],
   defaultName = "",
+  defaultUrl = "",
   hideMemberSelection = false,
   hideNameInput = false,
 }: {
@@ -36,6 +37,7 @@ export function GroupChatModal({
   creating?: boolean;
   defaultSelectedIds?: string[];
   defaultName?: string;
+  defaultUrl?: string;
   hideMemberSelection?: boolean;
   hideNameInput?: boolean;
 }) {
@@ -51,7 +53,7 @@ export function GroupChatModal({
   useEffect(() => {
     if (visible) {
       setName(defaultName);
-      setUrl("");
+      setUrl(defaultUrl);
       setSearch("");
       setSelectedIds(defaultSelectedIds);
       Animated.parallel([

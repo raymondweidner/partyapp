@@ -242,7 +242,7 @@ export default function FindFriend() {
                 data={searchResults}
                 keyExtractor={(item) => item.id!}
                 renderItem={({ item }) => {
-                  const isPending = item.status === "Invited";
+                  const isPending = item.status?.toLowerCase() === "invited";
                   return (
                     <TouchableOpacity
                       style={styles.resultItem}

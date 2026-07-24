@@ -21,6 +21,8 @@ import {
   createChat,
   createMeetup,
   createTribalCouncil,
+  getMembers,
+  getTribeMembers,
   getTribeMembersByMemberId,
   getTribes
 } from "../lib/data/service";
@@ -69,6 +71,12 @@ export default function CreateMeetup() {
   const [showCouncilChatModal, setShowCouncilChatModal] = useState(false);
 
   useEffect(() => {
+    if (member?.id && councilMemberIds.length === 0) {
+      setCouncilMemberIds([member.id]);
+    }
+  }, [member?.id]);
+
+  useEffect(() => {
     if (authLoading) return;
     if (!user) {
       router.replace("/login");
@@ -107,6 +115,28 @@ export default function CreateMeetup() {
     };
     fetchTribesList();
   }, [user, member, paramTribeId]);
+
+  useEffect(() => {
+    if (!user || !selectedTribeId) {
+      setTribeMembers([]);
+      setMembers([]);
+      return;
+    }
+    const fetchTribeCouncilCandidates = async () => {
+      try {
+        const token = await user.getIdToken();
+        const [mems, tMems] = await Promise.all([
+          getMembers(token),
+          getTribeMembers(selectedTribeId, token)
+        ]);
+        setMembers(mems);
+        setTribeMembers(tMems);
+      } catch (e: any) {
+        console.error("Failed to fetch tribe members for council selection", e);
+      }
+    };
+    fetchTribeCouncilCandidates();
+  }, [user, selectedTribeId]);
 
   const handleCreate = async () => {
     if (!title) {
@@ -382,6 +412,8 @@ export default function CreateMeetup() {
             {tribeMembers.map((tm) => {
               const mem = members.find((m) => m.id === tm.member_id);
               if (!mem) return null;
+              const isCreator = mem.id === member?.id;
+              if (isCreator) return null;
               const isSelected = councilMemberIds.includes(mem.id!);
               return (
                 <CheckboxToggle
@@ -403,7 +435,7 @@ export default function CreateMeetup() {
             onPress={() => setShowCouncilChatModal(true)}
           >
             <Text style={[styles.primaryButtonText, { color: colors.primary }]}>
-              {councilChatName ? `Chat: ${councilChatName}` : "+ Create Tribal Council Group Chat"}
+              {councilChatUrl ? "Edit Chat" : "+ Create Tribal Council Group Chat"}
             </Text>
           </TouchableOpacity>
         </View>
@@ -427,6 +459,7 @@ export default function CreateMeetup() {
         hideNameInput={true}
         title="Tribal Council Group Chat"
         defaultName={`${title || "Meetup"} Tribal Council Group Chat`}
+        defaultUrl={councilChatUrl}
         onCreate={(_name, url) => {
           setCouncilChatName(`${title || "Meetup"} Tribal Council Group Chat`);
           setCouncilChatUrl(url);

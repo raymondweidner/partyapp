@@ -416,7 +416,7 @@ export default function Home() {
     statusIcon: string,
     tab: string,
   ) => {
-    const isPendingJoin = f.status === "Invited";
+    const isPendingAppJoin = f.status?.toLowerCase() === "invited";
     const cleanEmail = f.email ? String(f.email).trim() : "";
     const cleanPhone = (f as any).phone ? String((f as any).phone).trim() : "";
     
@@ -438,8 +438,10 @@ export default function Home() {
         style={styles.memberCard}
       >
         <View style={styles.memberCardImageContainer}>
-          {f.profile_pic_data ? (
+          {f.profile_pic_data && !isPendingAppJoin ? (
             <Image source={{ uri: f.profile_pic_data }} style={styles.memberCardImage} />
+          ) : isPendingAppJoin ? (
+            <Text style={styles.memberCardSilhouette}>✉️</Text>
           ) : (
             <Text style={styles.memberCardSilhouette}>👤</Text>
           )}
@@ -470,7 +472,7 @@ export default function Home() {
         <View style={{ marginBottom: 10 }}>
           <Text style={styles.header}>
             Tribal
-            <Text style={{ color: colors.primary, opacity: 0.85, textShadowColor: colors.primary, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 6 }}>
+            <Text style={{ color: colors.accent, opacity: 0.85, textShadowColor: colors.accent, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 6 }}>
               Vibe
             </Text>
           </Text>
@@ -857,13 +859,13 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   scrollContent: { padding: 20 },
   header: {
-    fontSize: 36,
-    fontWeight: "900",
+    fontFamily: "BricolageGrotesque_500Medium",
+    fontSize: 40,
     marginBottom: 4,
     textAlign: "center",
-    color: colors.primary,
+    color: colors.accent,
     letterSpacing: 1,
-    textShadowColor: "rgba(0, 240, 255, 0.4)",
+    textShadowColor: "rgba(122, 139, 115, 0.4)",
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 10,
   },
@@ -886,20 +888,22 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontSize: 22, fontWeight: "800", color: colors.text, textAlign: "center" },
   addButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    backgroundColor: colors.accent,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 20,
-    shadowColor: colors.primary,
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
-    shadowRadius: 4,
+    shadowRadius: 6,
     elevation: 2,
+    flexDirection: "row",
+    alignItems: "center",
   },
   addButtonText: {
-    color: "#F8F9FA",
-    fontSize: 12,
-    fontWeight: "bold",
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
   },
   listContainer: { paddingBottom: 10 },
   itemContainer: {
@@ -956,53 +960,55 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   actionButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 14,
+    backgroundColor: colors.accent,
+    paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     flexDirection: "row",
     alignItems: "center",
-    shadowColor: colors.primary,
+    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
-    shadowRadius: 4,
+    shadowRadius: 6,
     elevation: 2,
   },
   actionButtonText: {
-    color: "#F8F9FA",
-    fontSize: 13,
-    fontWeight: "700",
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
   },
   tabContainer: {
     flexDirection: "row",
     marginBottom: 16,
-    backgroundColor: "#F4FAFF",
-    borderRadius: 12,
+    backgroundColor: colors.borderLight, // #F4F0EB in mock
+    borderRadius: 14,
     padding: 4,
+    gap: 4,
   },
   tab: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 10,
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "center",
-    borderRadius: 8,
+    borderRadius: 10,
+    backgroundColor: "transparent",
   },
   activeTab: {
-    backgroundColor: "#FFFFFF",
-    borderWidth: 1,
-    borderColor: colors.primary,
+    backgroundColor: colors.accent,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
   },
   tabText: {
     fontSize: 14,
-    color: "#888",
+    color: colors.textMuted,
     fontWeight: "600",
   },
   activeTabText: { 
-    color: "#2563EB",
-    textShadowColor: "rgba(255, 215, 0, 0.6)",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 3,
+    color: "#FFFFFF",
   },
   memberCard: {
     width: 80,
@@ -1076,18 +1082,16 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   tabBadge: {
-    backgroundColor: "colors.border",
+    backgroundColor: "#E2DDD5", // from mock segment-btn:not(.active) .badge
     borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 2,
     marginLeft: 6,
     minWidth: 20,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "colors.border",
   },
   tabBadgeText: {
-    color: "#ccc",
+    color: "#555555",
     fontSize: 12,
     fontWeight: "bold",
   },

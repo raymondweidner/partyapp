@@ -37,9 +37,11 @@ WebBrowser.maybeCompleteAuthSession();
 
 import { useAuth } from "../lib/auth";
 import { DropdownSelect } from "../lib/components/DropdownSelect";
+import PhoneInput from "../lib/components/PhoneInput";
 import { colors, globalStyles } from "../lib/theme";
 import { safeBack, showAlert } from "../lib/util";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
+import { parsePhoneNumber } from "libphonenumber-js";
 
 export default function EditMember() {
   const router = useRouter();
@@ -321,9 +323,18 @@ export default function EditMember() {
 
   const renderMemberItem = ({ item }: { item: Member }) => {
     const cleanEmail = item.email ? String(item.email).trim() : "";
-    const cleanPhone = (item as any).phone
+    let cleanPhone = (item as any).phone
       ? String((item as any).phone).trim()
       : "";
+    
+    if (cleanPhone) {
+      try {
+        const pn = parsePhoneNumber(cleanPhone);
+        if (pn) cleanPhone = pn.formatNational();
+      } catch (e) {
+        // Leave as is if unparseable
+      }
+    }
     const hasEmail =
       cleanEmail.length > 0 &&
       cleanEmail !== "undefined" &&
@@ -413,13 +424,10 @@ export default function EditMember() {
             />
 
             <Text style={styles.label}>Phone Number</Text>
-            <TextInput
-              style={styles.input}
+            <PhoneInput
               value={phone}
               onChangeText={setPhone}
-              placeholder="Phone Number"
-              keyboardType="phone-pad"
-              placeholderTextColor={colors.textMuted}
+              defaultCountry="US"
             />
 
             <Text style={styles.label}>Preferred Map App</Text>

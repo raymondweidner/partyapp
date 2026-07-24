@@ -12,6 +12,7 @@ import { useAuth } from "../lib/auth";
 import { createMember, createMemberContact, createTribeMember } from "../lib/data/service";
 import { showAlert, safeBack, openWhatsApp } from "../lib/util";
 import { colors, globalStyles } from "../lib/theme";
+import PhoneInput from "../lib/components/PhoneInput";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
 
 export default function CreateMember() {
@@ -134,13 +135,10 @@ export default function CreateMember() {
         />
 
         <Text style={styles.label}>Phone Number</Text>
-        <TextInput
-          style={styles.input}
+        <PhoneInput
           value={phone}
           onChangeText={setPhone}
-          placeholder="Phone Number"
-          keyboardType="phone-pad"
-          placeholderTextColor={colors.textMuted}
+          defaultCountry="US"
         />
 
         <View style={styles.buttonContainer}>

@@ -306,10 +306,11 @@ function NotificationsProvider({ children }: { children: React.ReactNode }) {
 
   const removeNotification = async (id: string) => {
     if (!user) return;
+    // Optimistically remove it from UI
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
     try {
       const token = await user.getIdToken();
       await deleteNotification(id, token);
-      setNotifications((prev) => prev.filter((n) => n.id !== id));
     } catch (error) {
       console.error("Failed to delete notification", error);
     }
@@ -713,7 +714,7 @@ function NotificationsModal({ visible, onClose }: { visible: boolean; onClose: (
                   }}
                   style={{ padding: 10 }}
                 >
-                  <Text style={{ color: "red", fontWeight: "bold" }}>Delete</Text>
+                  <Text style={{ color: colors.textSecondary, fontWeight: "bold" }}>Close</Text>
                 </TouchableOpacity>
               </TouchableOpacity>
             ))}
