@@ -484,7 +484,7 @@ export default function Home() {
           <>
             <View style={globalStyles.sectionPanel}>
               {renderSectionHeader("🏕️ Tribes", "/create-tribe")}
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.listContainer} nestedScrollEnabled>
+              <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.listContainer} nestedScrollEnabled>
               {tribes.map((t) => {
                 const cleanDetails = t.description ? String(t.description).trim() : "";
                 const hasDetails = cleanDetails.length > 0 && cleanDetails !== "undefined" && cleanDetails !== "null";
@@ -628,7 +628,7 @@ export default function Home() {
                     )}
                   </View>
 
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.listContainer} nestedScrollEnabled>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.listContainer} nestedScrollEnabled>
                     {currentMeetups.map((meetup) => {
                       const cleanDetails = meetup.details ? String(meetup.details).trim() : "";
                       const eventInfo = meetup.event_type ? `Type: ${meetup.event_type}\n` : "";
@@ -785,7 +785,7 @@ export default function Home() {
 
             <View style={globalStyles.sectionPanel}>
               {renderSectionHeader("💬 Group Chats", openGroupChatModal)}
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.listContainer} nestedScrollEnabled>
+              <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.listContainer} nestedScrollEnabled>
               {chats.map((chat) => {
                 const membersOfChat = chatMembers
                   .filter((cm) => cm.chat_id === chat.id)

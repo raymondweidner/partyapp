@@ -36,6 +36,7 @@ export function DropdownSelect({
   }
 
   const filteredOptions = options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()));
+  const showFilter = options.length > 6 && options.some(o => /[a-zA-Z]/.test(o.label));
 
   return (
     <View style={{ zIndex: isOpen ? 10000 : 1, elevation: isOpen ? 10000 : 1, width: "100%" }}>
@@ -51,14 +52,16 @@ export function DropdownSelect({
       </TouchableOpacity>
       {isOpen && (
         <View style={styles.dropdownListContainer}>
-          <TextInput
-            style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: colors.borderLight, fontSize: 16, color: colors.text }}
-            placeholder="Filter..."
-            placeholderTextColor={colors.textMuted}
-            value={search}
-            onChangeText={setSearch}
-            autoFocus
-          />
+          {showFilter && (
+            <TextInput
+              style={{ padding: 12, borderBottomWidth: 1, borderBottomColor: colors.borderLight, fontSize: 16, color: colors.text }}
+              placeholder="Filter..."
+              placeholderTextColor={colors.textMuted}
+              value={search}
+              onChangeText={setSearch}
+              autoFocus
+            />
+          )}
           <ScrollView style={styles.dropdownList} nestedScrollEnabled>
             {filteredOptions.map((opt) => (
               <TouchableOpacity
