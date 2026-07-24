@@ -106,18 +106,7 @@ export default function EditMember() {
             await updateMember(updatedMember, token);
             setSelectedMember(updatedMember);
 
-            // Trigger root folder sync for objects owned by this user
-            try {
-              const allMeetups = await getMeetups(token);
-              const myMeetups = allMeetups.filter((m: any) => m.creator_id === selectedMember.id && m.id);
-              await Promise.all(myMeetups.map(m => updateMeetup({ ...m, id: m.id! }, token)));
 
-              const allProposals = await getProposals(token);
-              const myProposals = allProposals.filter((p: any) => p.host_id === selectedMember.id && p.id);
-              await Promise.all(myProposals.map(p => updateProposal({ ...p, id: p.id! }, token)));
-            } catch (syncErr) {
-              console.warn("Failed to sync root folders:", syncErr);
-            }
 
             showAlert("Success", "Google Drive connected successfully!");
             fetchMembers();
@@ -269,18 +258,7 @@ export default function EditMember() {
         await updateMember(updatedMember, token);
         setSelectedMember(updatedMember);
 
-        // Trigger root folder removal for objects owned by this user
-        try {
-          const allMeetups = await getMeetups(token);
-          const myMeetups = allMeetups.filter((m: any) => m.creator_id === selectedMember.id && m.id);
-          await Promise.all(myMeetups.map((m: any) => updateMeetup({ ...m, id: m.id as string, root_folder_id: null as any }, token)));
 
-          const allProposals = await getProposals(token);
-          const myProposals = allProposals.filter((p: any) => p.host_id === selectedMember.id && p.id);
-          await Promise.all(myProposals.map((p: any) => updateProposal({ ...p, id: p.id as string, root_folder_id: null as any }, token)));
-        } catch (syncErr) {
-          console.warn("Failed to sync root folders removal:", syncErr);
-        }
 
         showAlert("Success", "Google Drive disconnected!");
         fetchMembers();
