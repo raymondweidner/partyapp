@@ -182,6 +182,7 @@ export default function CreateMeetup() {
           ...recPayload,
           created_at: new Date().toISOString(),
           status: "Planning",
+          root_folder_id: member.root_folder_id,
         },
         token,
       );
@@ -405,29 +406,35 @@ export default function CreateMeetup() {
         <View style={{ marginTop: 24, marginBottom: 24, paddingTop: 24, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
           <Text style={{ fontSize: 20, fontFamily: "Besley_700Bold", color: colors.text, marginBottom: 16 }}>Tribal Council</Text>
           <Text style={{ color: colors.textSecondary, marginBottom: 12 }}>
-            Select members who will act as the administrative Tribal Council for this meetup.
+            Pick the tribe members who are helpers and planners for this meetup
           </Text>
 
           <View style={{ marginBottom: 16 }}>
-            {tribeMembers.map((tm) => {
-              const mem = members.find((m) => m.id === tm.member_id);
-              if (!mem) return null;
-              const isCreator = mem.id === member?.id;
-              if (isCreator) return null;
-              const isSelected = councilMemberIds.includes(mem.id!);
-              return (
-                <CheckboxToggle
-                  key={mem.id}
-                  label={mem.name}
-                  isChecked={isSelected}
-                  onPress={() => {
-                    setCouncilMemberIds((prev) =>
-                      isSelected ? prev.filter((id) => id !== mem.id!) : [...prev, mem.id!]
-                    );
-                  }}
-                />
-              );
-            })}
+            {tribeMembers.filter(tm => tm.member_id !== member?.id).length === 0 ? (
+              <Text style={{ color: colors.textMuted, fontStyle: "italic" }}>
+                There are no other members in this tribe to add to the council.
+              </Text>
+            ) : (
+              tribeMembers.map((tm) => {
+                const mem = members.find((m) => m.id === tm.member_id);
+                if (!mem) return null;
+                const isCreator = mem.id === member?.id;
+                if (isCreator) return null;
+                const isSelected = councilMemberIds.includes(mem.id!);
+                return (
+                  <CheckboxToggle
+                    key={mem.id}
+                    label={mem.name}
+                    isChecked={isSelected}
+                    onPress={() => {
+                      setCouncilMemberIds((prev) =>
+                        isSelected ? prev.filter((id) => id !== mem.id!) : [...prev, mem.id!]
+                      );
+                    }}
+                  />
+                );
+              })
+            )}
           </View>
 
           <TouchableOpacity

@@ -24,24 +24,24 @@ import {
 } from "react-native";
 import { Member } from "../lib/data/Member";
 import { MemberAlertPreference } from "../lib/data/MemberAlertPreference";
-import { createMemberAlertPreference, getMemberAlertPreferences, getMembers, updateMember, updateMemberAlertPreference } from "../lib/data/service";
+import { createMemberAlertPreference, getMeetups, getMemberAlertPreferences, getMembers, getProposals, updateMeetup, updateMember, updateMemberAlertPreference, updateProposal } from "../lib/data/service";
 
 const ALL_ALERT_TYPES = [
-  'meetup_state_changed', 'proposal_selected', 'chat_invite', 'tribe_invite', 
-  'meetup_created', 'proposal_created', 'tribe_member_added', 'app_invite_accepted', 
+  'meetup_state_changed', 'proposal_selected', 'chat_invite', 'tribe_invite',
+  'meetup_created', 'proposal_created', 'tribe_member_added', 'app_invite_accepted',
   'availability_updated', 'contact_request_received', 'contact_request_accepted', 'meetup_cancelled', 'poll_created',
   'poll_voting_open', 'poll_completed', 'poll_no_entries', 'poll_no_votes', 'registry_item_updated'
 ];
 
 WebBrowser.maybeCompleteAuthSession();
 
+import { parsePhoneNumber } from "libphonenumber-js";
 import { useAuth } from "../lib/auth";
 import { DropdownSelect } from "../lib/components/DropdownSelect";
 import PhoneInput from "../lib/components/PhoneInput";
 import { colors, globalStyles } from "../lib/theme";
 import { safeBack, showAlert } from "../lib/util";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
-import { parsePhoneNumber } from "libphonenumber-js";
 
 export default function EditMember() {
   const router = useRouter();
@@ -103,6 +103,20 @@ export default function EditMember() {
           try {
             const token = await user.getIdToken();
             await updateMember({ ...selectedMember, id: selectedMember.id, google_refresh_token: refreshToken }, token);
+
+            // Trigger root folder sync for objects owned by this user
+            try {
+              const allMeetups = await getMeetups(token);
+              const myMeetups = allMeetups.filter((m: any) => m.creator_id === selectedMember.id && m.id);
+              await Promise.all(myMeetups.map(m => updateMeetup({ ...m, id: m.id! }, token)));
+
+              const allProposals = await getProposals(token);
+              const myProposals = allProposals.filter((p: any) => p.host_id === selectedMember.id && p.id);
+              await Promise.all(myProposals.map(p => updateProposal({ ...p, id: p.id! }, token)));
+            } catch (syncErr) {
+              console.warn("Failed to sync root folders:", syncErr);
+            }
+
             showAlert("Success", "Google Drive connected successfully!");
             fetchMembers();
           } catch (e: any) {
@@ -250,6 +264,20 @@ export default function EditMember() {
       try {
         const token = await user.getIdToken();
         await updateMember({ ...selectedMember, id: selectedMember.id, google_refresh_token: null as any, root_folder_id: null as any }, token);
+
+        // Trigger root folder removal for objects owned by this user
+        try {
+          const allMeetups = await getMeetups(token);
+          const myMeetups = allMeetups.filter((m: any) => m.creator_id === selectedMember.id && m.id);
+          await Promise.all(myMeetups.map((m: any) => updateMeetup({ ...m, id: m.id as string, root_folder_id: null as any }, token)));
+
+          const allProposals = await getProposals(token);
+          const myProposals = allProposals.filter((p: any) => p.host_id === selectedMember.id && p.id);
+          await Promise.all(myProposals.map((p: any) => updateProposal({ ...p, id: p.id as string, root_folder_id: null as any }, token)));
+        } catch (syncErr) {
+          console.warn("Failed to sync root folders removal:", syncErr);
+        }
+
         showAlert("Success", "Google Drive disconnected!");
         fetchMembers();
       } catch (e: any) {
@@ -326,7 +354,7 @@ export default function EditMember() {
     let cleanPhone = (item as any).phone
       ? String((item as any).phone).trim()
       : "";
-    
+
     if (cleanPhone) {
       try {
         const pn = parsePhoneNumber(cleanPhone);
@@ -465,13 +493,13 @@ export default function EditMember() {
                 </TouchableOpacity>
               ) : (
                 <View>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={() => {
-                      const url = selectedMember.root_folder_id 
+                      const url = selectedMember.root_folder_id
                         ? `https://drive.google.com/drive/folders/${selectedMember.root_folder_id}`
                         : 'https://drive.google.com/';
                       Linking.openURL(url);
-                    }} 
+                    }}
                     style={{ marginBottom: 15 }}
                   >
                     <Text style={{ color: colors.primary, fontWeight: 'bold' }}>Go To Google Drive Photo Album</Text>

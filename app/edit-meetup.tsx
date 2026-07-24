@@ -989,7 +989,7 @@ export default function EditMeetup() {
             </View>
           ) : null}
 
-          {!isEditing && (
+          {!isEditing && selectedMeetup.root_folder_id && (
               <View style={{ marginTop: 32, borderTopWidth: 1, borderTopColor: colors.borderLight, paddingTop: 24 }}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                   <Text style={{ fontSize: 24, fontFamily: "Besley_700Bold", color: colors.text }}>Polls</Text>

@@ -179,6 +179,8 @@ export default function EventDetails() {
           
           return (
             <View style={globalStyles.sectionPanel}>
+            {meetupEvent?.root_folder_id && (
+              <>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <Text style={styles.sectionTitle}>Event Polls</Text>
             {isCouncilMember && (
@@ -189,7 +191,6 @@ export default function EventDetails() {
                 <Text style={styles.addButtonText}>+ Add Poll</Text>
               </TouchableOpacity>
             )}
-
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16, borderBottomWidth: 1, borderBottomColor: colors.borderLight }}>
@@ -239,10 +240,13 @@ export default function EventDetails() {
             {polls.filter((p) => (p.status || "Posting").toLowerCase() === pollTab).length === 0 && (
               <Text style={{ textAlign: "center", color: colors.textMuted, fontStyle: "italic", marginTop: 12, marginBottom: 12 }}>No polls found.</Text>
             )}
-            </View>
+          </View>
+              </>
+            )}
           </View>
           );
         })()}
+        
         {(() => {
           const isCouncilMember = tribalCouncils.some(c => c.member_id === member?.id) || meetup?.creator_id === member?.id;
           const visibleRegistries = registries.filter(r => !r.is_council || isCouncilMember);

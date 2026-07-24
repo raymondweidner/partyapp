@@ -430,20 +430,6 @@ export default function EditTribe() {
                 <Text style={{ fontSize: 18 }}>➕</Text>
               </TouchableOpacity>
             )}
-            {!isMe && isInvited && (
-              <View
-                style={{ paddingHorizontal: 5, backgroundColor: colors.surface, borderRadius: 10 }}
-              >
-                <Text style={{ fontSize: 18 }}>⏳</Text>
-              </View>
-            )}
-            {isMe && (
-              <View
-                style={{ paddingHorizontal: 5, backgroundColor: colors.surface, borderRadius: 10 }}
-              >
-                <Text style={{ fontSize: 18 }}>⭐</Text>
-              </View>
-            )}
           </View>
         </View>
         <Text style={styles.memberCardName} numberOfLines={1}>{item.name || "Unnamed"}</Text>
@@ -683,20 +669,16 @@ export default function EditTribe() {
                         })
                       }
                       >
-                      <View style={{ flex: 1 }}>
+                      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
                         <Text style={styles.squareCardIcon}>
                           {meetup.icon_type || "🎉"}
                         </Text>
                         <Text
                           style={styles.squareCardTitle}
                           numberOfLines={2}
+                          ellipsizeMode="tail"
                         >
                           {meetup.title || "Unnamed Meetup"}
-                        </Text>
-                      </View>
-                      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
-                        <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                          {meetup.status || "Planning"}
                         </Text>
                       </View>
                     </TouchableOpacity>

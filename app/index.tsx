@@ -504,14 +504,9 @@ export default function Home() {
                       <Text style={styles.squareCardIcon}>
                         {t.icon_type || "😊"}
                       </Text>
-                      <Text style={styles.squareCardTitle} numberOfLines={2}>
+                      <Text style={styles.squareCardTitle} numberOfLines={2} ellipsizeMode="tail">
                         {t.name || "Unnamed"}
                       </Text>
-                      {hasDetails && (
-                        <Text style={{ fontSize: 10, fontStyle: 'italic', color: colors.textSecondary, textAlign: 'center', marginTop: 4 }} numberOfLines={2}>
-                          {cleanDetails}
-                        </Text>
-                      )}
                     </View>
                   </TouchableOpacity>
                 );
@@ -652,17 +647,12 @@ export default function Home() {
                             })
                           }
                         >
-                          <View style={{ flex: 1 }}>
+                          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
                             <Text style={styles.squareCardIcon}>
                               {meetup.icon_type || "🎉"}
                             </Text>
-                            <Text style={styles.squareCardTitle} numberOfLines={2}>
+                            <Text style={styles.squareCardTitle} numberOfLines={2} ellipsizeMode="tail">
                               {meetup.title || "Unnamed Meetup"}
-                            </Text>
-                          </View>
-                          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
-                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                              {meetup.status || "Planning"}
                             </Text>
                           </View>
                         </TouchableOpacity>
@@ -777,7 +767,7 @@ export default function Home() {
             </View>
 
             {famTab === "my_fam" && myFamMembers.length === 0 && (
-              <Text style={styles.emptyText}>No active connections.</Text>
+              <Text style={styles.emptyText}>No contacts yet</Text>
             )}
             {famTab === "incoming" && incomingInvites.length === 0 && (
               <Text style={styles.emptyText}>No incoming invites.</Text>
