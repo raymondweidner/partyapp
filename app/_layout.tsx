@@ -1,17 +1,14 @@
-import * as SplashScreen from 'expo-splash-screen';
-import { BlurView } from "expo-blur";
-import { Animated } from "react-native";
-import { useFonts, Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold, Nunito_900Black } from '@expo-google-fonts/nunito';
-import { useFonts as useQuicksandFonts, Quicksand_700Bold } from '@expo-google-fonts/quicksand';
-import { useFonts as useFrauncesFonts, Fraunces_200ExtraLight } from '@expo-google-fonts/fraunces';
-import { useFonts as useBricolageFonts, BricolageGrotesque_500Medium } from '@expo-google-fonts/bricolage-grotesque';
-import { useFonts as useBesleyFonts, Besley_600SemiBold, Besley_700Bold, Besley_800ExtraBold } from '@expo-google-fonts/besley';
+import { Besley_600SemiBold, Besley_700Bold, Besley_800ExtraBold, useFonts as useBesleyFonts } from '@expo-google-fonts/besley';
+import { BricolageGrotesque_500Medium, useFonts as useBricolageFonts } from '@expo-google-fonts/bricolage-grotesque';
+import { DancingScript_400Regular, DancingScript_500Medium, DancingScript_600SemiBold, DancingScript_700Bold, useFonts as useDancingScriptFonts } from '@expo-google-fonts/dancing-script';
+import { Fraunces_200ExtraLight, useFonts as useFrauncesFonts } from '@expo-google-fonts/fraunces';
+import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold, Nunito_900Black, useFonts } from '@expo-google-fonts/nunito';
+import { Quicksand_700Bold, useFonts as useQuicksandFonts } from '@expo-google-fonts/quicksand';
 import messaging from "@react-native-firebase/messaging";
+import { BlurView } from "expo-blur";
 import { Stack, useGlobalSearchParams, usePathname, useRouter, useSegments } from "expo-router";
 import { useShareIntent } from "expo-share-intent";
-import { colors, globalStyles } from "../lib/theme";
-
-SplashScreen.preventAutoHideAsync();
+import * as SplashScreen from 'expo-splash-screen';
 import { getApp } from "firebase/app";
 import {
   getMessaging,
@@ -24,12 +21,11 @@ import React, {
   useCallback,
   useContext,
   useEffect,
-  useState,
   useRef,
+  useState,
 } from "react";
 import {
-  ActivityIndicator,
-  DeviceEventEmitter,
+  ActivityIndicator, Animated, DeviceEventEmitter,
   Image,
   Modal,
   Platform,
@@ -39,24 +35,27 @@ import {
   View
 } from "react-native";
 import { AuthProvider, useAuth } from "../lib/auth";
+import { Meetup } from "../lib/data/Meetup";
 import { Member } from "../lib/data/Member";
 import type { Notification } from "../lib/data/Notification";
 import { UserDevice } from "../lib/data/UserDevice";
 import {
+  createPoll,
   createUserDevice,
   deleteNotification,
+  getMeetups,
   getMembers,
   getNotifications,
+  getPolls,
   getUserDeviceByToken,
   updateUserDevice,
-  getMeetups,
-  getPolls,
-  createPoll,
   uploadMedia,
 } from "../lib/data/service";
-import { Meetup } from "../lib/data/Meetup";
 import "../lib/firebaseConfig";
-import { handleNotificationPress, openEmailThread, openWhatsAppDM, pendingRedirect, safeBack, setPendingRedirect, showAlert } from "../lib/util";
+import { colors, globalStyles } from "../lib/theme";
+import { handleNotificationPress, pendingRedirect, safeBack, setPendingRedirect, showAlert } from "../lib/util";
+
+SplashScreen.preventAutoHideAsync();
 
 const UserDeviceContext = createContext<{
   userDevice: UserDevice | null;
@@ -532,11 +531,18 @@ function RootLayoutNav() {
     Besley_800ExtraBold,
   });
 
+  const [dancingScriptLoaded] = useDancingScriptFonts({
+    DancingScript_400Regular,
+    DancingScript_500Medium,
+    DancingScript_600SemiBold,
+    DancingScript_700Bold,
+  });
+
   useEffect(() => {
-    if (fontsLoaded && quicksandLoaded && frauncesLoaded && bricolageLoaded && besleyLoaded) {
+    if (fontsLoaded && quicksandLoaded && frauncesLoaded && bricolageLoaded && besleyLoaded && dancingScriptLoaded) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, quicksandLoaded, frauncesLoaded, bricolageLoaded, besleyLoaded]);
+  }, [fontsLoaded, quicksandLoaded, frauncesLoaded, bricolageLoaded, besleyLoaded, dancingScriptLoaded]);
 
   useEffect(() => {
     if (loading) return;
@@ -567,55 +573,55 @@ function RootLayoutNav() {
     );
   }
 
-function BottomNotificationBar() {
-  const { notifications } = useNotifications();
-  const [modalVisible, setModalVisible] = useState(false);
+  function BottomNotificationBar() {
+    const { notifications } = useNotifications();
+    const [modalVisible, setModalVisible] = useState(false);
 
-  if (notifications.length === 0) return null;
+    if (notifications.length === 0) return null;
 
-  return (
-    <>
-      <View style={{ position: 'absolute', bottom: 40, left: 0, right: 0, alignItems: 'center' }}>
-        <TouchableOpacity
-          onPress={() => setModalVisible(true)}
-          style={{
-            backgroundColor: 'rgba(255,255,255,0.85)',
-            padding: 10,
-            borderRadius: 30,
-            flexDirection: 'row',
-            alignItems: 'center',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.2,
-            shadowRadius: 4,
-            elevation: 4
-          }}
-        >
-          <Text style={{ fontSize: 24 }}>🔔</Text>
-          <View style={{
-            position: 'absolute',
-            top: -2,
-            right: -2,
-            backgroundColor: 'red',
-            borderRadius: 10,
-            paddingHorizontal: 5,
-            paddingVertical: 1,
-            justifyContent: 'center',
-            alignItems: 'center'
-          }}>
-            <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
-              {notifications.length > 99 ? '99+' : notifications.length}
-            </Text>
-          </View>
-        </TouchableOpacity>
-      </View>
-      <NotificationsModal
-        visible={modalVisible}
-        onClose={() => setModalVisible(false)}
-      />
-    </>
-  );
-}
+    return (
+      <>
+        <View style={{ position: 'absolute', bottom: 40, left: 0, right: 0, alignItems: 'center' }}>
+          <TouchableOpacity
+            onPress={() => setModalVisible(true)}
+            style={{
+              backgroundColor: 'rgba(255,255,255,0.85)',
+              padding: 10,
+              borderRadius: 30,
+              flexDirection: 'row',
+              alignItems: 'center',
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.2,
+              shadowRadius: 4,
+              elevation: 4
+            }}
+          >
+            <Text style={{ fontSize: 24 }}>🔔</Text>
+            <View style={{
+              position: 'absolute',
+              top: -2,
+              right: -2,
+              backgroundColor: 'red',
+              borderRadius: 10,
+              paddingHorizontal: 5,
+              paddingVertical: 1,
+              justifyContent: 'center',
+              alignItems: 'center'
+            }}>
+              <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
+                {notifications.length > 99 ? '99+' : notifications.length}
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+        <NotificationsModal
+          visible={modalVisible}
+          onClose={() => setModalVisible(false)}
+        />
+      </>
+    );
+  }
 
   return (
     <>
@@ -749,13 +755,13 @@ function ShareIntentHandler() {
   const { hasShareIntent, shareIntent, resetShareIntent, error } = useShareIntent();
   const { user } = useAuth();
   const { member } = useCurrentMember();
-  
+
   const [meetups, setMeetups] = useState<Meetup[]>([]);
   const [pollsByMeetup, setPollsByMeetup] = useState<Record<string, import("../lib/data/Poll").Poll[]>>({});
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const shareData: any = shareIntent;
-  
+
   useEffect(() => {
     if (hasShareIntent && user && shareData?.value) {
       loadData();
@@ -768,7 +774,7 @@ function ShareIntentHandler() {
       const token = await user!.getIdToken();
       const fetchedMeetups = await getMeetups(token);
       setMeetups(fetchedMeetups);
-      
+
       const pollsMap: Record<string, import("../lib/data/Poll").Poll[]> = {};
       for (const m of fetchedMeetups) {
         const fetchedPolls = await getPolls(token, m.id!);
@@ -788,12 +794,12 @@ function ShareIntentHandler() {
     try {
       const token = await user.getIdToken();
       let targetPollId = pollId;
-      
+
       if (!targetPollId) {
         const now = new Date();
         const entryDeadline = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
         const voteDeadline = new Date(entryDeadline.getTime() + 3 * 24 * 60 * 60 * 1000);
-        
+
         const newPoll = await createPoll({
           meetup_id: meetupId,
           creator_id: member.id!,
@@ -809,7 +815,7 @@ function ShareIntentHandler() {
         // Find if this share Intent has a mimeType. Use image/jpeg fallback
         const mimeType = shareData.mimeType || "image/jpeg";
         const filename = shareData.value.split("/").pop() || "shared.jpg";
-        
+
         // uploadMedia handles file uploading via formData
         await uploadMedia(shareData.value, filename, mimeType, meetupId, targetPollId, token);
         showAlert("Success", "Media uploaded to the poll!");
@@ -830,7 +836,7 @@ function ShareIntentHandler() {
       <BlurView intensity={80} style={layoutStyles.modalOverlay}>
         <View style={[layoutStyles.modalContent, { maxHeight: "90%" }]}>
           <Text style={layoutStyles.modalTitle}>Share to PartyApp</Text>
-          
+
           {loading || uploading ? (
             <ActivityIndicator size="large" color={colors.primary} />
           ) : (
@@ -838,11 +844,11 @@ function ShareIntentHandler() {
               {shareData.value && (
                 <Image source={{ uri: shareData.value }} style={{ width: "100%", height: 200, borderRadius: 10, marginBottom: 20 }} resizeMode="cover" />
               )}
-              
+
               {meetups.map(m => (
                 <View key={m.id} style={{ marginBottom: 20 }}>
                   <Text style={{ fontFamily: "Nunito_800ExtraBold", fontSize: 18, marginBottom: 10 }}>{m.title}</Text>
-                  
+
                   {pollsByMeetup[m.id!]?.map(p => (
                     <TouchableOpacity
                       key={p.id}
@@ -852,7 +858,7 @@ function ShareIntentHandler() {
                       <Text style={globalStyles.primaryButtonText}>Add to: {p.title}</Text>
                     </TouchableOpacity>
                   ))}
-                  
+
                   <TouchableOpacity
                     style={[globalStyles.secondaryButton, { marginBottom: 10 }]}
                     onPress={() => handleUpload(m.id!)}

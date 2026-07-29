@@ -6,15 +6,15 @@ import {
   FlatList,
   Image,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { useAuth } from "../lib/auth";
+import { DropdownSelect } from "../lib/components/DropdownSelect";
 import { EmailModal } from "../lib/components/EmailModal";
 import { GroupChatModal } from "../lib/components/GroupChatModal";
 import { Meetup } from "../lib/data/Meetup";
@@ -35,9 +35,8 @@ import {
   GroupedMemberContacts,
   updateTribe,
 } from "../lib/data/service";
-import { openEmailThread, safeBack, showAlert } from "../lib/util";
-import { DropdownSelect } from "../lib/components/DropdownSelect";
 import { colors, globalStyles } from "../lib/theme";
+import { openEmailThread, safeBack, showAlert } from "../lib/util";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
 
 export default function EditTribe() {
@@ -578,7 +577,7 @@ export default function EditTribe() {
           ) : (
             <View style={{ alignItems: "center", marginVertical: 24 }}>
               <Text style={{ fontSize: 72, marginBottom: 12 }}>{iconType || "😊"}</Text>
-              <Text style={{ fontSize: 32, fontFamily: "BricolageGrotesque_500Medium", color: colors.accent, textAlign: "center", marginBottom: 8 }}>{name}</Text>
+              <Text style={{ fontSize: 40, fontFamily: "DancingScript_700Bold", color: colors.accent, textAlign: "center", marginBottom: 8 }}>{name}</Text>
               {description ? (
                 <Text style={{ fontSize: 16, color: colors.textSecondary, textAlign: "center", paddingHorizontal: 20 }}>{description}</Text>
               ) : null}
@@ -671,7 +670,7 @@ export default function EditTribe() {
                           params: { id: meetup.id, tribeId: selectedTribe.id },
                         })
                       }
-                      >
+                    >
                       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
                         <Text style={styles.squareCardIcon}>
                           {meetup.icon_type || "🎉"}
@@ -719,7 +718,7 @@ export default function EditTribe() {
                     setIsEditing(false);
                   }}
                 >
-                    <Text style={[styles.primaryButtonText, { color: colors.textSecondary }]}>
+                  <Text style={[styles.primaryButtonText, { color: colors.textSecondary }]}>
                     Cancel
                   </Text>
                 </TouchableOpacity>

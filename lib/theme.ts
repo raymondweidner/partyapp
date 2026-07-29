@@ -1,21 +1,21 @@
 import { StyleSheet } from 'react-native';
 
 export const colors = {
-  background: '#FDFBF7', 
-  surface: '#FFFFFF', 
-  primary: '#404040', 
-  accent: '#7A8B73', 
+  background: '#FDFBF7',
+  surface: '#FFFFFF',
+  primary: '#404040',
+  accent: '#7A8B73',
   accentDark: '#5C6B55',
-  text: '#404040', 
+  text: '#404040',
   textSecondary: '#555555',
   textMuted: '#7B7B7B',
-  danger: '#FCA5A5', 
+  danger: '#FCA5A5',
   border: '#EAE5DD',
   borderLight: '#F4F0EB',
   glassBackground: 'rgba(255, 255, 255, 0.8)',
   glassBorder: '#EAE5DD',
-  overlay: 'rgba(255,255,255,0.4)', 
-  skyBlue: '#E0F2FE', 
+  overlay: 'rgba(255,255,255,0.4)',
+  skyBlue: '#E0F2FE',
 };
 
 export const globalStyles = StyleSheet.create({
@@ -162,7 +162,7 @@ export const globalStyles = StyleSheet.create({
   },
   primaryButtonText: {
     fontFamily: "Nunito_800ExtraBold",
-    color: "#FFFFFF", 
+    color: "#FFFFFF",
     fontSize: 16,
   },
   secondaryButton: {
@@ -188,9 +188,9 @@ export const globalStyles = StyleSheet.create({
     alignItems: "center",
     marginTop: 20,
   },
-  dangerButtonText: { 
+  dangerButtonText: {
     fontFamily: "Nunito_800ExtraBold",
-    color: "#FFFFFF", 
+    color: "#FFFFFF",
     fontSize: 16,
   },
   backButton: {

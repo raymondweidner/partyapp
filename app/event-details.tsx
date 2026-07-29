@@ -9,25 +9,25 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Member } from "../lib/data/Member";
-import { MeetupEvent } from "../lib/data/MeetupEvent";
+import { useAuth } from "../lib/auth";
+import { HelpRegistry } from "../lib/data/HelpRegistry";
 import { Meetup } from "../lib/data/Meetup";
+import { MeetupEvent } from "../lib/data/MeetupEvent";
+import { Member } from "../lib/data/Member";
 import { Poll } from "../lib/data/Poll";
 import { PollEntry } from "../lib/data/PollEntry";
 import { PollVote } from "../lib/data/PollVote";
-import { HelpRegistry } from "../lib/data/HelpRegistry";
 import {
+  getHelpRegistries,
   getMeetupEvents,
   getMeetups,
   getMembers,
   getPollEntries,
   getPolls,
   getPollVotes,
-  getHelpRegistries,
   getRegistryItems,
   getTribalCouncils,
 } from "../lib/data/service";
-import { useAuth } from "../lib/auth";
 import { TribalCouncil } from "../lib/data/TribalCouncil";
 import { colors, globalStyles } from "../lib/theme";
 import { safeBack } from "../lib/util";
@@ -37,7 +37,7 @@ export default function EventDetails() {
   const router = useRouter();
   const { id: eventId, meetupId } = useLocalSearchParams<{ id: string; meetupId: string }>();
   const { user } = useAuth();
-  
+
   const [loading, setLoading] = useState(true);
   const [meetupEvent, setMeetupEvent] = useState<MeetupEvent | null>(null);
   const [meetup, setMeetup] = useState<Meetup | null>(null);
@@ -63,16 +63,16 @@ export default function EventDetails() {
           getMembers(token),
           getTribalCouncils(token, meetupId),
         ]);
-        
+
         const event = eventsData.find(e => e.id === eventId);
         setMeetupEvent(event || null);
         setMeetup(meetupsData.find(m => m.id === meetupId) || null);
         setMembers(membersData);
         setTribalCouncils(councilsData);
-        
+
         const eventPolls = pollsData.filter(p => p.meetup_event_id === eventId);
         setPolls(eventPolls);
-        
+
         const entryPromises = eventPolls.map(p => getPollEntries(token, p.id!));
         const votePromises = eventPolls.map(p => getPollVotes(token, p.id!));
         const [entriesResults, votesResults] = await Promise.all([
@@ -84,13 +84,13 @@ export default function EventDetails() {
 
         const regs = await getHelpRegistries(token, undefined, eventId);
         const regsWithCounts = await Promise.all(regs.map(async (r) => {
-           if (!r.id) return { ...r, incompleteCount: 0 };
-           const rItems = await getRegistryItems(token, r.id);
-           const incCount = rItems.filter(i => i.status !== 'Complete' && i.status !== 'Cancelled').length;
-           return { ...r, incompleteCount: incCount };
+          if (!r.id) return { ...r, incompleteCount: 0 };
+          const rItems = await getRegistryItems(token, r.id);
+          const incCount = rItems.filter(i => i.status !== 'Complete' && i.status !== 'Cancelled').length;
+          return { ...r, incompleteCount: incCount };
         }));
         setRegistries(regsWithCounts);
-        
+
       } catch (err) {
         console.error("Failed to fetch event details", err);
       } finally {
@@ -119,7 +119,7 @@ export default function EventDetails() {
   const pStartDate = new Date(meetupEvent.start_at);
   const pEndDate = new Date(meetupEvent.end_at);
   const hasValidDate = !isNaN(pStartDate.getTime()) && !isNaN(pEndDate.getTime());
-  
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20 }}>
@@ -128,7 +128,7 @@ export default function EventDetails() {
         </TouchableOpacity>
 
         <View style={{ marginBottom: 24, marginTop: 12 }}>
-          <Text style={{ fontSize: 32, fontFamily: "BricolageGrotesque_500Medium", color: colors.text }}>
+          <Text style={{ fontSize: 40, fontFamily: "DancingScript_700Bold", color: colors.text }}>
             {meetup?.title || "Meetup Event"}
           </Text>
           <Text style={{ fontSize: 16, color: colors.textSecondary, marginTop: 4 }}>
@@ -157,7 +157,7 @@ export default function EventDetails() {
               {meetupEvent.location || "TBD"}
             </Text>
           </View>
-          
+
           {meetupEvent.note && (
             <View style={{ marginBottom: 12 }}>
               <Text style={globalStyles.attributeName}>Notes</Text>
@@ -176,77 +176,77 @@ export default function EventDetails() {
 
         {(() => {
           const isCouncilMember = tribalCouncils.some(c => c.member_id === member?.id) || meetup?.creator_id === member?.id;
-          
+
           return (
             <View style={globalStyles.sectionPanel}>
-            {meetupEvent?.root_folder_id && (
-              <>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <Text style={styles.sectionTitle}>Event Polls</Text>
-            {isCouncilMember && (
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => router.push({ pathname: "/create-poll", params: { meetupId: meetupId } } as any)}
-              >
-                <Text style={styles.addButtonText}>+ Add Poll</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+              {meetupEvent?.root_folder_id && (
+                <>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                    <Text style={styles.sectionTitle}>Event Polls</Text>
+                    {isCouncilMember && (
+                      <TouchableOpacity
+                        style={styles.addButton}
+                        onPress={() => router.push({ pathname: "/create-poll", params: { meetupId: meetupId } } as any)}
+                      >
+                        <Text style={styles.addButtonText}>+ Add Poll</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16, borderBottomWidth: 1, borderBottomColor: colors.borderLight }}>
-            <TouchableOpacity
-              onPress={() => setPollTab("posting")}
-              style={[styles.tab, pollTab === "posting" && styles.activeTab]}
-            >
-              <Text style={[styles.tabText, pollTab === "posting" && styles.activeTabText]}>Posting</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setPollTab("voting")}
-              style={[styles.tab, pollTab === "voting" && styles.activeTab]}
-            >
-              <Text style={[styles.tabText, pollTab === "voting" && styles.activeTabText]}>Voting</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setPollTab("complete")}
-              style={[styles.tab, pollTab === "complete" && styles.activeTab]}
-            >
-              <Text style={[styles.tabText, pollTab === "complete" && styles.activeTabText]}>Complete</Text>
-            </TouchableOpacity>
-          </ScrollView>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16, borderBottomWidth: 1, borderBottomColor: colors.borderLight }}>
+                    <TouchableOpacity
+                      onPress={() => setPollTab("posting")}
+                      style={[styles.tab, pollTab === "posting" && styles.activeTab]}
+                    >
+                      <Text style={[styles.tabText, pollTab === "posting" && styles.activeTabText]}>Posting</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setPollTab("voting")}
+                      style={[styles.tab, pollTab === "voting" && styles.activeTab]}
+                    >
+                      <Text style={[styles.tabText, pollTab === "voting" && styles.activeTabText]}>Voting</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setPollTab("complete")}
+                      style={[styles.tab, pollTab === "complete" && styles.activeTab]}
+                    >
+                      <Text style={[styles.tabText, pollTab === "complete" && styles.activeTabText]}>Complete</Text>
+                    </TouchableOpacity>
+                  </ScrollView>
 
-          <View style={{ gap: 12 }}>
-            {polls
-              .filter((p) => (p.status || "Posting").toLowerCase() === pollTab)
-              .map((poll) => {
-                const entryCount = pollEntries.filter((e) => e.poll_id === poll.id).length;
-                const voteCount = pollVotes.filter((v) => v.poll_id === poll.id).length;
-                
-                return (
-                  <TouchableOpacity
-                    key={poll.id}
-                    style={styles.proposalItem}
-                    onPress={() => router.push(`/edit-poll?id=${poll.id}` as any)}
-                  >
-                    <Text style={{ fontSize: 18, fontFamily: "Nunito_700Bold", color: colors.text, marginBottom: 4 }}>
-                      {poll.icon_type ? `${poll.icon_type} ` : ""}{poll.title}
-                    </Text>
-                    <Text style={{ fontSize: 14, color: colors.textSecondary }}>
-                      {entryCount} {entryCount === 1 ? "entry" : "entries"}
-                      {pollTab !== "posting" && ` • ${voteCount} ${voteCount === 1 ? "vote" : "votes"}`}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            {polls.filter((p) => (p.status || "Posting").toLowerCase() === pollTab).length === 0 && (
-              <Text style={{ textAlign: "center", color: colors.textMuted, fontStyle: "italic", marginTop: 12, marginBottom: 12 }}>No polls found.</Text>
-            )}
-          </View>
-              </>
-            )}
-          </View>
+                  <View style={{ gap: 12 }}>
+                    {polls
+                      .filter((p) => (p.status || "Posting").toLowerCase() === pollTab)
+                      .map((poll) => {
+                        const entryCount = pollEntries.filter((e) => e.poll_id === poll.id).length;
+                        const voteCount = pollVotes.filter((v) => v.poll_id === poll.id).length;
+
+                        return (
+                          <TouchableOpacity
+                            key={poll.id}
+                            style={styles.proposalItem}
+                            onPress={() => router.push(`/edit-poll?id=${poll.id}` as any)}
+                          >
+                            <Text style={{ fontSize: 18, fontFamily: "Nunito_700Bold", color: colors.text, marginBottom: 4 }}>
+                              {poll.icon_type ? `${poll.icon_type} ` : ""}{poll.title}
+                            </Text>
+                            <Text style={{ fontSize: 14, color: colors.textSecondary }}>
+                              {entryCount} {entryCount === 1 ? "entry" : "entries"}
+                              {pollTab !== "posting" && ` • ${voteCount} ${voteCount === 1 ? "vote" : "votes"}`}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    {polls.filter((p) => (p.status || "Posting").toLowerCase() === pollTab).length === 0 && (
+                      <Text style={{ textAlign: "center", color: colors.textMuted, fontStyle: "italic", marginTop: 12, marginBottom: 12 }}>No polls found.</Text>
+                    )}
+                  </View>
+                </>
+              )}
+            </View>
           );
         })()}
-        
+
         {(() => {
           const isCouncilMember = tribalCouncils.some(c => c.member_id === member?.id) || meetup?.creator_id === member?.id;
           const visibleRegistries = registries.filter(r => !r.is_council || isCouncilMember);
@@ -301,8 +301,8 @@ export default function EventDetails() {
             </View>
           );
         })()}
-        
-        
+
+
         <View style={{ height: 40 }} />
       </ScrollView>
     </View>

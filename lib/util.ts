@@ -34,7 +34,7 @@ export const showAlert = (
 
 export const getResourceEndpoint = () => {
   if (__DEV__ && process.env.EXPO_PUBLIC_USE_PROD_BACKEND !== "true") {
-    return "http://localhost:5008";
+    return Platform.OS === 'android' ? "http://10.0.2.2:5008" : "http://localhost:5008";
   }
   return "https://partyparty-395288752355.us-east5.run.app";
 };
