@@ -740,7 +740,7 @@ export default function EditMeetup() {
               <View style={{ alignItems: "center", marginTop: 24 }}>
                 <Text style={{ fontSize: 72, marginBottom: 12 }}>{iconType || "🎉"}</Text>
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 8, flexWrap: "wrap", gap: 12 }}>
-                  <Text style={{ fontSize: 40, fontFamily: "DancingScript_700Bold", color: colors.accent, textAlign: "center" }}>{title}</Text>
+                  <Text style={{ fontSize: 40, fontFamily: "Lobster_400Regular", color: colors.accent, textAlign: "center" }}>{title}</Text>
                   {(() => {
                     let bgColor = colors.accent;
                     let textColor = "#F8F9FA";
@@ -767,7 +767,7 @@ export default function EditMeetup() {
                   const tribe = tribes.find(t => t.id === selectedMeetup.tribe_id);
                   if (!tribe) return null;
                   return (
-                    <Text style={{ fontSize: 22, fontFamily: "DancingScript_700Bold", color: colors.textSecondary, textAlign: "center", marginBottom: 24 }}>
+                    <Text style={{ fontSize: 18, fontFamily: "Nunito_700Bold", color: colors.textSecondary, textAlign: "center", marginBottom: 24 }}>
                       {tribe.icon_type} {tribe.name}
                     </Text>
                   );

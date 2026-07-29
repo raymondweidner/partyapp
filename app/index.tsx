@@ -848,7 +848,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   scrollContent: { padding: 20 },
   header: {
-    fontFamily: "BricolageGrotesque_500Medium",
+    fontFamily: "Lobster_400Regular",
     fontSize: 40,
     marginBottom: 4,
     textAlign: "center",
@@ -935,12 +935,12 @@ const styles = StyleSheet.create({
   signOutButton: {
     marginTop: 32,
     height: 52,
-    backgroundColor: colors.danger,
+    backgroundColor: "#4E3629",
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
   },
-  signOutText: { color: "#F8F9FA", fontSize: 16, fontWeight: "bold" },
+  signOutText: { color: colors.background, fontSize: 16, fontWeight: "bold" },
   headerButtonsRow: {
     flexDirection: "row",
     gap: 8,
@@ -1040,8 +1040,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   squareCardTitle: {
-    fontSize: 22,
-    fontFamily: "DancingScript_700Bold",
+    fontSize: 20,
+    fontFamily: "BricolageGrotesque_500Medium",
     color: colors.text,
     textAlign: "center",
   },

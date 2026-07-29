@@ -577,7 +577,7 @@ export default function EditTribe() {
           ) : (
             <View style={{ alignItems: "center", marginVertical: 24 }}>
               <Text style={{ fontSize: 72, marginBottom: 12 }}>{iconType || "😊"}</Text>
-              <Text style={{ fontSize: 40, fontFamily: "DancingScript_700Bold", color: colors.accent, textAlign: "center", marginBottom: 8 }}>{name}</Text>
+              <Text style={{ fontSize: 40, fontFamily: "Lobster_400Regular", color: colors.accent, textAlign: "center", marginBottom: 8 }}>{name}</Text>
               {description ? (
                 <Text style={{ fontSize: 16, color: colors.textSecondary, textAlign: "center", paddingHorizontal: 20 }}>{description}</Text>
               ) : null}

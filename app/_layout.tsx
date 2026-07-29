@@ -1,6 +1,6 @@
 import { Besley_600SemiBold, Besley_700Bold, Besley_800ExtraBold, useFonts as useBesleyFonts } from '@expo-google-fonts/besley';
 import { BricolageGrotesque_500Medium, useFonts as useBricolageFonts } from '@expo-google-fonts/bricolage-grotesque';
-import { DancingScript_400Regular, DancingScript_500Medium, DancingScript_600SemiBold, DancingScript_700Bold, useFonts as useDancingScriptFonts } from '@expo-google-fonts/dancing-script';
+import { Lobster_400Regular, useFonts as useLobsterFonts } from '@expo-google-fonts/lobster';
 import { Fraunces_200ExtraLight, useFonts as useFrauncesFonts } from '@expo-google-fonts/fraunces';
 import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold, Nunito_900Black, useFonts } from '@expo-google-fonts/nunito';
 import { Quicksand_700Bold, useFonts as useQuicksandFonts } from '@expo-google-fonts/quicksand';
@@ -531,18 +531,15 @@ function RootLayoutNav() {
     Besley_800ExtraBold,
   });
 
-  const [dancingScriptLoaded] = useDancingScriptFonts({
-    DancingScript_400Regular,
-    DancingScript_500Medium,
-    DancingScript_600SemiBold,
-    DancingScript_700Bold,
+  const [lobsterLoaded] = useLobsterFonts({
+    Lobster_400Regular,
   });
 
   useEffect(() => {
-    if (fontsLoaded && quicksandLoaded && frauncesLoaded && bricolageLoaded && besleyLoaded && dancingScriptLoaded) {
+    if (fontsLoaded && quicksandLoaded && frauncesLoaded && bricolageLoaded && besleyLoaded && lobsterLoaded) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, quicksandLoaded, frauncesLoaded, bricolageLoaded, besleyLoaded, dancingScriptLoaded]);
+  }, [fontsLoaded, quicksandLoaded, frauncesLoaded, bricolageLoaded, besleyLoaded, lobsterLoaded]);
 
   useEffect(() => {
     if (loading) return;

@@ -36,15 +36,15 @@ export const globalStyles = StyleSheet.create({
     elevation: 0,
   },
   headerTitleStyle: {
-    fontFamily: "BricolageGrotesque_500Medium",
-    fontSize: 20,
+    fontFamily: "Lobster_400Regular",
+    fontSize: 24,
   },
   scrollContent: {
     padding: 16,
   },
   header: {
-    fontFamily: "BricolageGrotesque_500Medium",
-    fontSize: 34,
+    fontFamily: "Lobster_400Regular",
+    fontSize: 40,
     marginBottom: 8,
     textAlign: "center",
     color: colors.accent,

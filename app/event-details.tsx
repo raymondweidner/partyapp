@@ -128,7 +128,7 @@ export default function EventDetails() {
         </TouchableOpacity>
 
         <View style={{ marginBottom: 24, marginTop: 12 }}>
-          <Text style={{ fontSize: 40, fontFamily: "DancingScript_700Bold", color: colors.text }}>
+          <Text style={{ fontSize: 40, fontFamily: "Lobster_400Regular", color: colors.text }}>
             {meetup?.title || "Meetup Event"}
           </Text>
           <Text style={{ fontSize: 16, color: colors.textSecondary, marginTop: 4 }}>
