@@ -347,7 +347,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   formCard: {
-    backgroundColor: colors.glassBackground,
+    backgroundColor: colors.glassCardBackground,
     borderRadius: 16,
     padding: 24,
     borderWidth: 1,

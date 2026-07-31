@@ -57,13 +57,14 @@ import { TribeMember } from "../lib/data/TribeMember";
 
 import { useAuth } from "../lib/auth";
 import { DropdownSelect } from "../lib/components/DropdownSelect";
+import { FloralDivider } from "../lib/components/FloralDivider";
 import { GroupChatModal } from "../lib/components/GroupChatModal";
 import { NumberStepper } from "../lib/components/NumberStepper";
 import { colors, globalStyles } from "../lib/theme";
 import { openMapUrl, safeBack, showAlert } from "../lib/util";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
 
-export default function EditMeetup() {
+export default function ReadMeetup() {
   const router = useRouter();
   const { id: paramMeetupId, tribeId: paramTribeId } = useLocalSearchParams<{
     id?: string;
@@ -326,7 +327,7 @@ export default function EditMeetup() {
 
   const handleBack = () => {
     if (paramMeetupId) {
-      safeBack(router, `/edit-tribe?id=${paramTribeId}`);
+      safeBack(router, `/read-tribe?id=${paramTribeId}`);
     } else {
       setSelectedMeetup(null);
     }
@@ -553,7 +554,7 @@ export default function EditMeetup() {
       <View style={styles.container}>
         <Stack.Screen
           options={{
-            title: isEditing ? `Edit ${selectedMeetup.title || ""} Meetup`.trim() : `Meetup ${selectedMeetup.title || ""}`.trim(),
+            title: `Meetup ${selectedMeetup.title || ""}`.trim(),
             headerLeft: () => <CustomHeaderLeft onBack={handleBack} />,
           }}
         />
@@ -760,6 +761,7 @@ export default function EditMeetup() {
                     );
                   })()}
                 </View>
+                <FloralDivider color={colors.accent} />
                 {details ? (
                   <Text style={{ fontSize: 18, fontFamily: "Fraunces_200ExtraLight", color: colors.textSecondary, textAlign: "center", paddingHorizontal: 20, marginBottom: 32 }}>{details}</Text>
                 ) : <View style={{ marginBottom: 32 }} />}
@@ -987,7 +989,7 @@ export default function EditMeetup() {
                 selectedMeetup.status === "Completed" && !selectedMeetup.recurrence_type ? null : (
                   <TouchableOpacity
                     style={styles.primaryButton}
-                    onPress={() => setIsEditing(true)}
+                    onPress={() => router.push({ pathname: "/write-meetup", params: { id: selectedMeetup.id, tribeId: selectedMeetup.tribe_id } })}
                   >
                     <Text style={styles.primaryButtonText}>Edit Meetup</Text>
                   </TouchableOpacity>
@@ -995,13 +997,15 @@ export default function EditMeetup() {
             </View>
           ) : null}
 
-          {!isEditing && selectedMeetup.root_folder_id && (
+          <FloralDivider color={colors.accent} />
+
+          {selectedMeetup.root_folder_id && (
             <View style={globalStyles.sectionPanel}>
               <View style={globalStyles.sectionHeader}>
                 <Text style={globalStyles.sectionTitle}>📊 Polls</Text>
                 {selectedMeetup.status !== "Completed" && (
                   <TouchableOpacity
-                    onPress={() => router.push(`/create-poll?meetupId=${selectedMeetup.id}` as any)}
+                    onPress={() => router.push(`/write-poll?meetupId=${selectedMeetup.id}` as any)}
                     style={styles.addButton}
                   >
                     <Text style={styles.addButtonText}>+ Add</Text>
@@ -1050,7 +1054,7 @@ export default function EditMeetup() {
                       <TouchableOpacity
                         key={poll.id}
                         style={styles.proposalItem}
-                        onPress={() => router.push(`/edit-poll?id=${poll.id}` as any)}
+                        onPress={() => router.push(`/read-poll?id=${poll.id}` as any)}
                       >
                         <Text style={{ fontSize: 18, fontFamily: "Nunito_700Bold", color: colors.text, marginBottom: 4 }}>
                           {poll.icon_type ? `${poll.icon_type} ` : ""}{poll.title}
@@ -1090,7 +1094,7 @@ export default function EditMeetup() {
                         <TouchableOpacity
                           style={styles.addButton}
                           onPress={() => {
-                            router.push({ pathname: "/edit-registry", params: { meetupEventId: relevantEventId } });
+                            router.push({ pathname: "/write-registry", params: { meetupEventId: relevantEventId } });
                           }}
                         >
                           <Text style={styles.addButtonText}>+ Add</Text>
@@ -1122,7 +1126,7 @@ export default function EditMeetup() {
                         <TouchableOpacity
                           key={reg.id}
                           style={styles.proposalItem}
-                          onPress={() => router.push({ pathname: "/edit-registry", params: { id: reg.id } })}
+                          onPress={() => router.push({ pathname: "/read-registry", params: { id: reg.id } })}
                         >
                           <Text style={{ fontSize: 18, fontFamily: "Nunito_700Bold", color: colors.text, marginBottom: 4 }}>{reg.name}</Text>
                           <Text style={{ fontSize: 14, color: colors.textSecondary }}>
@@ -1148,7 +1152,7 @@ export default function EditMeetup() {
                     style={styles.addButton}
                     onPress={() =>
                       router.push({
-                        pathname: "/create-proposal",
+                        pathname: "/write-proposal",
                         params: { meetupId: selectedMeetup.id },
                       })
                     }
@@ -1223,7 +1227,7 @@ export default function EditMeetup() {
                         onPress={() => {
                           if (selectedMeetup.status === "Cancelled" || selectedMeetup.status === "Completed") return;
                           router.push({
-                            pathname: "/edit-proposal",
+                            pathname: "/read-proposal",
                             params: { id: p.id, meetupId: selectedMeetup.id },
                           });
                         }}
@@ -1309,7 +1313,7 @@ export default function EditMeetup() {
             </View>
           )}
 
-          {!isEditing && (selectedMeetup as any).creator_id === member?.id && selectedMeetup.status !== "Cancelled" && selectedMeetup.status !== "Completed" && proposals.length > 0 && selectedMeetup.status === "Planning" && (
+          {(selectedMeetup as any).creator_id === member?.id && selectedMeetup.status !== "Cancelled" && selectedMeetup.status !== "Completed" && proposals.length > 0 && selectedMeetup.status === "Planning" && (
             <View style={{ marginTop: 10, marginBottom: 20 }}>
               <TouchableOpacity
                 style={[styles.primaryButton, { backgroundColor: colors.accent }]}
@@ -1320,7 +1324,7 @@ export default function EditMeetup() {
             </View>
           )}
 
-          {!isEditing && (
+          {(
             <View style={globalStyles.sectionPanel}>
               <View style={globalStyles.sectionHeader}>
                 <Text style={globalStyles.sectionTitle}>
@@ -1353,7 +1357,7 @@ export default function EditMeetup() {
           )}
 
           {/* Tribal Council Section */}
-          {!isEditing && (
+          {(
             <View style={globalStyles.sectionPanel}>
               <View style={globalStyles.sectionHeader}>
                 <Text style={globalStyles.sectionTitle}>👑 Tribal Council</Text>
@@ -1380,7 +1384,7 @@ export default function EditMeetup() {
                         <Text style={[globalStyles.attributeName, { marginBottom: 4 }]}>
                           {selectedMeetup.leader_title || "Tribal Chieftain"}
                         </Text>
-                        <TouchableOpacity onPress={() => router.push(`/edit-member?id=${creatorMember.id}` as any)}>
+                        <TouchableOpacity onPress={() => router.push(`/read-member?id=${creatorMember.id}` as any)}>
                           <Text style={globalStyles.attributeValue}>
                             {creatorMember.name}
                           </Text>
@@ -1404,7 +1408,7 @@ export default function EditMeetup() {
                     const mem = members.find((m) => m.id === c.member_id);
                     if (!mem) return null;
                     return (
-                      <TouchableOpacity key={c.id} onPress={() => router.push(`/edit-member?id=${mem.id}` as any)} style={{ marginBottom: 4 }}>
+                      <TouchableOpacity key={c.id} onPress={() => router.push(`/read-member?id=${mem.id}` as any)} style={{ marginBottom: 4 }}>
                         <Text style={globalStyles.attributeValue}>{mem.name}</Text>
                       </TouchableOpacity>
                     );
@@ -1441,7 +1445,7 @@ export default function EditMeetup() {
             </View>
           )}
 
-          {!isEditing && (selectedMeetup as any).creator_id === member?.id && selectedMeetup.status !== "Cancelled" && selectedMeetup.status !== "Completed" && (
+          {(selectedMeetup as any).creator_id === member?.id && selectedMeetup.status !== "Cancelled" && selectedMeetup.status !== "Completed" && (
             <View style={{ marginTop: 10, marginBottom: 20 }}>
               <TouchableOpacity
                 style={[styles.primaryButton, { backgroundColor: colors.danger }]}
@@ -1678,7 +1682,7 @@ export default function EditMeetup() {
 const styles = StyleSheet.create({
   container: { ...globalStyles.container, padding: 20 },
   item: { padding: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
-  itemTitle: { fontSize: 16, fontWeight: "bold", color: colors.text },
+  itemTitle: { fontFamily: "BricolageGrotesque_500Medium", fontSize: 15, color: colors.text },
   itemSubtitle: { fontSize: 14, color: colors.textSecondary },
   label: globalStyles.label,
   input: globalStyles.input,
@@ -1751,7 +1755,7 @@ const styles = StyleSheet.create({
   },
   proposalItem: {
     padding: 15,
-    backgroundColor: colors.glassBackground,
+    backgroundColor: colors.glassCardBackground,
     borderRadius: 12,
     marginBottom: 10,
     borderWidth: 1,

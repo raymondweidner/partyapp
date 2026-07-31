@@ -17,6 +17,7 @@ import { useAuth } from "../lib/auth";
 import { DropdownSelect } from "../lib/components/DropdownSelect";
 import { EmailModal } from "../lib/components/EmailModal";
 import { GroupChatModal } from "../lib/components/GroupChatModal";
+import { FloralDivider } from "../lib/components/FloralDivider";
 import { Meetup } from "../lib/data/Meetup";
 import { Member } from "../lib/data/Member";
 import { Tribe } from "../lib/data/Tribe";
@@ -39,14 +40,12 @@ import { colors, globalStyles } from "../lib/theme";
 import { openEmailThread, safeBack, showAlert } from "../lib/util";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
 
-export default function EditTribe() {
+export default function ReadTribe() {
   const router = useRouter();
   const { id: paramTribeId } = useLocalSearchParams<{ id?: string }>();
   const { user, loading: authLoading } = useAuth();
   const { member } = useCurrentMember();
 
-
-  const [isEditing, setIsEditing] = useState(false);
 
   const [tribes, setTribes] = useState<Tribe[]>([]);
   const [loading, setLoading] = useState(false);
@@ -185,7 +184,6 @@ export default function EditTribe() {
 
   const handleSelectTribe = useCallback(
     (tribe: Tribe) => {
-      setIsEditing(false);
       setSelectedTribe(tribe);
       setName(tribe.name || "");
       setDescription(tribe.description || "");
@@ -269,7 +267,7 @@ export default function EditTribe() {
     setUpdating(true);
     try {
       const token = await user.getIdToken();
-      await updateTribe(
+      const updatedTribe = await updateTribe(
         { ...selectedTribe, name, description, icon_type: iconType } as Tribe & { id: string },
         token,
       );
@@ -299,11 +297,11 @@ export default function EditTribe() {
 
       await Promise.all(promises);
 
+      setSelectedTribe(updatedTribe);
       showAlert("Success", "Tribe updated successfully!", [
         {
           text: "OK",
           onPress: () => {
-            setIsEditing(false);
             if (paramTribeId) {
               safeBack(router, "/");
             } else {
@@ -516,7 +514,7 @@ export default function EditTribe() {
       <View style={styles.container}>
         <Stack.Screen
           options={{
-            title: isEditing ? `Edit ${selectedTribe.name} Tribe` : selectedTribe.name || "Tribe Details",
+            title: selectedTribe.name || "Tribe Details",
             headerLeft: () => <CustomHeaderLeft onBack={handleBack} />,
           }}
         />
@@ -524,65 +522,14 @@ export default function EditTribe() {
           contentContainerStyle={{ paddingBottom: 40 }}
           keyboardShouldPersistTaps="handled"
         >
-          {isEditing ? (
-            <>
-              <View style={{ flexDirection: "row", gap: 10, zIndex: 6000, elevation: 6000 }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.label}>Name</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={name}
-                    onChangeText={setName}
-                    placeholder="Tribe Name"
-                    placeholderTextColor={colors.textMuted}
-                  />
-                </View>
-                <View style={{ width: 90 }}>
-                  <Text style={styles.label}>Icon</Text>
-                  <DropdownSelect
-                    options={[
-                      { label: "👨‍👩‍👧‍👦", value: "👨‍👩‍👧‍👦" },
-                      { label: "🏠", value: "🏠" },
-                      { label: "💼", value: "💼" },
-                      { label: "🏢", value: "🏢" },
-                      { label: "🎓", value: "🎓" },
-                      { label: "🎒", value: "🎒" },
-                      { label: "♾️", value: "♾️" },
-                      { label: "🤝", value: "🤝" },
-                      { label: "🪖", value: "🪖" },
-                      { label: "🎖️", value: "🎖️" },
-                      { label: "⚽", value: "⚽" },
-                      { label: "🏅", value: "🏅" },
-                      { label: "😊", value: "😊" },
-                      { label: "😃", value: "😃" },
-                    ]}
-                    value={iconType}
-                    onSelect={setIconType}
-                    placeholder="😊"
-                  />
-                </View>
-              </View>
-
-              <Text style={styles.label}>Description</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                value={description}
-                onChangeText={setDescription}
-                placeholder="Description"
-                multiline
-                numberOfLines={4}
-                placeholderTextColor={colors.textMuted}
-              />
-            </>
-          ) : (
-            <View style={{ alignItems: "center", marginVertical: 24 }}>
+          <View style={{ alignItems: "center", marginVertical: 24 }}>
               <Text style={{ fontSize: 72, marginBottom: 12 }}>{iconType || "😊"}</Text>
               <Text style={{ fontSize: 40, fontFamily: "Lobster_400Regular", color: colors.accent, textAlign: "center", marginBottom: 8 }}>{name}</Text>
               {description ? (
                 <Text style={{ fontSize: 16, color: colors.textSecondary, textAlign: "center", paddingHorizontal: 20 }}>{description}</Text>
               ) : null}
             </View>
-          )}
+            <FloralDivider color={colors.accent} />
 
           <View style={globalStyles.sectionPanel}>
             <View style={styles.sectionHeader}>
@@ -602,14 +549,6 @@ export default function EditTribe() {
                 >
                   <Text style={styles.editButtonText}>📧 Email</Text>
                 </TouchableOpacity>
-                {isEditing && (
-                  <TouchableOpacity
-                    onPress={() => setIsModalVisible(true)}
-                    style={styles.editButton}
-                  >
-                    <Text style={styles.editButtonText}>Edit</Text>
-                  </TouchableOpacity>
-                )}
               </View>
             </View>
             {membersLoading && <ActivityIndicator size="small" />}
@@ -636,7 +575,7 @@ export default function EditTribe() {
                 style={styles.addButton}
                 onPress={() =>
                   router.push({
-                    pathname: "/create-meetup",
+                    pathname: "/write-meetup",
                     params: { tribeId: selectedTribe.id },
                   })
                 }
@@ -666,7 +605,7 @@ export default function EditTribe() {
                       style={styles.squareCard}
                       onPress={() =>
                         router.push({
-                          pathname: "/edit-meetup",
+                          pathname: "/read-meetup",
                           params: { id: meetup.id, tribeId: selectedTribe.id },
                         })
                       }
@@ -690,53 +629,16 @@ export default function EditTribe() {
             )}
           </View>
 
+          <FloralDivider color={colors.accent} />
           <View
             style={[styles.buttonContainer, { marginBottom: 20, marginTop: 30 }]}
           >
-            {updating ? (
-              <ActivityIndicator size="large" />
-            ) : isEditing ? (
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                }}
-              >
-                <TouchableOpacity
-                  style={[
-                    styles.primaryButton,
-                    {
-                      flex: 1,
-                      marginRight: 10,
-                      backgroundColor: "#f0f0f0",
-                      shadowOpacity: 0,
-                      elevation: 0,
-                    },
-                  ]}
-                  onPress={() => {
-                    handleSelectTribe(selectedTribe!);
-                    setIsEditing(false);
-                  }}
-                >
-                  <Text style={[styles.primaryButtonText, { color: colors.textSecondary }]}>
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.primaryButton, { flex: 1, marginLeft: 10 }]}
-                  onPress={handleUpdate}
-                >
-                  <Text style={styles.primaryButtonText}>Save</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <TouchableOpacity
-                style={styles.primaryButton}
-                onPress={() => setIsEditing(true)}
-              >
-                <Text style={styles.primaryButtonText}>Edit Details</Text>
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={() => router.push({ pathname: "/write-tribe", params: { id: selectedTribe.id } })}
+            >
+              <Text style={styles.primaryButtonText}>Edit Details</Text>
+            </TouchableOpacity>
           </View>
 
           <Modal

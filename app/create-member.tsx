@@ -77,7 +77,7 @@ export default function CreateMember() {
       );
 
       const buttons: any[] = [
-        { text: "OK", onPress: () => safeBack(router, tribeId ? `/edit-tribe?id=${tribeId}` : "/") }
+        { text: "OK", onPress: () => safeBack(router, tribeId ? `/read-tribe?id=${tribeId}` : "/") }
       ];
 
       if (phone.trim()) {
@@ -86,7 +86,7 @@ export default function CreateMember() {
           onPress: () => {
             const message = `Hi ${name.trim()}, you've been invited to join the Fam! Join here: https://app.partyapp.com/login?invite=${encodeURIComponent(email)}`;
             openWhatsApp(phone, message);
-            safeBack(router, tribeId ? `/edit-tribe?id=${tribeId}` : "/");
+            safeBack(router, tribeId ? `/read-tribe?id=${tribeId}` : "/");
           }
         });
       }
@@ -161,7 +161,7 @@ export default function CreateMember() {
 const styles = StyleSheet.create({
   container: { ...globalStyles.container, padding: 20 },
   formCard: {
-    backgroundColor: colors.glassBackground,
+    backgroundColor: colors.glassCardBackground,
     borderRadius: 16,
     padding: 24,
     borderWidth: 1,

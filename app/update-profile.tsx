@@ -103,8 +103,8 @@ export default function EditMember() {
           try {
             const token = await user.getIdToken();
             const updatedMember = { ...selectedMember, id: selectedMember.id, google_refresh_token: refreshToken };
-            await updateMember(updatedMember, token);
-            setSelectedMember(updatedMember);
+            const returnedMember = await updateMember(updatedMember, token);
+            setSelectedMember(returnedMember);
 
 
 
@@ -586,14 +586,14 @@ export default function EditMember() {
 const styles = StyleSheet.create({
   container: { ...globalStyles.container, padding: 20 },
   formCard: {
-    backgroundColor: colors.glassBackground,
+    backgroundColor: colors.glassCardBackground,
     borderRadius: 16,
     padding: 24,
     borderWidth: 1,
     borderColor: colors.border,
   },
   item: { padding: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
-  itemTitle: { fontSize: 16, fontWeight: "bold", color: colors.text },
+  itemTitle: { fontFamily: "BricolageGrotesque_500Medium", fontSize: 15, color: colors.text },
   itemSubtitle: { fontSize: 14, color: colors.textSecondary },
   label: globalStyles.label,
   input: globalStyles.input,

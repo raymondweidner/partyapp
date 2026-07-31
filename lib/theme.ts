@@ -3,6 +3,7 @@ import { StyleSheet } from 'react-native';
 export const colors = {
   background: '#FDFBF7',
   surface: '#FFFFFF',
+  cardBackground: '#FAF5F4',
   primary: '#404040',
   accent: '#7A8B73',
   accentDark: '#5C6B55',
@@ -13,6 +14,7 @@ export const colors = {
   border: '#EAE5DD',
   borderLight: '#F4F0EB',
   glassBackground: 'rgba(255, 255, 255, 0.8)',
+  glassCardBackground: 'rgba(250, 245, 244, 0.85)',
   glassBorder: '#EAE5DD',
   overlay: 'rgba(255,255,255,0.4)',
   skyBlue: '#E0F2FE',
@@ -266,8 +268,8 @@ export const globalStyles = StyleSheet.create({
     color: colors.text,
   },
   itemTitle: {
-    fontFamily: "Nunito_700Bold",
-    fontSize: 16,
+    fontFamily: "BricolageGrotesque_500Medium",
+    fontSize: 18,
     color: colors.text,
     marginBottom: 4,
   },

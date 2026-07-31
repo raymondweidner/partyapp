@@ -44,7 +44,6 @@ export default function EditRegistry() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
 
   // Registry Details
   const [name, setName] = useState("");
@@ -70,12 +69,8 @@ export default function EditRegistry() {
         setName(reg.name || "");
         setDetails(reg.details || "");
         setIsCouncil(reg.is_council || false);
-        setIsEditing(false);
-
         const itms = await getRegistryItems(token, paramId);
         setItems(itms);
-      } else {
-        setIsEditing(true);
       }
     } catch (e: any) {
       showAlert("Error", e.message);
@@ -100,7 +95,7 @@ export default function EditRegistry() {
       if (registry && registry.id) {
         const updated = await updateHelpRegistry({ ...registry, name, details, is_council: isCouncil, id: registry.id as string }, token);
         setRegistry(updated);
-        setIsEditing(false);
+        router.back();
         showAlert("Success", "Registry updated successfully!");
       } else {
         const newReg = await createHelpRegistry(
@@ -108,7 +103,7 @@ export default function EditRegistry() {
           token
         );
         setRegistry(newReg);
-        setIsEditing(false);
+        router.back();
         showAlert("Success", "Registry created successfully!");
         router.setParams({ id: newReg.id });
       }
@@ -159,14 +154,8 @@ export default function EditRegistry() {
           title: registry?.id ? "Help Registry" : "Create Registry",
           headerLeft: () => <CustomHeaderLeft />,
           headerRight: () =>
-            registry?.id && !isEditing ? (
-              <TouchableOpacity onPress={() => setIsEditing(true)}>
-                <Text style={{ color: colors.primary, fontSize: 16, fontWeight: "bold" }}>
-                  Edit
-                </Text>
-              </TouchableOpacity>
-            ) : isEditing && registry?.id ? (
-              <TouchableOpacity onPress={() => setIsEditing(false)}>
+            registry?.id ? (
+              <TouchableOpacity onPress={() => router.back()}>
                 <Text style={{ color: colors.primary, fontSize: 16 }}>Cancel</Text>
               </TouchableOpacity>
             ) : null,
@@ -175,64 +164,51 @@ export default function EditRegistry() {
       <ScrollView contentContainerStyle={{ padding: 20 }}>
         <Text style={globalStyles.label}>Registry Name</Text>
         <TextInput
-          style={[globalStyles.input, !isEditing && styles.readOnlyInput]}
+          style={globalStyles.input}
           value={name}
           onChangeText={setName}
-          editable={isEditing}
           placeholder="e.g. Decorations, Food, Cleanup"
           placeholderTextColor={colors.textMuted}
         />
 
         <Text style={[globalStyles.label, { marginTop: 15 }]}>Details</Text>
         <TextInput
-          style={[globalStyles.input, !isEditing && styles.readOnlyInput, { minHeight: 80 }]}
+          style={[globalStyles.input, { minHeight: 80 }]}
           value={details}
           onChangeText={setDetails}
-          editable={isEditing}
           multiline
           placeholder="Any special instructions for helpers?"
           placeholderTextColor={colors.textMuted}
         />
-        {isEditing && (
-          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 15, marginBottom: 10 }}>
-            <TouchableOpacity
-              style={[
-                styles.checkbox,
-                isCouncil && styles.checkboxSelected
-              ]}
-              onPress={() => setIsCouncil(!isCouncil)}
-            >
-              {isCouncil && (
-                <Text style={{ color: colors.background, fontWeight: "bold", fontSize: 14 }}>✓</Text>
-              )}
-            </TouchableOpacity>
-            <Text style={[globalStyles.label, { marginLeft: 10, marginTop: 0 }]}>
-              Tribal Council Eyes Only?
-            </Text>
-          </View>
-        )}
-        {!isEditing && isCouncil && (
-          <View style={{ marginTop: 15 }}>
-            <Text style={{ color: colors.primary, fontWeight: "bold", fontSize: 14 }}>
-              🔒 Tribal Council Eyes Only
-            </Text>
-          </View>
-        )}
-        {isEditing && (
+        <View style={{ flexDirection: "row", alignItems: "center", marginTop: 15, marginBottom: 10 }}>
           <TouchableOpacity
-            style={[globalStyles.primaryButton, { marginTop: 20 }]}
-            onPress={handleSaveRegistry}
-            disabled={saving}
+            style={[
+              styles.checkbox,
+              isCouncil && styles.checkboxSelected
+            ]}
+            onPress={() => setIsCouncil(!isCouncil)}
           >
-            {saving ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={globalStyles.primaryButtonText}>
-                {registry?.id ? "Save Registry" : "Create Registry"}
-              </Text>
+            {isCouncil && (
+              <Text style={{ color: colors.background, fontWeight: "bold", fontSize: 14 }}>✓</Text>
             )}
           </TouchableOpacity>
-        )}
+          <Text style={[globalStyles.label, { marginLeft: 10, marginTop: 0 }]}>
+            Tribal Council Eyes Only?
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={[globalStyles.primaryButton, { marginTop: 20 }]}
+          onPress={handleSaveRegistry}
+          disabled={saving}
+        >
+          {saving ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={globalStyles.primaryButtonText}>
+              {registry?.id ? "Save Registry" : "Create Registry"}
+            </Text>
+          )}
+        </TouchableOpacity>
 
         {registry?.id && (
           <View style={globalStyles.sectionPanel}>
@@ -320,13 +296,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     color: colors.text,
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: colors.text,
-    textAlign: "center",
-    marginBottom: 15,
-  },
+  sectionTitle: { fontSize: 24, fontFamily: "PaytoneOne_400Regular", color: colors.text, textAlign: "center", marginBottom: 15 },
   addButton: {
     backgroundColor: colors.primary,
     paddingHorizontal: 12,

@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
   container: { ...globalStyles.container, padding: 20 },
   label: globalStyles.label,
   formCard: {
-    backgroundColor: colors.glassBackground,
+    backgroundColor: colors.glassCardBackground,
     borderRadius: 16,
     padding: 24,
     borderWidth: 1,

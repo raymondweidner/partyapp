@@ -31,14 +31,14 @@ import {
   getRegistryItems,
   getTribeMembers,
   getTribalCouncils,
-  updateProposal,
+  createProposal, updateProposal,
 } from "../lib/data/service";
 import { TribalCouncil } from "../lib/data/TribalCouncil";
 import { colors, globalStyles } from "../lib/theme";
 import { openMapUrl, showAlert } from "../lib/util";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
 
-export default function EditProposal() {
+export default function WriteProposal() {
   const router = useRouter();
   const { id: paramProposalId, meetupId: paramMeetupId } =
     useLocalSearchParams<{
@@ -144,8 +144,8 @@ export default function EditProposal() {
     if (!user) router.replace("/login");
   }, [user, authLoading, router]);
 
-  const handleUpdate = async () => {
-    if (!proposal || !user) return;
+  const handleSave = async () => {
+    if (!user) return;
 
     if (!startDate || !endDate || !location) {
       showAlert("Validation Error", "Start time, end time, and location are required.");
@@ -169,7 +169,7 @@ export default function EditProposal() {
         {
           text: "OK",
           onPress: () => {
-            setIsEditing(false);
+            router.back();
             fetchDetails();
           },
         },
@@ -191,7 +191,7 @@ export default function EditProposal() {
       );
       setLocation((proposal as any).location || "");
     }
-    setIsEditing(false);
+    router.back();
   };
 
   if (!proposal) {
@@ -328,7 +328,7 @@ export default function EditProposal() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.primaryButton, { flex: 1, marginLeft: 10 }]}
-                onPress={handleUpdate}
+                onPress={handleSave}
               >
                 <Text style={styles.primaryButtonText}>Save</Text>
               </TouchableOpacity>
@@ -409,7 +409,7 @@ export default function EditProposal() {
                 {isCouncilMember && (
                   <TouchableOpacity
                     style={styles.addButton}
-                    onPress={() => router.push({ pathname: "/edit-registry", params: { proposalId: paramProposalId } })}
+                    onPress={() => router.push({ pathname: "/write-registry", params: { proposalId: paramProposalId } })}
                   >
                     <Text style={styles.addButtonText}>+ Add Registry</Text>
                   </TouchableOpacity>
@@ -440,7 +440,7 @@ export default function EditProposal() {
                   <TouchableOpacity
                     key={reg.id}
                     style={styles.registryCard}
-                    onPress={() => router.push({ pathname: "/edit-registry", params: { id: reg.id } })}
+                    onPress={() => router.push({ pathname: "/read-registry", params: { id: reg.id } })}
                   >
                     <Text style={styles.registryName}>{reg.name}</Text>
                     <Text style={styles.registryCount}>
@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
   input: globalStyles.input,
   readOnlyInput: globalStyles.readOnlyInput,
   disabledText: { color: colors.textMuted },
-  itemTitle: { fontSize: 16, fontWeight: "bold", color: colors.text },
+  itemTitle: { fontFamily: "BricolageGrotesque_500Medium", fontSize: 15, color: colors.text },
   availabilityItem: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: globalStyles.primaryButton,
   primaryButtonText: globalStyles.primaryButtonText,
-  sectionTitle: { fontSize: 20, fontWeight: "bold", color: colors.text, textAlign: "center", marginBottom: 15 },
+  sectionTitle: { fontSize: 24, fontFamily: "PaytoneOne_400Regular", color: colors.text, textAlign: "center", marginBottom: 15 },
   addButton: { backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   addButtonText: { color: "#fff", fontWeight: "bold" },
   tabContainer: { flexDirection: "row", gap: 10, marginVertical: 15 },
@@ -482,7 +482,7 @@ const styles = StyleSheet.create({
   activeTab: { backgroundColor: colors.primary, borderColor: colors.primary },
   tabText: { color: colors.text, fontWeight: "bold" },
   activeTabText: { color: "#fff" },
-  registryCard: { backgroundColor: colors.surface, padding: 16, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
+  registryCard: { backgroundColor: colors.cardBackground, padding: 16, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
   registryName: { fontSize: 16, color: colors.text, fontWeight: "bold", marginBottom: 4 },
   registryCount: { fontSize: 14, color: colors.primary },
   tabBadge: {

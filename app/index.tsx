@@ -1,4 +1,5 @@
 import { useFocusEffect, useRouter } from "expo-router";
+import { FloralDivider } from "../lib/components/FloralDivider";
 // removed signOut from firebase/auth
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -475,6 +476,7 @@ export default function Home() {
               Vibe
             </Text>
           </Text>
+          <FloralDivider color={colors.accent} />
         </View>
 
         {loading ? (
@@ -482,7 +484,7 @@ export default function Home() {
         ) : (
           <>
             <View style={globalStyles.sectionPanel}>
-              {renderSectionHeader("🏕️ Tribes", "/create-tribe")}
+              {renderSectionHeader("🏕️ Tribes", "/write-tribe")}
               <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.listContainer} nestedScrollEnabled>
                 {tribes.map((t) => {
                   const cleanDetails = t.description ? String(t.description).trim() : "";
@@ -494,7 +496,7 @@ export default function Home() {
                       style={styles.squareCard}
                       onPress={() =>
                         router.push({
-                          pathname: "/edit-tribe",
+                          pathname: "/read-tribe",
                           params: { id: t.id },
                         })
                       }
@@ -529,7 +531,7 @@ export default function Home() {
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    onPress={() => router.push("/create-meetup")}
+                    onPress={() => router.push("/write-meetup")}
                     style={styles.addButton}
                   >
                     <Text style={styles.addButtonText}>+ Add</Text>
@@ -641,7 +643,7 @@ export default function Home() {
                             style={styles.squareCard}
                             onPress={() =>
                               router.push({
-                                pathname: "/edit-meetup",
+                                pathname: "/read-meetup",
                                 params: { id: meetup.id },
                               })
                             }
@@ -819,6 +821,8 @@ export default function Home() {
           </>
         )}
 
+        <FloralDivider color={colors.accent} />
+        
         <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
           <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>
@@ -875,7 +879,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "colors.border",
   },
-  sectionTitle: { fontSize: 22, fontWeight: "800", color: colors.text, textAlign: "center" },
+  sectionTitle: { fontSize: 24, fontFamily: "PaytoneOne_400Regular", color: colors.text, textAlign: "center" },
   addButton: {
     backgroundColor: colors.accent,
     paddingHorizontal: 16,
@@ -1008,7 +1012,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.cardBackground,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 5,
@@ -1028,7 +1032,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
   },
   squareCard: {
-    backgroundColor: colors.glassBackground,
+    backgroundColor: colors.glassCardBackground,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
@@ -1040,7 +1044,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   squareCardTitle: {
-    fontSize: 20,
+    fontSize: 17,
     fontFamily: "BricolageGrotesque_500Medium",
     color: colors.text,
     textAlign: "center",

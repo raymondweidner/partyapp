@@ -146,7 +146,7 @@ export const handleNotificationPress = (
 ) => {
   if (notification.resource_type && notification.action_mode) {
     if (notification.resource_type.toLowerCase() === 'oauth' && notification.action_mode.toLowerCase() === 'google_drive') {
-      const target = { pathname: "/edit-member", params: { id: notification.resource_id, profile: "true" } };
+      const target = { pathname: "/read-member", params: { id: notification.resource_id, profile: "true" } };
       if (isLoggedIn) {
         router.push(target as any);
       } else {
@@ -157,16 +157,16 @@ export const handleNotificationPress = (
       let targetPath = "";
       switch (notification.resource_type.toLowerCase()) {
         case "tribe":
-          targetPath = "/edit-tribe";
+          targetPath = "/read-tribe";
           break;
         case "meetup":
-          targetPath = "/edit-meetup";
+          targetPath = "/read-meetup";
           break;
         case "member":
-          targetPath = "/edit-member";
+          targetPath = "/read-member";
           break;
         case "proposal":
-          targetPath = "/edit-proposal";
+          targetPath = "/read-proposal";
           break;
       }
       

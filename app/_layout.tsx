@@ -1,5 +1,6 @@
 import { Besley_600SemiBold, Besley_700Bold, Besley_800ExtraBold, useFonts as useBesleyFonts } from '@expo-google-fonts/besley';
 import { BricolageGrotesque_500Medium, useFonts as useBricolageFonts } from '@expo-google-fonts/bricolage-grotesque';
+import { PaytoneOne_400Regular, useFonts as usePaytoneFonts } from '@expo-google-fonts/paytone-one';
 import { Lobster_400Regular, useFonts as useLobsterFonts } from '@expo-google-fonts/lobster';
 import { Fraunces_200ExtraLight, useFonts as useFrauncesFonts } from '@expo-google-fonts/fraunces';
 import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold, Nunito_900Black, useFonts } from '@expo-google-fonts/nunito';
@@ -340,7 +341,7 @@ function Header() {
       <TouchableOpacity
         onPress={() =>
           router.push({
-            pathname: "/edit-member",
+            pathname: "/read-member",
             params: { id: member.id, profile: "true" },
           })
         }
@@ -535,11 +536,15 @@ function RootLayoutNav() {
     Lobster_400Regular,
   });
 
+  const [paytoneLoaded] = usePaytoneFonts({
+    PaytoneOne_400Regular,
+  });
+
   useEffect(() => {
-    if (fontsLoaded && quicksandLoaded && frauncesLoaded && bricolageLoaded && besleyLoaded && lobsterLoaded) {
+    if (fontsLoaded && quicksandLoaded && frauncesLoaded && bricolageLoaded && besleyLoaded && lobsterLoaded && paytoneLoaded) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, quicksandLoaded, frauncesLoaded, bricolageLoaded, besleyLoaded, lobsterLoaded]);
+  }, [fontsLoaded, quicksandLoaded, frauncesLoaded, bricolageLoaded, besleyLoaded, lobsterLoaded, paytoneLoaded]);
 
   useEffect(() => {
     if (loading) return;
@@ -562,7 +567,7 @@ function RootLayoutNav() {
     }
   }, [user, loading, segments, router, pathname, params]);
 
-  if (loading || !fontsLoaded || !quicksandLoaded) {
+  if (loading || !fontsLoaded || !quicksandLoaded || !paytoneLoaded) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" />

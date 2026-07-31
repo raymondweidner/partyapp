@@ -31,6 +31,7 @@ import {
 import { TribalCouncil } from "../lib/data/TribalCouncil";
 import { colors, globalStyles } from "../lib/theme";
 import { safeBack } from "../lib/util";
+import { FloralDivider } from "../lib/components/FloralDivider";
 import { useCurrentMember } from "./_layout";
 
 export default function EventDetails() {
@@ -131,6 +132,7 @@ export default function EventDetails() {
           <Text style={{ fontSize: 40, fontFamily: "Lobster_400Regular", color: colors.text }}>
             {meetup?.title || "Meetup Event"}
           </Text>
+          <FloralDivider color={colors.accent} />
           <Text style={{ fontSize: 16, color: colors.textSecondary, marginTop: 4 }}>
             Past Event Details
           </Text>
@@ -186,7 +188,7 @@ export default function EventDetails() {
                     {isCouncilMember && (
                       <TouchableOpacity
                         style={styles.addButton}
-                        onPress={() => router.push({ pathname: "/create-poll", params: { meetupId: meetupId } } as any)}
+                        onPress={() => router.push({ pathname: "/write-poll", params: { meetupId: meetupId } } as any)}
                       >
                         <Text style={styles.addButtonText}>+ Add Poll</Text>
                       </TouchableOpacity>
@@ -225,7 +227,7 @@ export default function EventDetails() {
                           <TouchableOpacity
                             key={poll.id}
                             style={styles.proposalItem}
-                            onPress={() => router.push(`/edit-poll?id=${poll.id}` as any)}
+                            onPress={() => router.push(`/read-poll?id=${poll.id}` as any)}
                           >
                             <Text style={{ fontSize: 18, fontFamily: "Nunito_700Bold", color: colors.text, marginBottom: 4 }}>
                               {poll.icon_type ? `${poll.icon_type} ` : ""}{poll.title}
@@ -258,7 +260,7 @@ export default function EventDetails() {
                 {isCouncilMember && (
                   <TouchableOpacity
                     style={styles.addButton}
-                    onPress={() => router.push({ pathname: "/edit-registry", params: { meetupEventId: eventId } })}
+                    onPress={() => router.push({ pathname: "/write-registry", params: { meetupEventId: eventId } })}
                   >
                     <Text style={styles.addButtonText}>+ Add Registry</Text>
                   </TouchableOpacity>
@@ -289,7 +291,7 @@ export default function EventDetails() {
                   <TouchableOpacity
                     key={reg.id}
                     style={styles.registryCard}
-                    onPress={() => router.push({ pathname: "/edit-registry", params: { id: reg.id } })}
+                    onPress={() => router.push({ pathname: "/read-registry", params: { id: reg.id } })}
                   >
                     <Text style={styles.registryName}>{reg.name}</Text>
                     <Text style={styles.registryCount}>
@@ -341,11 +343,11 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  sectionTitle: { fontSize: 20, fontWeight: "bold", color: colors.text, textAlign: "center", marginBottom: 15 },
+  sectionTitle: { fontSize: 22, fontFamily: "PaytoneOne_400Regular", color: colors.text, textAlign: "center", marginBottom: 15 },
   addButton: { backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
   addButtonText: { color: "#fff", fontWeight: "bold" },
   tabContainer: { flexDirection: "row", gap: 10, marginVertical: 15 },
-  registryCard: { backgroundColor: colors.surface, padding: 16, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
+  registryCard: { backgroundColor: colors.cardBackground, padding: 16, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
   registryName: { fontSize: 16, color: colors.text, fontWeight: "bold", marginBottom: 4 },
   registryCount: { fontSize: 14, color: colors.primary },
   tabBadge: {
