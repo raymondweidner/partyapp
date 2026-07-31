@@ -78,7 +78,7 @@ export default function WriteProposal() {
         getProposals(token, undefined, paramMeetupId),
         getMeetups(token),
         getMembers(token),
-        getTribalCouncils(token, paramMeetupId),
+        getTribalCouncils(paramMeetupId as string, token),
       ]);
       setTribalCouncils(councilsData);
 

@@ -23,6 +23,7 @@ import {
   updateRegistryItem,
 } from "../lib/data/service";
 import { colors, globalStyles } from "../lib/theme";
+import { FloralDivider } from "../lib/components/FloralDivider";
 import { showAlert } from "../lib/util";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
 import { EditRegistryItemModal } from "../lib/components/EditRegistryItemModal";
@@ -162,26 +163,13 @@ export default function ReadRegistry() {
         }}
       />
       <ScrollView contentContainerStyle={{ padding: 20 }}>
-        <Text style={globalStyles.label}>Registry Name</Text>
-        <TextInput
-          style={[globalStyles.input, styles.readOnlyInput]}
-          value={name}
-          onChangeText={setName}
-          editable={false}
-          placeholder="e.g. Decorations, Food, Cleanup"
-          placeholderTextColor={colors.textMuted}
-        />
-
-        <Text style={[globalStyles.label, { marginTop: 15 }]}>Details</Text>
-        <TextInput
-          style={[globalStyles.input, styles.readOnlyInput, { minHeight: 80 }]}
-          value={details}
-          onChangeText={setDetails}
-          editable={false}
-          multiline
-          placeholder="Any special instructions for helpers?"
-          placeholderTextColor={colors.textMuted}
-        />
+        <View style={{ alignItems: "center", marginBottom: 20 }}>
+          <Text style={{ fontSize: 40, fontFamily: "Lobster_400Regular", color: colors.accent, textAlign: "center", marginBottom: 8 }}>{name}</Text>
+          <FloralDivider color={colors.accent} />
+          {details ? (
+            <Text style={{ fontSize: 18, fontFamily: "Fraunces_200ExtraLight", color: colors.textSecondary, textAlign: "center", paddingHorizontal: 20, marginTop: 16 }}>{details}</Text>
+          ) : null}
+        </View>
         {isCouncil && (
           <View style={{ marginTop: 15 }}>
             <Text style={{ color: colors.primary, fontWeight: "bold", fontSize: 14 }}>
@@ -192,8 +180,8 @@ export default function ReadRegistry() {
 
         {registry?.id && (
           <View style={globalStyles.sectionPanel}>
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-              <Text style={styles.sectionTitle}>Registry Items</Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 15 }}>
+              <Text style={styles.sectionTitle}>📋 Registry Items</Text>
               <TouchableOpacity
                 style={styles.addButton}
                 onPress={() => {
@@ -201,25 +189,23 @@ export default function ReadRegistry() {
                   setModalVisible(true);
                 }}
               >
-                <Text style={styles.addButtonText}>+ Add Item</Text>
+                <Text style={styles.addButtonText}>+ Add</Text>
               </TouchableOpacity>
             </View>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginVertical: 15 }}>
-              <View style={styles.tabContainer}>
-                {TABS.map(tab => (
-                  <TouchableOpacity
-                    key={tab}
-                    style={[styles.tab, activeTab === tab && styles.activeTab]}
-                    onPress={() => setActiveTab(tab)}
-                  >
-                    <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-                      {tab}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
+            <View style={styles.tabContainer}>
+              {TABS.map(tab => (
+                <TouchableOpacity
+                  key={tab}
+                  style={[styles.tab, activeTab === tab && styles.activeTab]}
+                  onPress={() => setActiveTab(tab)}
+                >
+                  <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+                    {tab}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
             {filteredItems.length === 0 ? (
               <Text style={{ color: colors.textMuted, fontStyle: "italic", textAlign: "center", marginTop: 20 }}>
@@ -276,40 +262,58 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     color: colors.text,
   },
-  sectionTitle: { fontSize: 24, fontFamily: "PaytoneOne_400Regular", color: colors.text, textAlign: "center", marginBottom: 15 },
+  sectionTitle: { fontSize: 24, fontFamily: "PaytoneOne_400Regular", color: colors.text, textAlign: "center" },
   addButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  addButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  tabContainer: {
-    flexDirection: "row",
-    gap: 10,
-    paddingRight: 20,
-  },
-  tab: {
+    backgroundColor: colors.accent,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 2,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  addButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  tabContainer: {
+    flexDirection: "row",
+    marginBottom: 16,
+    backgroundColor: colors.borderLight,
+    borderRadius: 14,
+    padding: 4,
+    gap: 4,
+    flexWrap: "wrap",
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    borderRadius: 10,
+    backgroundColor: "transparent",
   },
   activeTab: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.accent,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
   },
   tabText: {
-    color: colors.text,
-    fontWeight: "bold",
+    fontSize: 14,
+    color: colors.textMuted,
+    fontWeight: "600",
   },
   activeTabText: {
-    color: "#fff",
+    color: "#FFFFFF",
   },
   itemCard: {
     backgroundColor: colors.surface,

@@ -62,7 +62,7 @@ export default function EventDetails() {
           getMeetups(token),
           getPolls(token, meetupId),
           getMembers(token),
-          getTribalCouncils(token, meetupId),
+          getTribalCouncils(meetupId as string, token),
         ]);
 
         const event = eventsData.find(e => e.id === eventId);

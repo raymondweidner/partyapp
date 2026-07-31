@@ -1,10 +1,8 @@
-import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Image,
   Modal,
   Platform,
   ScrollView,
@@ -12,7 +10,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { WebView } from "react-native-webview";
 import { useAuth } from "../lib/auth";
@@ -22,15 +20,15 @@ import { Poll } from "../lib/data/Poll";
 import { PollEntry } from "../lib/data/PollEntry";
 import { PollVote } from "../lib/data/PollVote";
 import {
+  createPoll,
   createPollVote,
-  deletePollEntry,
   deletePollVote,
   getPoll,
   getPollEntries,
-  getMeetups, getProposals, getMeetupEvents, createPoll, getPollVotes,
+  getPollVotes,
   updatePoll,
   updatePollVote,
-  uploadMedia,
+  uploadMedia
 } from "../lib/data/service";
 import { colors, globalStyles } from "../lib/theme";
 import { showAlert } from "../lib/util";
@@ -53,7 +51,7 @@ export default function WritePoll() {
 
   // Edit fields
   const [title, setTitle] = useState("");
-  const [iconType, setIconType] = useState("📊");
+  const [iconType, setIconType] = useState("ðŸ“Š");
   const [details, setDetails] = useState("");
   const [meetup, setMeetup] = useState<any>(null);
   const [meetupEvents, setMeetupEvents] = useState<any[]>([]);
@@ -77,7 +75,11 @@ export default function WritePoll() {
   }, [id, user]);
 
   const fetchData = async () => {
-    if (!id || !user) return;
+    if (!user) return;
+    if (!id) {
+      setLoading(false);
+      return;
+    }
     try {
       const token = await user.getIdToken();
       const [fetchedPoll, fetchedEntries, fetchedVotes] = await Promise.all([
@@ -112,7 +114,7 @@ export default function WritePoll() {
     }
   };
 
-  
+
   const formatMinutes = (m: number) => {
     const hours = Math.floor(m / 60);
     const mins = m % 60;
@@ -145,7 +147,7 @@ export default function WritePoll() {
       showAlert("Validation Error", "Poll name is required.");
       return;
     }
-    if (!user) return;
+    if (!user || !member) return;
 
     setSaving(true);
     try {
@@ -154,19 +156,37 @@ export default function WritePoll() {
       const entryDeadline = new Date(now.getTime() + parseInt(daysToPost, 10) * 24 * 60 * 60 * 1000);
       const voteDeadline = new Date(entryDeadline.getTime() + parseInt(daysToVote, 10) * 24 * 60 * 60 * 1000);
 
-      const updated = await updatePoll(
-        {
-          ...poll,
-          id: poll?.id!,
-          title: title.trim(),
-          details: details.trim(),
-          entry_deadline: entryDeadline.toISOString(),
-          vote_deadline: voteDeadline.toISOString(),
-          icon_type: iconType,
-        },
-        token
-      );
-      setPoll(updated);
+      if (id) {
+        if (!poll) return;
+        const updated = await updatePoll(
+          {
+            ...poll,
+            id: id as string,
+            title: title.trim(),
+            details: details.trim(),
+            entry_deadline: entryDeadline.toISOString(),
+            vote_deadline: voteDeadline.toISOString(),
+            icon_type: iconType,
+          },
+          token
+        );
+        setPoll(updated);
+      } else {
+        const newPoll = await createPoll(
+          {
+            meetup_id: meetupId as string,
+            creator_id: member.id!,
+            title: title.trim(),
+            details: details.trim(),
+            entry_deadline: entryDeadline.toISOString(),
+            vote_deadline: voteDeadline.toISOString(),
+            icon_type: iconType,
+            status: "Posting",
+          },
+          token
+        );
+        setPoll(newPoll);
+      }
       router.back();
     } catch (error) {
       console.error(error);
@@ -307,79 +327,79 @@ export default function WritePoll() {
       />
 
       <ScrollView contentContainerStyle={globalStyles.contentContainer}>
-          <View>
-            <View style={globalStyles.formGroup}>
-              <Text style={globalStyles.label}>Icon</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-                <View style={{ flexDirection: "row", gap: 15, paddingHorizontal: 5, paddingVertical: 10 }}>
-                  {AVAILABLE_ICONS.map((icon) => (
-                    <TouchableOpacity
-                      key={icon}
-                      onPress={() => setIconType(icon)}
-                      style={{
-                        padding: 10,
-                        borderRadius: 25,
-                        backgroundColor: iconType === icon ? colors.accent : colors.surface,
-                        borderWidth: 2,
-                        borderColor: iconType === icon ? colors.primary : "transparent",
-                        transform: [{ scale: iconType === icon ? 1.1 : 1 }],
-                      }}
-                    >
-                      <Text style={{ fontSize: 24 }}>{icon}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
-            <View style={globalStyles.formGroup}>
-              <Text style={globalStyles.label}>Poll Name</Text>
-              <TextInput
-                style={globalStyles.input}
-                value={title}
-                onChangeText={setTitle}
-                placeholder="e.g., Summer Trip Destination"
-                placeholderTextColor={colors.textMuted}
-              />
-            </View>
-            <View style={globalStyles.formGroup}>
-              <Text style={globalStyles.label}>Details (Optional)</Text>
-              <TextInput
-                style={[globalStyles.input, globalStyles.textArea]}
-                value={details}
-                onChangeText={setDetails}
-                placeholder="Add some details..."
-                placeholderTextColor={colors.textMuted}
-                multiline
-                numberOfLines={4}
-                textAlignVertical="top"
-              />
-            </View>
-            <View style={globalStyles.formGroup}>
-              <Text style={globalStyles.label}>Days to Post</Text>
-              <Text style={styles.helperText}>How long can members add entries to this poll?</Text>
-              <View style={{ height: 48, flexDirection: "row" }}>
-                <NumberStepper value={daysToPost} onChange={setDaysToPost} />
+        <View>
+          <View style={globalStyles.formGroup}>
+            <Text style={globalStyles.label}>Icon</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+              <View style={{ flexDirection: "row", gap: 15, paddingHorizontal: 5, paddingVertical: 10 }}>
+                {AVAILABLE_ICONS.map((icon) => (
+                  <TouchableOpacity
+                    key={icon}
+                    onPress={() => setIconType(icon)}
+                    style={{
+                      padding: 10,
+                      borderRadius: 25,
+                      backgroundColor: iconType === icon ? colors.accent : colors.surface,
+                      borderWidth: 2,
+                      borderColor: iconType === icon ? colors.primary : "transparent",
+                      transform: [{ scale: iconType === icon ? 1.1 : 1 }],
+                    }}
+                  >
+                    <Text style={{ fontSize: 24 }}>{icon}</Text>
+                  </TouchableOpacity>
+                ))}
               </View>
-            </View>
-            <View style={globalStyles.formGroup}>
-              <Text style={globalStyles.label}>Days to Vote</Text>
-              <Text style={styles.helperText}>How long can members vote after posting ends?</Text>
-              <View style={{ height: 48, flexDirection: "row" }}>
-                <NumberStepper value={daysToVote} onChange={setDaysToVote} />
-              </View>
-            </View>
-            <TouchableOpacity
-              style={[globalStyles.primaryButton, saving && { opacity: 0.7 }]}
-              onPress={handleSave}
-              disabled={saving}
-            >
-              {saving ? (
-                <ActivityIndicator color={colors.background} />
-              ) : (
-                <Text style={globalStyles.primaryButtonText}>{id ? "Save Changes" : "Create Poll"}</Text>
-              )}
-            </TouchableOpacity>
+            </ScrollView>
           </View>
+          <View style={globalStyles.formGroup}>
+            <Text style={globalStyles.label}>Poll Name</Text>
+            <TextInput
+              style={globalStyles.input}
+              value={title}
+              onChangeText={setTitle}
+              placeholder="e.g., Summer Trip Destination"
+              placeholderTextColor={colors.textMuted}
+            />
+          </View>
+          <View style={globalStyles.formGroup}>
+            <Text style={globalStyles.label}>Details (Optional)</Text>
+            <TextInput
+              style={[globalStyles.input, globalStyles.textArea]}
+              value={details}
+              onChangeText={setDetails}
+              placeholder="Add some details..."
+              placeholderTextColor={colors.textMuted}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+          </View>
+          <View style={globalStyles.formGroup}>
+            <Text style={globalStyles.label}>Days to Post</Text>
+            <Text style={styles.helperText}>How long can members add entries to this poll?</Text>
+            <View style={{ height: 48, flexDirection: "row" }}>
+              <NumberStepper value={daysToPost} onChange={setDaysToPost} />
+            </View>
+          </View>
+          <View style={globalStyles.formGroup}>
+            <Text style={globalStyles.label}>Days to Vote</Text>
+            <Text style={styles.helperText}>How long can members vote after posting ends?</Text>
+            <View style={{ height: 48, flexDirection: "row" }}>
+              <NumberStepper value={daysToVote} onChange={setDaysToVote} />
+            </View>
+          </View>
+          <TouchableOpacity
+            style={[globalStyles.primaryButton, saving && { opacity: 0.7 }]}
+            onPress={handleSave}
+            disabled={saving}
+          >
+            {saving ? (
+              <ActivityIndicator color={colors.background} />
+            ) : (
+              <Text style={globalStyles.primaryButtonText}>{id ? "Save Changes" : "Create Poll"}</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
       {/* Media Modal */}
