@@ -153,7 +153,7 @@ function UserDeviceProvider({ children }: { children: React.ReactNode }) {
         console.log("🔥 FCM Token (Use this to test):", fcmToken);
         setLoading(true);
         const token = await user.getIdToken();
-        let foundDevice = await getUserDeviceByToken(fcmToken, token);
+        let foundDevice = await getUserDeviceByToken(token, fcmToken);
 
         if (foundDevice) {
           console.log("Existing user ID for token", foundDevice);
@@ -161,28 +161,24 @@ function UserDeviceProvider({ children }: { children: React.ReactNode }) {
           // 2. Update user_id if found but user_id is different
           if (foundDevice.user_id !== user.uid) {
             console.log("Different user_id!", "Updating device");
-            foundDevice = await updateUserDevice(
-              {
+            foundDevice = await updateUserDevice(token, {
                 ...foundDevice,
                 user_id: user.uid,
                 platform: Platform.OS,
                 updated_at: new Date().toISOString(),
-              },
-              token,
+              }
             );
           } else {
             console.log("Same userId...", "No change");
           }
         } else {
           // 3. Create if not found
-          foundDevice = await createUserDevice(
-            {
+          foundDevice = await createUserDevice(token, {
               user_id: user.uid,
               token: fcmToken,
               updated_at: new Date().toISOString(),
               platform: Platform.OS,
-            },
-            token,
+            }
           );
           console.log("No matching token found", JSON.stringify(foundDevice));
         }
@@ -310,7 +306,7 @@ function NotificationsProvider({ children }: { children: React.ReactNode }) {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
     try {
       const token = await user.getIdToken();
-      await deleteNotification(id, token);
+      await deleteNotification(token, id);
     } catch (error) {
       console.error("Failed to delete notification", error);
     }
@@ -400,7 +396,7 @@ function FCMHandler() {
       const notifId = data.notificationId || data.notification_id;
       if (notifId && user) {
         user.getIdToken().then((token) => {
-          deleteNotification(notifId, token).catch((e) =>
+          deleteNotification(token, notifId).catch((e) =>
             console.error("Failed to delete displayed notification:", e),
           );
         });
@@ -499,7 +495,7 @@ function RootLayoutNav() {
   useEffect(() => {
     if (params.deleteNotifId && user) {
       user.getIdToken().then(token => {
-        deleteNotification(params.deleteNotifId as string, token).then(() => {
+        deleteNotification(token, params.deleteNotifId as string).then(() => {
           refreshNotifications();
         }).catch(e => console.error("Failed to delete background notification:", e));
       });
@@ -802,14 +798,14 @@ function ShareIntentHandler() {
         const entryDeadline = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
         const voteDeadline = new Date(entryDeadline.getTime() + 3 * 24 * 60 * 60 * 1000);
 
-        const newPoll = await createPoll({
+        const newPoll = await createPoll(token, {
           meetup_id: meetupId,
           creator_id: member.id!,
           title: "Shared Media Poll",
           details: "Created from shared media.",
           entry_deadline: entryDeadline.toISOString(),
           vote_deadline: voteDeadline.toISOString(),
-        }, token);
+        });
         targetPollId = newPoll.id;
       }
 
@@ -819,7 +815,7 @@ function ShareIntentHandler() {
         const filename = shareData.value.split("/").pop() || "shared.jpg";
 
         // uploadMedia handles file uploading via formData
-        await uploadMedia(shareData.value, filename, mimeType, meetupId, targetPollId, token);
+        await uploadMedia(token, shareData.value, filename, mimeType, meetupId, targetPollId);
         showAlert("Success", "Media uploaded to the poll!");
         resetShareIntent();
       }

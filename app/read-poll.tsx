@@ -76,7 +76,7 @@ export default function ReadPoll() {
     try {
       const token = await user.getIdToken();
       const [fetchedPoll, fetchedEntries, fetchedVotes] = await Promise.all([
-        getPoll(id as string, token),
+        getPoll(token, id as string),
         getPollEntries(token, id as string),
         getPollVotes(token, id as string),
       ]);
@@ -121,8 +121,7 @@ export default function ReadPoll() {
       const entryDeadline = new Date(now.getTime() + parseInt(daysToPost, 10) * 24 * 60 * 60 * 1000);
       const voteDeadline = new Date(entryDeadline.getTime() + parseInt(daysToVote, 10) * 24 * 60 * 60 * 1000);
 
-      const updated = await updatePoll(
-        {
+      const updated = await updatePoll(token, {
           ...poll,
           id: poll.id!,
           title: title.trim(),
@@ -130,8 +129,7 @@ export default function ReadPoll() {
           entry_deadline: entryDeadline.toISOString(),
           vote_deadline: voteDeadline.toISOString(),
           icon_type: iconType,
-        },
-        token
+        }
       );
       setPoll(updated);
     } catch (error) {
@@ -178,7 +176,7 @@ export default function ReadPoll() {
       const filename = pendingAsset.fileName || pendingAsset.uri.split("/").pop() || "upload.jpg";
       const mimeType = pendingAsset.mimeType || "image/jpeg";
 
-      await uploadMedia(pendingAsset.uri, filename, mimeType, poll.meetup_id, poll.id!, token, entryCaption.trim());
+      await uploadMedia(token, pendingAsset.uri, filename, mimeType, poll.meetup_id, poll.id!, entryCaption.trim());
 
       // Refresh entries
       const fetchedEntries = await getPollEntries(token, poll.id!);
@@ -205,20 +203,16 @@ export default function ReadPoll() {
           return; // already voted for this
         }
         // Update vote
-        const updated = await updatePollVote(
-          { ...currentVote, id: currentVote.id!, poll_entry_id: entry.id! },
-          token
+        const updated = await updatePollVote(token, { ...currentVote, id: currentVote.id!, poll_entry_id: entry.id! }
         );
         setVotes((prev) => prev.map((v) => (v.id === updated.id ? updated : v)));
       } else {
         // Create vote
-        const newVote = await createPollVote(
-          {
+        const newVote = await createPollVote(token, {
             poll_id: poll.id!,
             voter_id: member.id!,
             poll_entry_id: entry.id!,
-          },
-          token
+          }
         );
         setVotes((prev) => [...prev, newVote]);
       }
@@ -235,7 +229,7 @@ export default function ReadPoll() {
     setVoting(true);
     try {
       const token = await user.getIdToken();
-      await deletePollVote(currentVote.id!, token);
+      await deletePollVote(token, currentVote.id!);
       setVotes((prev) => prev.filter((v) => v.id !== currentVote.id));
     } catch (error) {
       console.error(error);
@@ -452,15 +446,21 @@ export default function ReadPoll() {
 
 const styles = StyleSheet.create({
   addButton: {
+    backgroundColor: colors.accent,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: colors.primary,
-    borderRadius: 8,
+    borderRadius: 20,
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 2,
   },
   addButtonText: {
-    color: "#FFF",
+    color: "#F8F9FA",
+    fontSize: 12,
+    fontWeight: "bold",
     fontFamily: "Nunito_700Bold",
-    fontSize: 14,
   },
   helperText: {
     color: colors.textSecondary,

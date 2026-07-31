@@ -58,11 +58,11 @@ export default function EventDetails() {
       try {
         const token = await user.getIdToken();
         const [eventsData, meetupsData, pollsData, membersData, councilsData] = await Promise.all([
-          getMeetupEvents(meetupId, token),
+          getMeetupEvents(token, meetupId),
           getMeetups(token),
           getPolls(token, meetupId),
           getMembers(token),
-          getTribalCouncils(meetupId as string, token),
+          getTribalCouncils(token, meetupId as string),
         ]);
 
         const event = eventsData.find(e => e.id === eventId);

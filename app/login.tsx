@@ -118,8 +118,7 @@ export default function Login() {
             throw new Error("Existing member record is missing an id.");
           }
           // 4. Update user_id, name, and email (Link existing member or update details)
-          await updateMember(
-            {
+          await updateMember(token, {
               ...member,
               id: member.id,
               user_id: user.uid,
@@ -127,14 +126,11 @@ export default function Login() {
               email,
               phone,
               status: "active",
-            },
-            token,
+            }
           );
         } else {
           // 5. Create new member
-          await createMember(
-            { name, email, phone, user_id: user.uid, status: "active" } as any,
-            token,
+          await createMember(token, { name, email, phone, user_id: user.uid, status: "active" } as any
           );
         }
 
@@ -166,9 +162,7 @@ export default function Login() {
 
               await Promise.all(
                 validInvites.map((contact) =>
-                  updateMemberContact(
-                    { ...contact, status: "accepted" },
-                    token,
+                  updateMemberContact(token, { ...contact, status: "accepted" }
                   ),
                 ),
               );

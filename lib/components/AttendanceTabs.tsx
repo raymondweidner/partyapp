@@ -30,7 +30,7 @@ export const AttendanceTabs: React.FC<AttendanceTabsProps> = ({ eventId }) => {
     try {
       const token = await user?.getIdToken();
       if (!token) return;
-      const data = await getEventCheckIns(eventId, token);
+      const data = await getEventCheckIns(token, eventId);
       setCheckIns(data);
     } catch (err) {
       console.error("Failed to load checkins", err);

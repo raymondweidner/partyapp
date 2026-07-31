@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { useAuth } from "../lib/auth";
 import { DateTimePickerField } from "../lib/components/DateTimePickerField";
+import { FloralDivider } from "../lib/components/FloralDivider";
 import { LocationPickerModal } from "../lib/components/LocationPickerModal";
 import { Availability } from "../lib/data/Availability";
 import { HelpRegistry } from "../lib/data/HelpRegistry";
@@ -78,7 +79,7 @@ export default function ReadProposal() {
         getProposals(token, undefined, paramMeetupId),
         getMeetups(token),
         getMembers(token),
-        getTribalCouncils(paramMeetupId as string, token),
+        getTribalCouncils(token, paramMeetupId as string),
       ]);
       setTribalCouncils(councilsData);
 
@@ -109,7 +110,7 @@ export default function ReadProposal() {
       setMeetup(foundMeetup || null);
       if (foundMeetup?.tribe_id) {
         const [tMembers, aData] = await Promise.all([
-          getTribeMembers(foundMeetup.tribe_id, token),
+          getTribeMembers(token, foundMeetup.tribe_id),
           getAvailabilities(token, undefined, paramProposalId),
         ]);
 
@@ -155,14 +156,12 @@ export default function ReadProposal() {
     setUpdating(true);
     try {
       const token = await user.getIdToken();
-      await updateProposal(
-        {
+      await updateProposal(token, {
           ...proposal,
           start_at: startDate.toISOString(),
           end_at: endDate.toISOString(),
           location,
-        } as any,
-        token,
+        } as any
       );
 
       showAlert("Success", "Proposal updated successfully!", [
@@ -335,17 +334,21 @@ export default function ReadProposal() {
             </View>
           ) : isHost ? (
             <TouchableOpacity
-              style={styles.primaryButton}
+              style={styles.oliveButton}
               onPress={() => setIsEditing(true)}
             >
-              <Text style={styles.primaryButtonText}>Edit Proposal</Text>
+              <Text style={styles.oliveButtonText}>Edit Proposal</Text>
             </TouchableOpacity>
           ) : null}
         </View>
 
+        <View style={{ height: 40 }} />
+        <FloralDivider />
+        <View style={{ height: 20 }} />
+
         <View style={globalStyles.sectionPanel}>
-          <Text style={styles.sectionTitle}>
-            Availability
+          <Text style={[styles.sectionTitle, { textAlign: "left" }]}>
+            📅 Availability
           </Text>
           {tribeMembers.map((m) => {
             const avail = availabilities.find((a) => a.member_id === m.id);
@@ -379,10 +382,7 @@ export default function ReadProposal() {
           {meetup?.status === "Planning" && (
             <View style={{ marginTop: 20 }}>
               <TouchableOpacity
-                style={[
-                  styles.primaryButton,
-                  { backgroundColor: "rgba(157, 78, 221, 0.2)", shadowOpacity: 0, elevation: 0 },
-                ]}
+                style={styles.oliveButton}
                 onPress={() =>
                   router.push({
                     pathname: "/update-availability",
@@ -390,7 +390,7 @@ export default function ReadProposal() {
                   })
                 }
               >
-                <Text style={[styles.primaryButtonText, { color: colors.primary }]}>
+                <Text style={styles.oliveButtonText}>
                   Update Availability
                 </Text>
               </TouchableOpacity>
@@ -405,7 +405,7 @@ export default function ReadProposal() {
           return (
             <View style={globalStyles.sectionPanel}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <Text style={styles.sectionTitle}>Help Registries</Text>
+                <Text style={[styles.sectionTitle, { textAlign: "left", marginBottom: 0 }]}>📝 Help Registries</Text>
                 {isCouncilMember && (
                   <TouchableOpacity
                     style={styles.addButton}
@@ -474,19 +474,67 @@ const styles = StyleSheet.create({
   },
   primaryButton: globalStyles.primaryButton,
   primaryButtonText: globalStyles.primaryButtonText,
+  oliveButton: {
+    ...globalStyles.primaryButton,
+    backgroundColor: colors.accent,
+  },
+  oliveButtonText: {
+    ...globalStyles.primaryButtonText,
+    color: "#fff",
+  },
   sectionTitle: { fontSize: 24, fontFamily: "PaytoneOne_400Regular", color: colors.text, textAlign: "center", marginBottom: 15 },
-  addButton: { backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  addButtonText: { color: "#fff", fontWeight: "bold" },
-  tabContainer: { flexDirection: "row", gap: 10, marginVertical: 15 },
-  tab: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  activeTab: { backgroundColor: colors.primary, borderColor: colors.primary },
-  tabText: { color: colors.text, fontWeight: "bold" },
-  activeTabText: { color: "#fff" },
-  registryCard: { backgroundColor: colors.cardBackground, padding: 16, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
-  registryName: { fontSize: 16, color: colors.text, fontWeight: "bold", marginBottom: 4 },
-  registryCount: { fontSize: 14, color: colors.primary },
+  addButton: {
+    backgroundColor: colors.accent,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    shadowColor: colors.accent,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  addButtonText: {
+    color: "#F8F9FA",
+    fontSize: 12,
+    fontWeight: "bold",
+    fontFamily: "Nunito_700Bold",
+  },
+  tabContainer: {
+    flexDirection: "row",
+    marginBottom: 16,
+    backgroundColor: colors.borderLight,
+    borderRadius: 14,
+    padding: 4,
+    gap: 4,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    borderRadius: 10,
+    backgroundColor: "transparent",
+  },
+  activeTab: {
+    backgroundColor: colors.accent,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  tabText: {
+    fontSize: 14,
+    color: colors.textMuted,
+    fontWeight: "600",
+  },
+  activeTabText: {
+    color: "#FFFFFF",
+  },
   tabBadge: {
-    backgroundColor: "colors.border",
+    backgroundColor: colors.border,
     borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -494,11 +542,15 @@ const styles = StyleSheet.create({
     minWidth: 20,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "colors.border",
+    borderColor: colors.border,
   },
   tabBadgeText: {
-    color: "#ccc",
+    color: colors.textSecondary,
     fontSize: 12,
     fontWeight: "bold",
   },
+  registryCard: { backgroundColor: colors.cardBackground, padding: 16, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: colors.border },
+  registryName: { fontSize: 16, color: colors.text, fontWeight: "bold", marginBottom: 4 },
+  registryCount: { fontSize: 14, color: colors.primary },
 });
+

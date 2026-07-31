@@ -29,8 +29,8 @@ const getHeaders = (token: string) => ({
 
 // MemberAlertPreference Services
 export const getMemberAlertPreferences = async (
-  memberId: string,
   authToken: string,
+  memberId: string
 ): Promise<MemberAlertPreference[]> => {
   const response = await fetch(
     `${getResourceEndpoint()}/member_alert_preference?member_id=${encodeURIComponent(memberId)}`,
@@ -46,8 +46,8 @@ export const getMemberAlertPreferences = async (
 };
 
 export const createMemberAlertPreference = async (
-  pref: Omit<MemberAlertPreference, "id">,
   authToken: string,
+  pref: Omit<MemberAlertPreference, "id">
 ): Promise<MemberAlertPreference> => {
   const response = await fetch(`${getResourceEndpoint()}/member_alert_preference`, {
     method: "POST",
@@ -59,8 +59,8 @@ export const createMemberAlertPreference = async (
 };
 
 export const updateMemberAlertPreference = async (
-  pref: MemberAlertPreference & { id?: string },
   authToken: string,
+  pref: MemberAlertPreference & { id?: string }
 ): Promise<MemberAlertPreference> => {
   const idToUpdate = pref.id; 
   if (idToUpdate) {
@@ -81,8 +81,8 @@ export const updateMemberAlertPreference = async (
 
 // EventCheckIn Services
 export const getEventCheckIns = async (
-  eventId: string,
   authToken: string,
+  eventId: string
 ): Promise<EventCheckIn[]> => {
   const response = await fetch(
     `${getResourceEndpoint()}/event_check_in?meetup_event_id=${encodeURIComponent(eventId)}`,
@@ -98,10 +98,10 @@ export const getEventCheckIns = async (
 };
 
 export const checkInEvent = async (
+  authToken: string,
   eventId: string,
   latitude: number,
-  longitude: number,
-  authToken: string,
+  longitude: number
 ): Promise<EventCheckIn> => {
   const response = await fetch(`${getResourceEndpoint()}/meetup_event/${eventId}/checkin`, {
     method: "POST",
@@ -116,8 +116,8 @@ export const checkInEvent = async (
 };
 
 export const checkOutEvent = async (
-  eventId: string,
   authToken: string,
+  eventId: string
 ): Promise<void> => {
   const response = await fetch(`${getResourceEndpoint()}/meetup_event/${eventId}/checkout`, {
     method: "POST",
@@ -148,8 +148,8 @@ export const getUserDeviceByToken = async (
 };
 
 export const createUserDevice = async (
-  device: Omit<UserDevice, "id">,
   authToken: string,
+  device: Omit<UserDevice, "id">
 ): Promise<UserDevice> => {
   const response = await fetch(`${getResourceEndpoint()}/user_device`, {
     method: "POST",
@@ -161,8 +161,8 @@ export const createUserDevice = async (
 };
 
 export const updateUserDevice = async (
-  device: UserDevice,
   authToken: string,
+  device: UserDevice
 ): Promise<UserDevice> => {
   const response = await fetch(
     `${getResourceEndpoint()}/user_device/${device.id}`,
@@ -177,8 +177,8 @@ export const updateUserDevice = async (
 };
 
 export const deleteUserDevice = async (
-  deviceId: string,
   authToken: string,
+  deviceId: string
 ): Promise<void> => {
   const response = await fetch(
     `${getResourceEndpoint()}/user_device/${deviceId}`,
@@ -204,8 +204,8 @@ export const getMembers = async (authToken: string): Promise<Member[]> => {
 };
 
 export const createMember = async (
-  member: Omit<Member, "id">,
   authToken: string,
+  member: Omit<Member, "id">
 ): Promise<Member> => {
   const response = await fetch(`${getResourceEndpoint()}/member`, {
     method: "POST",
@@ -217,8 +217,8 @@ export const createMember = async (
 };
 
 export const updateMember = async (
-  member: Member & { id: string },
   authToken: string,
+  member: Member & { id: string }
 ): Promise<Member> => {
   const response = await fetch(`${getResourceEndpoint()}/member/${member.id}`, {
     method: "PUT",
@@ -263,8 +263,8 @@ export const getMeetups = async (
 };
 
 export const createMeetup = async (
-  meetup: Omit<Meetup, "id">,
   authToken: string,
+  meetup: Omit<Meetup, "id">
 ): Promise<Meetup> => {
   const response = await fetch(`${getResourceEndpoint()}/meetup`, {
     method: "POST",
@@ -276,8 +276,8 @@ export const createMeetup = async (
 };
 
 export const updateMeetup = async (
-  meetup: Meetup & { id: string },
   authToken: string,
+  meetup: Meetup & { id: string }
 ): Promise<Meetup> => {
   const response = await fetch(`${getResourceEndpoint()}/meetup/${meetup.id}`, {
     method: "PUT",
@@ -313,8 +313,8 @@ export const getProposals = async (
 };
 
 export const createProposal = async (
-  proposal: Omit<Proposal, "id">,
   authToken: string,
+  proposal: Omit<Proposal, "id">
 ): Promise<Proposal> => {
   const response = await fetch(`${getResourceEndpoint()}/proposal`, {
     method: "POST",
@@ -326,8 +326,8 @@ export const createProposal = async (
 };
 
 export const updateProposal = async (
-  proposal: Proposal & { id: string },
   authToken: string,
+  proposal: Proposal & { id: string }
 ): Promise<Proposal> => {
   const response = await fetch(
     `${getResourceEndpoint()}/proposal/${proposal.id}`,
@@ -342,8 +342,8 @@ export const updateProposal = async (
 };
 
 export const deleteProposal = async (
-  proposalId: string,
   authToken: string,
+  proposalId: string
 ): Promise<void> => {
   const response = await fetch(
     `${getResourceEndpoint()}/proposal/${proposalId}`,
@@ -377,8 +377,8 @@ export const getAvailabilities = async (
 };
 
 export const createAvailability = async (
-  availability: Omit<Availability, "id">,
   authToken: string,
+  availability: Omit<Availability, "id">
 ): Promise<Availability> => {
   const response = await fetch(`${getResourceEndpoint()}/availability`, {
     method: "POST",
@@ -390,8 +390,8 @@ export const createAvailability = async (
 };
 
 export const updateAvailability = async (
-  availability: Availability & { id: string },
   authToken: string,
+  availability: Availability & { id: string }
 ): Promise<Availability> => {
   const response = await fetch(
     `${getResourceEndpoint()}/availability/${availability.id}`,
@@ -406,8 +406,8 @@ export const updateAvailability = async (
 };
 
 export const deleteAvailability = async (
-  availabilityId: string,
   authToken: string,
+  availabilityId: string
 ): Promise<void> => {
   const response = await fetch(
     `${getResourceEndpoint()}/availability/${availabilityId}`,
@@ -429,8 +429,8 @@ export const getTribes = async (authToken: string): Promise<Tribe[]> => {
 };
 
 export const createTribe = async (
-  tribe: Omit<Tribe, "id">,
   authToken: string,
+  tribe: Omit<Tribe, "id">
 ): Promise<Tribe> => {
   const response = await fetch(`${getResourceEndpoint()}/tribe`, {
     method: "POST",
@@ -442,8 +442,8 @@ export const createTribe = async (
 };
 
 export const updateTribe = async (
-  tribe: Tribe & { id: string },
   authToken: string,
+  tribe: Tribe & { id: string }
 ): Promise<Tribe> => {
   const response = await fetch(`${getResourceEndpoint()}/tribe/${tribe.id}`, {
     method: "PUT",
@@ -456,8 +456,8 @@ export const updateTribe = async (
 
 // TribeMember Services
 export const getTribeMembers = async (
-  tribeId: string,
   authToken: string,
+  tribeId: string
 ): Promise<TribeMember[]> => {
   const response = await fetch(
     `${getResourceEndpoint()}/tribe_member?tribe_id=${encodeURIComponent(tribeId)}`,
@@ -473,8 +473,8 @@ export const getTribeMembers = async (
 };
 
 export const getTribeMembersByMemberId = async (
-  memberId: string,
   authToken: string,
+  memberId: string
 ): Promise<TribeMember[]> => {
   const response = await fetch(
     `${getResourceEndpoint()}/tribe_member?member_id=${encodeURIComponent(memberId)}`,
@@ -490,8 +490,8 @@ export const getTribeMembersByMemberId = async (
 };
 
 export const createTribeMember = async (
-  tribeMember: Omit<TribeMember, "id">,
   authToken: string,
+  tribeMember: Omit<TribeMember, "id">
 ): Promise<TribeMember> => {
   const response = await fetch(`${getResourceEndpoint()}/tribe_member`, {
     method: "POST",
@@ -503,10 +503,10 @@ export const createTribeMember = async (
 };
 
 export const deleteTribeMember = async (
+  authToken: string,
   tribeMemberId: string | undefined,
   tribeId: string,
-  memberId: string,
-  authToken: string,
+  memberId: string
 ): Promise<void> => {
   const url = tribeMemberId
     ? `${getResourceEndpoint()}/tribe_member/${tribeMemberId}`
@@ -581,8 +581,8 @@ export const getMemberContacts = async (
 };
 
 export const createMemberContact = async (
-  memberContact: Omit<MemberContact, "id">,
   authToken: string,
+  memberContact: Omit<MemberContact, "id">
 ): Promise<MemberContact> => {
   const response = await fetch(`${getResourceEndpoint()}/member_contact`, {
     method: "POST",
@@ -594,8 +594,8 @@ export const createMemberContact = async (
 };
 
 export const updateMemberContact = async (
-  memberContact: MemberContact,
   authToken: string,
+  memberContact: MemberContact
 ): Promise<MemberContact> => {
   const response = await fetch(
     `${getResourceEndpoint()}/member_contact/${memberContact.id}`,
@@ -610,8 +610,8 @@ export const updateMemberContact = async (
 };
 
 export const deleteMemberContact = async (
-  id: string,
   authToken: string,
+  id: string
 ): Promise<void> => {
   const response = await fetch(
     `${getResourceEndpoint()}/member_contact/${id}`,
@@ -636,8 +636,8 @@ export const getChats = async (authToken: string): Promise<Chat[]> => {
 };
 
 export const createChat = async (
-  chat: Omit<Chat, "id">,
   authToken: string,
+  chat: Omit<Chat, "id">
 ): Promise<Chat> => {
   const response = await fetch(`${getResourceEndpoint()}/chat`, {
     method: "POST",
@@ -668,8 +668,8 @@ export const getChatMembers = async (
 };
 
 export const createChatMember = async (
-  chatMember: Omit<ChatMember, "id">,
   authToken: string,
+  chatMember: Omit<ChatMember, "id">
 ): Promise<ChatMember> => {
   const response = await fetch(`${getResourceEndpoint()}/chat_member`, {
     method: "POST",
@@ -700,8 +700,8 @@ export const getNotifications = async (
 };
 
 export const createNotification = async (
-  notification: Omit<Notification, "id">,
   authToken: string,
+  notification: Omit<Notification, "id">
 ): Promise<Notification> => {
   const response = await fetch(`${getResourceEndpoint()}/notification`, {
     method: "POST",
@@ -713,8 +713,8 @@ export const createNotification = async (
 };
 
 export const updateNotification = async (
-  notification: Notification & { id: string },
   authToken: string,
+  notification: Notification & { id: string }
 ): Promise<Notification> => {
   const response = await fetch(
     `${getResourceEndpoint()}/notification/${notification.id}`,
@@ -729,8 +729,8 @@ export const updateNotification = async (
 };
 
 export const deleteNotification = async (
-  notificationId: string,
   authToken: string,
+  notificationId: string
 ): Promise<void> => {
   const response = await fetch(
     `${getResourceEndpoint()}/notification/${notificationId}`,
@@ -798,8 +798,8 @@ export const getPollVotes = async (
 };
 
 export const createPoll = async (
-  poll: Omit<Poll, "id">,
   authToken: string,
+  poll: Omit<Poll, "id">
 ): Promise<Poll> => {
   const response = await fetch(`${getResourceEndpoint()}/poll`, {
     method: "POST",
@@ -811,8 +811,8 @@ export const createPoll = async (
 };
 
 export const getPoll = async (
-  pollId: string,
   authToken: string,
+  pollId: string
 ): Promise<Poll> => {
   const response = await fetch(`${getResourceEndpoint()}/poll/${pollId}`, {
     headers: { Authorization: `Bearer ${authToken}` },
@@ -823,7 +823,10 @@ export const getPoll = async (
   return response.json();
 };
 
-export const updatePollEntry = async (entry: Partial<PollEntry>, authToken: string): Promise<PollEntry> => {
+export const updatePollEntry = async (
+  authToken: string,
+  entry: Partial<PollEntry>
+): Promise<PollEntry> => {
   const { id, ...data } = entry;
   const res = await fetch(`${getResourceEndpoint()}/poll_entry/${id}`, {
     method: "PUT",
@@ -841,8 +844,8 @@ export const deletePollEntry = async (authToken: string, id: string): Promise<vo
 };
 
 export const updatePoll = async (
-  poll: Poll & { id: string },
   authToken: string,
+  poll: Poll & { id: string }
 ): Promise<Poll> => {
   const response = await fetch(`${getResourceEndpoint()}/poll/${poll.id}`, {
     method: "PUT",
@@ -855,8 +858,8 @@ export const updatePoll = async (
 
 // PollVote Services
 export const createPollVote = async (
-  vote: Omit<PollVote, "id">,
   authToken: string,
+  vote: Omit<PollVote, "id">
 ): Promise<PollVote> => {
   const response = await fetch(`${getResourceEndpoint()}/poll_vote`, {
     method: "POST",
@@ -868,8 +871,8 @@ export const createPollVote = async (
 };
 
 export const updatePollVote = async (
-  vote: PollVote & { id: string },
   authToken: string,
+  vote: PollVote & { id: string }
 ): Promise<PollVote> => {
   const response = await fetch(`${getResourceEndpoint()}/poll_vote/${vote.id}`, {
     method: "PUT",
@@ -881,8 +884,8 @@ export const updatePollVote = async (
 };
 
 export const deletePollVote = async (
-  voteId: string,
   authToken: string,
+  voteId: string
 ): Promise<void> => {
   const response = await fetch(`${getResourceEndpoint()}/poll_vote/${voteId}`, {
     method: "DELETE",
@@ -911,8 +914,8 @@ export const getPollWinners = async (
 };
 
 export const createPollWinner = async (
-  winner: Omit<PollWinner, "id">,
   authToken: string,
+  winner: Omit<PollWinner, "id">
 ): Promise<PollWinner> => {
   const response = await fetch(`${getResourceEndpoint()}/poll_winner`, {
     method: "POST",
@@ -924,8 +927,8 @@ export const createPollWinner = async (
 };
 
 export const updatePollWinner = async (
-  winner: PollWinner & { id?: string },
   authToken: string,
+  winner: PollWinner & { id?: string }
 ): Promise<PollWinner> => {
   const idToUpdate = winner.id;
   if (!idToUpdate) throw new Error("No ID provided for winner update");
@@ -944,8 +947,8 @@ export const updatePollWinner = async (
 
 // MeetupEvent Services
 export const getMeetupEvents = async (
-  meetupId: string,
   authToken: string,
+  meetupId: string
 ): Promise<MeetupEvent[]> => {
   const response = await fetch(
     `${getResourceEndpoint()}/meetup_event?meetup_id=${encodeURIComponent(meetupId)}`,
@@ -961,8 +964,8 @@ export const getMeetupEvents = async (
 };
 
 export const createMeetupEvent = async (
-  meetupEvent: Omit<MeetupEvent, "id">,
   authToken: string,
+  meetupEvent: Omit<MeetupEvent, "id">
 ): Promise<MeetupEvent> => {
   const response = await fetch(`${getResourceEndpoint()}/meetup_event`, {
     method: "POST",
@@ -974,8 +977,8 @@ export const createMeetupEvent = async (
 };
 
 export const updateMeetupEvent = async (
-  meetupEvent: MeetupEvent & { id: string },
   authToken: string,
+  meetupEvent: MeetupEvent & { id: string }
 ): Promise<MeetupEvent> => {
   const response = await fetch(
     `${getResourceEndpoint()}/meetup_event/${meetupEvent.id}`,
@@ -990,8 +993,8 @@ export const updateMeetupEvent = async (
 };
 
 export const deleteMeetupEvent = async (
-  meetupEventId: string,
   authToken: string,
+  meetupEventId: string
 ): Promise<void> => {
   const response = await fetch(
     `${getResourceEndpoint()}/meetup_event/${meetupEventId}`,
@@ -1004,8 +1007,8 @@ export const deleteMeetupEvent = async (
 };
 
 export const deletePollWinner = async (
-  winnerId: string,
   authToken: string,
+  winnerId: string
 ): Promise<void> => {
   const response = await fetch(`${getResourceEndpoint()}/poll_winner/${winnerId}`, {
     method: "DELETE",
@@ -1016,12 +1019,12 @@ export const deletePollWinner = async (
 
 // Media Services
 export const uploadMedia = async (
+  authToken: string,
   uri: string,
   filename: string,
   mimeType: string,
   meetupId: string,
   pollId: string,
-  authToken: string,
   caption?: string
 ): Promise<{ success: boolean; fileId?: string }> => {
   const formData = new FormData();
@@ -1083,8 +1086,8 @@ export const getHelpRegistries = async (
 };
 
 export const getHelpRegistry = async (
-  id: string,
-  authToken: string
+  authToken: string,
+  id: string
 ): Promise<HelpRegistry> => {
   const response = await fetch(`${getResourceEndpoint()}/help_registry/${id}`, {
     headers: { Authorization: `Bearer ${authToken}` },
@@ -1096,8 +1099,8 @@ export const getHelpRegistry = async (
 };
 
 export const createHelpRegistry = async (
-  registry: Omit<HelpRegistry, "id">,
-  authToken: string
+  authToken: string,
+  registry: Omit<HelpRegistry, "id">
 ): Promise<HelpRegistry> => {
   const response = await fetch(`${getResourceEndpoint()}/help_registry`, {
     method: "POST",
@@ -1109,8 +1112,8 @@ export const createHelpRegistry = async (
 };
 
 export const updateHelpRegistry = async (
-  registry: HelpRegistry & { id: string },
-  authToken: string
+  authToken: string,
+  registry: HelpRegistry & { id: string }
 ): Promise<HelpRegistry> => {
   const response = await fetch(`${getResourceEndpoint()}/help_registry/${registry.id}`, {
     method: "PUT",
@@ -1122,8 +1125,8 @@ export const updateHelpRegistry = async (
 };
 
 export const deleteHelpRegistry = async (
-  id: string,
-  authToken: string
+  authToken: string,
+  id: string
 ): Promise<void> => {
   const response = await fetch(`${getResourceEndpoint()}/help_registry/${id}`, {
     method: "DELETE",
@@ -1151,8 +1154,8 @@ export const getRegistryItems = async (
 };
 
 export const createRegistryItem = async (
-  item: Omit<RegistryItem, "id">,
-  authToken: string
+  authToken: string,
+  item: Omit<RegistryItem, "id">
 ): Promise<RegistryItem> => {
   const response = await fetch(`${getResourceEndpoint()}/registry_item`, {
     method: "POST",
@@ -1164,8 +1167,8 @@ export const createRegistryItem = async (
 };
 
 export const updateRegistryItem = async (
-  item: RegistryItem & { id: string },
-  authToken: string
+  authToken: string,
+  item: RegistryItem & { id: string }
 ): Promise<RegistryItem> => {
   const response = await fetch(`${getResourceEndpoint()}/registry_item/${item.id}`, {
     method: "PUT",
@@ -1177,8 +1180,8 @@ export const updateRegistryItem = async (
 };
 
 export const deleteRegistryItem = async (
-  id: string,
-  authToken: string
+  authToken: string,
+  id: string
 ): Promise<void> => {
   const response = await fetch(`${getResourceEndpoint()}/registry_item/${id}`, {
     method: "DELETE",
@@ -1189,8 +1192,8 @@ export const deleteRegistryItem = async (
 
 // TribalCouncil Services
 export const getTribalCouncils = async (
-  meetupId: string,
-  authToken: string
+  authToken: string,
+  meetupId: string
 ): Promise<TribalCouncil[]> => {
   const response = await fetch(
     `${getResourceEndpoint()}/tribal_council?meetup_id=${encodeURIComponent(meetupId)}`,
@@ -1207,8 +1210,8 @@ export const getTribalCouncils = async (
 };
 
 export const createTribalCouncil = async (
-  council: Omit<TribalCouncil, "id">,
-  authToken: string
+  authToken: string,
+  council: Omit<TribalCouncil, "id">
 ): Promise<TribalCouncil> => {
   const response = await fetch(`${getResourceEndpoint()}/tribal_council`, {
     method: "POST",
@@ -1220,8 +1223,8 @@ export const createTribalCouncil = async (
 };
 
 export const deleteTribalCouncil = async (
-  id: string,
-  authToken: string
+  authToken: string,
+  id: string
 ): Promise<void> => {
   const response = await fetch(`${getResourceEndpoint()}/tribal_council/${id}`, {
     method: "DELETE",

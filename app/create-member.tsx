@@ -62,18 +62,14 @@ export default function CreateMember() {
         memberPayload.phone = null;
       }
 
-      const newMember = await createMember(
-        memberPayload,
-        token,
+      const newMember = await createMember(token, memberPayload
       );
 
-      await createMemberContact(
-        {
+      await createMemberContact(token, {
           source_id: currentMember.id,
           subject_id: newMember.id!,
           status: "invited",
-        },
-        token,
+        }
       );
 
       const buttons: any[] = [

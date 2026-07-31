@@ -64,7 +64,7 @@ export default function EditRegistry() {
       setMembers(allMembers);
 
       if (paramId) {
-        const reg = await getHelpRegistry(paramId, token);
+        const reg = await getHelpRegistry(token, paramId);
         setRegistry(reg);
         setName(reg.name || "");
         setDetails(reg.details || "");
@@ -93,14 +93,12 @@ export default function EditRegistry() {
     try {
       const token = await user.getIdToken();
       if (registry && registry.id) {
-        const updated = await updateHelpRegistry({ ...registry, name, details, is_council: isCouncil, id: registry.id as string }, token);
+        const updated = await updateHelpRegistry(token, { ...registry, name, details, is_council: isCouncil, id: registry.id as string });
         setRegistry(updated);
         router.back();
         showAlert("Success", "Registry updated successfully!");
       } else {
-        const newReg = await createHelpRegistry(
-          { name, details, is_council: isCouncil, proposal_id: proposalId, meetup_event_id: meetupEventId },
-          token
+        const newReg = await createHelpRegistry(token, { name, details, is_council: isCouncil, proposal_id: proposalId, meetup_event_id: meetupEventId }
         );
         setRegistry(newReg);
         router.back();
@@ -119,15 +117,11 @@ export default function EditRegistry() {
     try {
       const token = await user.getIdToken();
       if (selectedItem?.id) {
-        const updated = await updateRegistryItem(
-          { ...selectedItem, ...itemData } as RegistryItem & { id: string },
-          token
+        const updated = await updateRegistryItem(token, { ...selectedItem, ...itemData } as RegistryItem & { id: string }
         );
         setItems(prev => prev.map(i => (i.id === updated.id ? updated : i)));
       } else {
-        const newItem = await createRegistryItem(
-          { ...itemData, help_registry_id: registry.id } as Omit<RegistryItem, "id">,
-          token
+        const newItem = await createRegistryItem(token, { ...itemData, help_registry_id: registry.id } as Omit<RegistryItem, "id">
         );
         setItems(prev => [...prev, newItem]);
       }

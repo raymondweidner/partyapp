@@ -151,13 +151,11 @@ export default function FindFriend() {
       console.log("Invite confirmed, sending request...");
       try {
         const token = await user!.getIdToken();
-        await createMemberContact(
-          {
+        await createMemberContact(token, {
             source_id: currentMember.id!,
             subject_id: selectedMember.id!,
             status: "invited",
-          },
-          token,
+          }
         );
         showAlert("Success", `Invitation sent to ${selectedMember.name}!`);
         fetchMemberContacts();

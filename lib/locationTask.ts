@@ -27,11 +27,11 @@ TaskManager.defineTask(GEOFENCE_TASK_NAME, async ({ data, error }) => {
         // or the device's current known location.
         const location = await Location.getLastKnownPositionAsync();
         if (location) {
-          await checkInEvent(eventId, location.coords.latitude, location.coords.longitude, authToken);
+          await checkInEvent(authToken, eventId, location.coords.latitude, location.coords.longitude);
         }
       } else if (eventType === Location.GeofencingEventType.Exit) {
         console.log(`Exited geofence for event ${eventId}`);
-        await checkOutEvent(eventId, authToken);
+        await checkOutEvent(authToken, eventId);
       }
     } catch (err) {
       console.error('Failed to process geofence event:', err);

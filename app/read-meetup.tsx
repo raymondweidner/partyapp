@@ -160,8 +160,8 @@ export default function ReadMeetup() {
               Promise.all(availPromises),
               getTribeMembers(token, found.tribe_id || paramTribeId!),
               getPolls(token, paramMeetupId),
-              getMeetupEvents(paramMeetupId, token),
-              getTribalCouncils(paramMeetupId, token),
+              getMeetupEvents(token, paramMeetupId),
+              getTribalCouncils(token, paramMeetupId),
               getChats(token),
             ]);
             setAvailabilities(availResults.flat());
@@ -248,8 +248,8 @@ export default function ReadMeetup() {
 
         const [fetchedPolls, fetchedEvents, fetchedCouncils, fetchedChats] = await Promise.all([
           getPolls(token, meetup.id),
-          getMeetupEvents(meetup.id, token),
-          getTribalCouncils(meetup.id, token),
+          getMeetupEvents(token, meetup.id),
+          getTribalCouncils(token, meetup.id),
           getChats(token),
         ]);
         setPolls(fetchedPolls);
@@ -357,8 +357,7 @@ export default function ReadMeetup() {
     setUpdating(true);
     try {
       const token = await user.getIdToken();
-      await updateMeetup(
-        {
+      await updateMeetup(token, {
           ...selectedMeetup,
           title,
           event_type: eventType,
@@ -369,8 +368,7 @@ export default function ReadMeetup() {
           days_to_decide,
           leader_title: leaderTitleSelect === "Custom..." ? leaderTitleCustom : leaderTitleSelect,
           ...recurrencePayload,
-        } as any,
-        token,
+        } as any
       );
 
       showAlert("Success", "Meetup updated successfully!", [
@@ -400,7 +398,7 @@ export default function ReadMeetup() {
     setUpdating(true);
     try {
       const token = await user.getIdToken();
-      await updateMeetup({ ...selectedMeetup, status: "Cancelled" } as any, token);
+      await updateMeetup(token, { ...selectedMeetup, status: "Cancelled" } as any);
       showAlert("Success", "Meetup cancelled!");
       setIsEditing(false);
       fetchMeetups();
@@ -438,7 +436,7 @@ export default function ReadMeetup() {
               nextRecursOn = baseDate.toISOString();
             }
 
-            await updateMeetup({ ...selectedMeetup, status: nextStatus, recurs_on: nextRecursOn } as any, token);
+            await updateMeetup(token, { ...selectedMeetup, status: nextStatus, recurs_on: nextRecursOn } as any);
             showAlert("Success", "Meetup completed!");
             setIsEditing(false);
             fetchMeetups();
@@ -462,8 +460,8 @@ export default function ReadMeetup() {
           setUpdating(true);
           try {
             const token = await user.getIdToken();
-            await updateProposal({ ...proposal, status: "accepted" } as any, token);
-            await updateMeetup({ ...selectedMeetup, status: "Scheduled" } as any, token);
+            await updateProposal(token, { ...proposal, status: "accepted" } as any);
+            await updateMeetup(token, { ...selectedMeetup, status: "Scheduled" } as any);
             showAlert("Success", "Proposal accepted and meetup scheduled!");
             setIsSelectProposalModalVisible(false);
             setSelectedProposalForAccept(null);
@@ -485,10 +483,10 @@ export default function ReadMeetup() {
     setUpdating(true);
     try {
       const token = await user.getIdToken();
-      await Promise.all(tribalCouncils.map(c => deleteTribalCouncil(c.id!, token)));
+      await Promise.all(tribalCouncils.map(c => deleteTribalCouncil(token, c.id!)));
       const newCouncils = await Promise.all(
         councilMemberIds.map(cid =>
-          createTribalCouncil({ meetup_id: selectedMeetup.id!, member_id: cid }, token)
+          createTribalCouncil(token, { meetup_id: selectedMeetup.id!, member_id: cid })
         )
       );
       setTribalCouncils(newCouncils);
@@ -505,13 +503,13 @@ export default function ReadMeetup() {
     setUpdating(true);
     try {
       const token = await user.getIdToken();
-      const chat = await createChat({
+      const chat = await createChat(token, {
         name: name,
         url: url,
         is_council: true,
         meetup_id: selectedMeetup.id,
         tribe_id: selectedMeetup.tribe_id,
-      }, token);
+      });
       setChats(prev => [...prev, chat]);
       setShowCouncilChatModal(false);
       setCouncilChatName("");

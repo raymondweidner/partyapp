@@ -99,7 +99,7 @@ export default function Home() {
     setCreatingChat(true);
     try {
       const token = await user!.getIdToken();
-      const newChat = await createChat({ name, url }, token);
+      const newChat = await createChat(token, { name, url });
 
       const memberIdsToCreate = [...selectedIds];
       if (currentMember?.id && !memberIdsToCreate.includes(currentMember.id)) {
@@ -108,9 +108,7 @@ export default function Home() {
 
       await Promise.all(
         memberIdsToCreate.map((memberId) =>
-          createChatMember(
-            { chat_id: newChat.id!, member_id: memberId },
-            token,
+          createChatMember(token, { chat_id: newChat.id!, member_id: memberId }
           ),
         ),
       );
@@ -208,9 +206,7 @@ export default function Home() {
       // 2. Fetch user's tribes
       let myTribeIds: string[] = [];
       if (currentMember && currentMember.id) {
-        const tribeMembers = await getTribeMembersByMemberId(
-          currentMember.id,
-          token,
+        const tribeMembers = await getTribeMembersByMemberId(token, currentMember.id
         );
         console.log(
           `Tribe memberships for member id ${currentMember.id}`,
@@ -281,7 +277,7 @@ export default function Home() {
       const deviceId = userDevice?.id;
       if (user && deviceId) {
         const token = await user.getIdToken();
-        await deleteUserDevice(deviceId, token);
+        await deleteUserDevice(token, deviceId);
       }
       await auth.signOut();
     } catch (e: any) {
@@ -351,9 +347,7 @@ export default function Home() {
           );
           return;
         }
-        await updateMemberContact(
-          { ...contact, status: "accepted", id: contact.id! },
-          token,
+        await updateMemberContact(token, { ...contact, status: "accepted", id: contact.id! }
         );
         showAlert("Success", `You are now connected with ${f.name}!`);
         fetchData();
@@ -373,7 +367,7 @@ export default function Home() {
         (c) => c.source_id === f.id,
       );
       if (contact && contact.id) {
-        await deleteMemberContact(contact.id, token);
+        await deleteMemberContact(token, contact.id);
         showAlert("Success", `Invitation from ${f.name} declined.`);
         fetchData();
       }

@@ -103,7 +103,7 @@ export default function EditMember() {
           try {
             const token = await user.getIdToken();
             const updatedMember = { ...selectedMember, id: selectedMember.id, google_refresh_token: refreshToken };
-            const returnedMember = await updateMember(updatedMember, token);
+            const returnedMember = await updateMember(token, updatedMember);
             setSelectedMember(returnedMember);
 
 
@@ -178,7 +178,7 @@ export default function EditMember() {
     if (member.id && user && isProfile) {
       setLoadingAlerts(true);
       user.getIdToken().then(token => {
-        getMemberAlertPreferences(member.id!, token).then(prefs => {
+        getMemberAlertPreferences(token, member.id!).then(prefs => {
           setAlertPreferences(prefs.sort((a, b) => a.alert_type.localeCompare(b.alert_type)));
           setLoadingAlerts(false);
         }).catch(err => {
@@ -207,9 +207,9 @@ export default function EditMember() {
     try {
       const token = await user.getIdToken();
       if (updatedPref.id) {
-        await updateMemberAlertPreference(updatedPref, token);
+        await updateMemberAlertPreference(token, updatedPref);
       } else {
-        const newPref = await createMemberAlertPreference(updatedPref, token);
+        const newPref = await createMemberAlertPreference(token, updatedPref);
         setAlertPreferences(prev => prev.map(p => p.alert_type === pref.alert_type ? newPref : p));
       }
     } catch (e: any) {
@@ -255,7 +255,7 @@ export default function EditMember() {
       try {
         const token = await user.getIdToken();
         const updatedMember = { ...selectedMember, id: selectedMember.id, google_refresh_token: null as any, root_folder_id: null as any };
-        await updateMember(updatedMember, token);
+        await updateMember(token, updatedMember);
         setSelectedMember(updatedMember);
 
 
@@ -303,7 +303,7 @@ export default function EditMember() {
     try {
       const token = await user.getIdToken();
       // @ts-ignore
-      await updateMember({ ...selectedMember, name, email, phone, map_type: mapType, profile_pic_data: profilePicData }, token);
+      await updateMember(token, { ...selectedMember, name, email, phone, map_type: mapType, profile_pic_data: profilePicData });
 
       showAlert("Success", "Member updated successfully!", [
         {

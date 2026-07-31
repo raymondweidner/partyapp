@@ -78,7 +78,7 @@ export default function WriteProposal() {
         getProposals(token, undefined, paramMeetupId),
         getMeetups(token),
         getMembers(token),
-        getTribalCouncils(paramMeetupId as string, token),
+        getTribalCouncils(token, paramMeetupId as string),
       ]);
       setTribalCouncils(councilsData);
 
@@ -109,7 +109,7 @@ export default function WriteProposal() {
       setMeetup(foundMeetup || null);
       if (foundMeetup?.tribe_id) {
         const [tMembers, aData] = await Promise.all([
-          getTribeMembers(foundMeetup.tribe_id, token),
+          getTribeMembers(token, foundMeetup.tribe_id),
           getAvailabilities(token, undefined, paramProposalId),
         ]);
 
@@ -155,14 +155,12 @@ export default function WriteProposal() {
     setUpdating(true);
     try {
       const token = await user.getIdToken();
-      await updateProposal(
-        {
+      await updateProposal(token, {
           ...proposal,
           start_at: startDate.toISOString(),
           end_at: endDate.toISOString(),
           location,
-        } as any,
-        token,
+        } as any
       );
 
       showAlert("Success", "Proposal updated successfully!", [

@@ -85,7 +85,7 @@ export default function UpdateAvailability() {
           vote: isVoted,
           id: existingAvailability.id!,
         };
-        await updateAvailability(updatedAvailability, token);
+        await updateAvailability(token, updatedAvailability);
       } else {
         const proposalsData = await getProposals(token);
         const thisProposal = proposalsData.find(
@@ -112,14 +112,12 @@ export default function UpdateAvailability() {
           }
         }
 
-        await createAvailability(
-          {
+        await createAvailability(token, {
             member_id: member.id,
             proposal_id: paramProposalId,
             status,
             vote: isVoted,
-          } as any,
-          token,
+          } as any
         );
       }
       showAlert("Success", "Availability updated!", [

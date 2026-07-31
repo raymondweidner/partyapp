@@ -96,7 +96,7 @@ export default function EditTribe() {
     setCreatingChat(true);
     try {
       const token = await user!.getIdToken();
-      const newChat = await createChat({ name, url }, token);
+      const newChat = await createChat(token, { name, url });
 
       const memberIdsToCreate = [...selectedIds];
       if (member?.id && !memberIdsToCreate.includes(member.id)) {
@@ -105,9 +105,7 @@ export default function EditTribe() {
 
       await Promise.all(
         memberIdsToCreate.map((memberId) =>
-          createChatMember(
-            { chat_id: newChat.id!, member_id: memberId },
-            token,
+          createChatMember(token, { chat_id: newChat.id!, member_id: memberId }
           ),
         ),
       );
@@ -162,7 +160,7 @@ export default function EditTribe() {
         const [membersData, tribeMembersData, contactsData] =
           await Promise.all([
             getMembers(token),
-            getTribeMembers(tribeId, token),
+            getTribeMembers(token, tribeId),
             getMemberContacts(token, member.id),
           ]);
         setAllMembers(membersData);
@@ -263,9 +261,7 @@ export default function EditTribe() {
     setUpdating(true);
     try {
       const token = await user.getIdToken();
-      await updateTribe(
-        { ...selectedTribe, name, description, icon_type: iconType } as Tribe & { id: string },
-        token,
+      await updateTribe(token, { ...selectedTribe, name, description, icon_type: iconType } as Tribe & { id: string }
       );
 
       const originalMemberIds = tribeMembers.map((tm) => tm.member_id);
@@ -279,15 +275,13 @@ export default function EditTribe() {
       const promises: Promise<any>[] = [];
       toAdd.forEach((memberId) => {
         promises.push(
-          createTribeMember(
-            { tribe_id: selectedTribe.id!, member_id: memberId },
-            token,
+          createTribeMember(token, { tribe_id: selectedTribe.id!, member_id: memberId }
           ),
         );
       });
       toRemove.forEach((tm) => {
         promises.push(
-          deleteTribeMember(tm.id, selectedTribe.id!, tm.member_id, token),
+          deleteTribeMember(token, tm.id, selectedTribe.id!, tm.member_id),
         );
       });
 
@@ -384,13 +378,11 @@ export default function EditTribe() {
       if (!user || !member?.id || !item.id) return;
       try {
         const token = await user.getIdToken();
-        await createMemberContact(
-          {
+        await createMemberContact(token, {
             source_id: member.id,
             subject_id: item.id,
             status: "invited",
-          },
-          token,
+          }
         );
         showAlert("Success", `Invitation sent to ${item.name}!`);
         const newContacts = await getMemberContacts(token, member.id);
