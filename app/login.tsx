@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from "expo-router";
+import { Link, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -26,6 +26,7 @@ import { useCurrentMember } from "./_layout";
 import PhoneInput from "../lib/components/PhoneInput";
 
 export default function Login() {
+  const router = useRouter();
   const { invite } = useLocalSearchParams<{ invite?: string }>();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -294,14 +295,13 @@ export default function Login() {
                     <Text style={styles.primaryButtonText}>Sign In</Text>
                   </TouchableOpacity>
                   
-                  <TouchableOpacity
-                    style={styles.linkButton}
-                    onPress={() => {}}
-                  >
-                    <Text style={styles.linkButtonText}>
-                      Forgot password?
-                    </Text>
-                  </TouchableOpacity>
+                  <Link href="/forgot-password" asChild>
+                    <TouchableOpacity style={styles.linkButton}>
+                      <Text style={styles.linkButtonText}>
+                        Forgot password?
+                      </Text>
+                    </TouchableOpacity>
+                  </Link>
 
                   <View style={styles.separator} />
 

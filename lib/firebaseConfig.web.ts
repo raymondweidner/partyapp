@@ -31,5 +31,7 @@ export const auth = {
   signOut: () => require("firebase/auth").signOut(rawAuth),
   onAuthStateChanged: (callback: any) => 
     require("firebase/auth").onAuthStateChanged(rawAuth, callback),
+  sendPasswordResetEmail: (email: string) =>
+    require("firebase/auth").sendPasswordResetEmail(rawAuth, email),
   get currentUser() { return rawAuth.currentUser; }
 };

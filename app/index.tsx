@@ -18,6 +18,7 @@ import {
 import { useAuth } from "../lib/auth";
 import { EmailModal } from "../lib/components/EmailModal";
 import { GroupChatModal } from "../lib/components/GroupChatModal";
+import { MemberModal } from "../lib/components/MemberModal";
 import { Chat } from "../lib/data/Chat";
 import { ChatMember } from "../lib/data/ChatMember";
 import { Meetup } from "../lib/data/Meetup";
@@ -26,6 +27,7 @@ import { Tribe } from "../lib/data/Tribe";
 import {
   createChat,
   createChatMember,
+  createMemberContact,
   deleteMemberContact,
   deleteUserDevice,
   getChatMembers,
@@ -67,10 +69,15 @@ export default function Home() {
   const [memberContacts, setMemberContacts] =
     useState<GroupedMemberContacts | null>(null);
 
+  const [activeRootTab, setActiveRootTab] = useState<"tribes" | "meetups" | "fam" | "chats">("tribes");
+
   const [isGroupChatModalVisible, setIsGroupChatModalVisible] = useState(false);
   const [creatingChat, setCreatingChat] = useState(false);
 
   const [isEmailModalVisible, setIsEmailModalVisible] = useState(false);
+
+  const [isMemberModalVisible, setIsMemberModalVisible] = useState(false);
+  const [selectedMemberForModal, setSelectedMemberForModal] = useState<Member | null>(null);
 
   const openGroupChatModal = () => {
     setIsGroupChatModalVisible(true);
@@ -427,9 +434,17 @@ export default function Home() {
     ) : null;
 
     return (
-      <View
+      <TouchableOpacity
         key={f.id}
         style={styles.memberCard}
+        onPress={() => {
+          if (f.id === currentMember?.id) {
+            router.push(`/read-member?id=${f.id}&profile=true` as any);
+          } else {
+            setSelectedMemberForModal(f);
+            setIsMemberModalVisible(true);
+          }
+        }}
       >
         <View style={styles.memberCardImageContainer}>
           {f.profile_pic_data && !isPendingAppJoin ? (
@@ -446,7 +461,7 @@ export default function Home() {
           )}
         </View>
         <Text style={styles.memberCardName} numberOfLines={1}>{f.name || "Unnamed"}</Text>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -457,369 +472,375 @@ export default function Home() {
 
   return (
     <View style={styles.container}>
+      {/* Fixed Header */}
+      <View style={styles.fixedHeader}>
+        <Text style={styles.header}>
+          Tribal
+          <Text style={{ color: colors.accent, opacity: 0.85, textShadowColor: colors.accent, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 6 }}>
+            Vibe
+          </Text>
+        </Text>
+        <TouchableOpacity style={styles.headerSignOut} onPress={handleSignOut}>
+          <Text style={styles.headerSignOutText}>Sign Out</Text>
+        </TouchableOpacity>
+      </View>
+      <FloralDivider color={colors.accent} />
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
       >
-        <View style={{ marginBottom: 10 }}>
-          <Text style={styles.header}>
-            Tribal
-            <Text style={{ color: colors.accent, opacity: 0.85, textShadowColor: colors.accent, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 6 }}>
-              Vibe
-            </Text>
-          </Text>
-          <FloralDivider color={colors.accent} />
-        </View>
-
         {loading ? (
           <ActivityIndicator size="large" color="#007bff" />
         ) : (
           <>
-            <View style={globalStyles.sectionPanel}>
-              {renderSectionHeader("🏕️ Tribes", "/write-tribe")}
-              <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.listContainer} nestedScrollEnabled>
-                {tribes.map((t) => {
-                  const cleanDetails = t.description ? String(t.description).trim() : "";
-                  const hasDetails = cleanDetails.length > 0 && cleanDetails !== "undefined" && cleanDetails !== "null";
+            {activeRootTab === "tribes" && (
+              <View style={globalStyles.sectionPanel}>
+                {renderSectionHeader("🏕️ Tribes", "/write-tribe")}
+                <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.listContainer} nestedScrollEnabled>
+                  {tribes.map((t) => {
+                    const cleanDetails = t.description ? String(t.description).trim() : "";
+                    const hasDetails = cleanDetails.length > 0 && cleanDetails !== "undefined" && cleanDetails !== "null";
+
+                    return (
+                      <TouchableOpacity
+                        key={t.id}
+                        style={styles.squareCard}
+                        onPress={() =>
+                          router.push({
+                            pathname: "/read-tribe",
+                            params: { id: t.id },
+                          })
+                        }
+                      >
+                        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                          <Text style={styles.squareCardIcon}>
+                            {t.icon_type || "😊"}
+                          </Text>
+                          <Text style={styles.squareCardTitle} numberOfLines={2} ellipsizeMode="tail">
+                            {t.name || "Unnamed"}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+                {tribes.length === 0 && (
+                  <Text style={styles.emptyText}>No tribes found.</Text>
+                )}
+              </View>
+            )}
+
+            {activeRootTab === "meetups" && (
+              <View style={globalStyles.sectionPanel}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>🎉 Meetups</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <TouchableOpacity
+                      onPress={() => setMeetupsExpanded(!meetupsExpanded)}
+                      style={{ marginRight: 15 }}
+                    >
+                      <Text style={{ fontSize: 18, color: colors.textSecondary }}>
+                        {meetupsExpanded ? "▲" : "▼"}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => router.push("/write-meetup")}
+                      style={styles.addButton}
+                    >
+                      <Text style={styles.addButtonText}>+ Add</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {(() => {
+                  const ongoingMeetups = meetups.filter(m => m.status && m.status.toLowerCase() === "ongoing");
+                  const proposedMeetups = meetups.filter(m => !m.status || !["upcoming", "selected", "scheduled", "completed", "complete", "cancelled", "ongoing"].includes(m.status.toLowerCase()));
+                  const upcomingMeetups = meetups.filter(m => m.status && ["upcoming", "selected", "scheduled"].includes(m.status.toLowerCase()));
+                  const completedMeetups = meetups.filter(m => m.status && ["completed", "complete"].includes(m.status.toLowerCase()));
+                  const cancelledMeetups = meetups.filter(m => m.status && m.status.toLowerCase() === "cancelled");
+
+                  let currentMeetups: Meetup[] = [];
+                  if (meetupTab === "ongoing") currentMeetups = ongoingMeetups;
+                  else if (meetupTab === "proposed") currentMeetups = proposedMeetups;
+                  else if (meetupTab === "upcoming") currentMeetups = upcomingMeetups;
+                  else if (meetupTab === "completed") currentMeetups = completedMeetups;
+                  else if (meetupTab === "cancelled") currentMeetups = cancelledMeetups;
 
                   return (
-                    <TouchableOpacity
-                      key={t.id}
-                      style={styles.squareCard}
-                      onPress={() =>
-                        router.push({
-                          pathname: "/read-tribe",
-                          params: { id: t.id },
-                        })
-                      }
-                    >
-                      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                        <Text style={styles.squareCardIcon}>
-                          {t.icon_type || "😊"}
-                        </Text>
-                        <Text style={styles.squareCardTitle} numberOfLines={2} ellipsizeMode="tail">
-                          {t.name || "Unnamed"}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-              {tribes.length === 0 && (
-                <Text style={styles.emptyText}>No tribes found.</Text>
-              )}
-            </View>
-
-            <View style={globalStyles.sectionPanel}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>🎉 Meetups</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <TouchableOpacity
-                    onPress={() => setMeetupsExpanded(!meetupsExpanded)}
-                    style={{ marginRight: 15 }}
-                  >
-                    <Text style={{ fontSize: 18, color: colors.textSecondary }}>
-                      {meetupsExpanded ? "▲" : "▼"}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => router.push("/write-meetup")}
-                    style={styles.addButton}
-                  >
-                    <Text style={styles.addButtonText}>+ Add</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {(() => {
-                const ongoingMeetups = meetups.filter(m => m.status && m.status.toLowerCase() === "ongoing");
-                const proposedMeetups = meetups.filter(m => !m.status || !["upcoming", "selected", "scheduled", "completed", "complete", "cancelled", "ongoing"].includes(m.status.toLowerCase()));
-                const upcomingMeetups = meetups.filter(m => m.status && ["upcoming", "selected", "scheduled"].includes(m.status.toLowerCase()));
-                const completedMeetups = meetups.filter(m => m.status && ["completed", "complete"].includes(m.status.toLowerCase()));
-                const cancelledMeetups = meetups.filter(m => m.status && m.status.toLowerCase() === "cancelled");
-
-                let currentMeetups: Meetup[] = [];
-                if (meetupTab === "ongoing") currentMeetups = ongoingMeetups;
-                else if (meetupTab === "proposed") currentMeetups = proposedMeetups;
-                else if (meetupTab === "upcoming") currentMeetups = upcomingMeetups;
-                else if (meetupTab === "completed") currentMeetups = completedMeetups;
-                else if (meetupTab === "cancelled") currentMeetups = cancelledMeetups;
-
-                return (
-                  <>
-                    <View style={styles.tabContainer}>
-                      {ongoingMeetups.length > 0 && (
+                    <>
+                      <View style={styles.tabContainer}>
+                        {ongoingMeetups.length > 0 && (
+                          <TouchableOpacity
+                            style={[styles.tab, meetupTab === "ongoing" && styles.activeTab]}
+                            onPress={() => setMeetupTab("ongoing")}
+                          >
+                            <Text style={[styles.tabText, meetupTab === "ongoing" && styles.activeTabText]}>
+                              Ongoing
+                            </Text>
+                            <View style={styles.tabBadge}>
+                              <Text style={styles.tabBadgeText}>
+                                {ongoingMeetups.length > 99 ? "99+" : ongoingMeetups.length}
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                        )}
                         <TouchableOpacity
-                          style={[styles.tab, meetupTab === "ongoing" && styles.activeTab]}
-                          onPress={() => setMeetupTab("ongoing")}
+                          style={[styles.tab, meetupTab === "proposed" && styles.activeTab]}
+                          onPress={() => setMeetupTab("proposed")}
                         >
-                          <Text style={[styles.tabText, meetupTab === "ongoing" && styles.activeTabText]}>
-                            Ongoing
+                          <Text style={[styles.tabText, meetupTab === "proposed" && styles.activeTabText]}>
+                            Proposed
                           </Text>
                           <View style={styles.tabBadge}>
                             <Text style={styles.tabBadgeText}>
-                              {ongoingMeetups.length > 99 ? "99+" : ongoingMeetups.length}
+                              {proposedMeetups.length > 99 ? "99+" : proposedMeetups.length}
                             </Text>
                           </View>
                         </TouchableOpacity>
-                      )}
-                      <TouchableOpacity
-                        style={[styles.tab, meetupTab === "proposed" && styles.activeTab]}
-                        onPress={() => setMeetupTab("proposed")}
-                      >
-                        <Text style={[styles.tabText, meetupTab === "proposed" && styles.activeTabText]}>
-                          Proposed
-                        </Text>
-                        <View style={styles.tabBadge}>
-                          <Text style={styles.tabBadgeText}>
-                            {proposedMeetups.length > 99 ? "99+" : proposedMeetups.length}
+                        <TouchableOpacity
+                          style={[styles.tab, meetupTab === "upcoming" && styles.activeTab]}
+                          onPress={() => setMeetupTab("upcoming")}
+                        >
+                          <Text style={[styles.tabText, meetupTab === "upcoming" && styles.activeTabText]}>
+                            Upcoming
                           </Text>
-                        </View>
+                          <View style={styles.tabBadge}>
+                            <Text style={styles.tabBadgeText}>
+                              {upcomingMeetups.length > 99 ? "99+" : upcomingMeetups.length}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                        {meetupsExpanded && (
+                          <>
+                            <TouchableOpacity
+                              style={[styles.tab, meetupTab === "completed" && styles.activeTab]}
+                              onPress={() => setMeetupTab("completed")}
+                            >
+                              <Text style={[styles.tabText, meetupTab === "completed" && styles.activeTabText]}>
+                                Completed
+                              </Text>
+                              <View style={styles.tabBadge}>
+                                <Text style={styles.tabBadgeText}>
+                                  {completedMeetups.length > 99 ? "99+" : completedMeetups.length}
+                                </Text>
+                              </View>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.tab, meetupTab === "cancelled" && styles.activeTab]}
+                              onPress={() => setMeetupTab("cancelled")}
+                            >
+                              <Text style={[styles.tabText, meetupTab === "cancelled" && styles.activeTabText]}>
+                                Cancelled
+                              </Text>
+                              <View style={styles.tabBadge}>
+                                <Text style={styles.tabBadgeText}>
+                                  {cancelledMeetups.length > 99 ? "99+" : cancelledMeetups.length}
+                                </Text>
+                              </View>
+                            </TouchableOpacity>
+                          </>
+                        )}
+                      </View>
+
+                      <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.listContainer} nestedScrollEnabled>
+                        {currentMeetups.map((meetup) => {
+                          const cleanDetails = meetup.details ? String(meetup.details).trim() : "";
+                          const eventInfo = meetup.event_type ? `Type: ${meetup.event_type}\n` : "";
+                          const infoText = cleanDetails.length > 0 && cleanDetails !== "undefined" && cleanDetails !== "null"
+                            ? `${eventInfo}Status: ${meetup.status || "Planning"}\n\n${cleanDetails}`
+                            : `${eventInfo}Status: ${meetup.status || "Planning"}`;
+
+                          return (
+                            <TouchableOpacity
+                              key={meetup.id}
+                              style={styles.squareCard}
+                              onPress={() =>
+                                router.push({
+                                  pathname: "/read-meetup",
+                                  params: { id: meetup.id },
+                                })
+                              }
+                            >
+                              <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                                <Text style={styles.squareCardIcon}>
+                                  {meetup.icon_type || "🎉"}
+                                </Text>
+                                <Text style={styles.squareCardTitle} numberOfLines={2} ellipsizeMode="tail">
+                                  {meetup.title || "Unnamed Meetup"}
+                                </Text>
+                              </View>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </ScrollView>
+                      {currentMeetups.length === 0 && (
+                        <Text style={styles.emptyText}>No meetups found.</Text>
+                      )}
+                    </>
+                  );
+                })()}
+              </View>
+            )}
+
+            {activeRootTab === "fam" && (
+              <View style={globalStyles.sectionPanel}>
+                <View style={{ marginBottom: 16, borderBottomWidth: 1, borderBottomColor: "rgba(0, 0, 0, 0.08)", paddingBottom: 5 }}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <Text style={styles.sectionTitle}>🙌 Fam</Text>
+                    <View style={styles.headerButtonsRow}>
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => router.push("/find-friend" as any)}
+                      >
+                        <Text style={styles.actionButtonText}>🙌 Find</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
-                        style={[styles.tab, meetupTab === "upcoming" && styles.activeTab]}
-                        onPress={() => setMeetupTab("upcoming")}
+                        style={styles.actionButton}
+                        onPress={() => router.push("/create-member" as any)}
                       >
-                        <Text style={[styles.tabText, meetupTab === "upcoming" && styles.activeTabText]}>
-                          Upcoming
+                        <Text style={styles.actionButtonText}>
+                          🚪 Invite
                         </Text>
-                        <View style={styles.tabBadge}>
-                          <Text style={styles.tabBadgeText}>
-                            {upcomingMeetups.length > 99 ? "99+" : upcomingMeetups.length}
-                          </Text>
-                        </View>
                       </TouchableOpacity>
-                      {meetupsExpanded && (
-                        <>
-                          <TouchableOpacity
-                            style={[styles.tab, meetupTab === "completed" && styles.activeTab]}
-                            onPress={() => setMeetupTab("completed")}
-                          >
-                            <Text style={[styles.tabText, meetupTab === "completed" && styles.activeTabText]}>
-                              Completed
-                            </Text>
-                            <View style={styles.tabBadge}>
-                              <Text style={styles.tabBadgeText}>
-                                {completedMeetups.length > 99 ? "99+" : completedMeetups.length}
-                              </Text>
-                            </View>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[styles.tab, meetupTab === "cancelled" && styles.activeTab]}
-                            onPress={() => setMeetupTab("cancelled")}
-                          >
-                            <Text style={[styles.tabText, meetupTab === "cancelled" && styles.activeTabText]}>
-                              Cancelled
-                            </Text>
-                            <View style={styles.tabBadge}>
-                              <Text style={styles.tabBadgeText}>
-                                {cancelledMeetups.length > 99 ? "99+" : cancelledMeetups.length}
-                              </Text>
-                            </View>
-                          </TouchableOpacity>
-                        </>
-                      )}
                     </View>
-
-                    <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.listContainer} nestedScrollEnabled>
-                      {currentMeetups.map((meetup) => {
-                        const cleanDetails = meetup.details ? String(meetup.details).trim() : "";
-                        const eventInfo = meetup.event_type ? `Type: ${meetup.event_type}\n` : "";
-                        const infoText = cleanDetails.length > 0 && cleanDetails !== "undefined" && cleanDetails !== "null"
-                          ? `${eventInfo}Status: ${meetup.status || "Planning"}\n\n${cleanDetails}`
-                          : `${eventInfo}Status: ${meetup.status || "Planning"}`;
-
-                        return (
-                          <TouchableOpacity
-                            key={meetup.id}
-                            style={styles.squareCard}
-                            onPress={() =>
-                              router.push({
-                                pathname: "/read-meetup",
-                                params: { id: meetup.id },
-                              })
-                            }
-                          >
-                            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                              <Text style={styles.squareCardIcon}>
-                                {meetup.icon_type || "🎉"}
-                              </Text>
-                              <Text style={styles.squareCardTitle} numberOfLines={2} ellipsizeMode="tail">
-                                {meetup.title || "Unnamed Meetup"}
-                              </Text>
-                            </View>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </ScrollView>
-                    {currentMeetups.length === 0 && (
-                      <Text style={styles.emptyText}>No meetups found.</Text>
-                    )}
-                  </>
-                );
-              })()}
-            </View>
-
-            <View style={globalStyles.sectionPanel}>
-              <View style={{ marginBottom: 16, borderBottomWidth: 1, borderBottomColor: "rgba(0, 0, 0, 0.08)", paddingBottom: 5 }}>
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                  <Text style={styles.sectionTitle}>🙌 Fam</Text>
-                  <View style={styles.headerButtonsRow}>
-                    <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={() => router.push("/find-friend" as any)}
-                    >
-                      <Text style={styles.actionButtonText}>🙌 Find</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={() => router.push("/create-member" as any)}
-                    >
-                      <Text style={styles.actionButtonText}>
-                        🚪 Invite
-                      </Text>
-                    </TouchableOpacity>
                   </View>
                 </View>
-              </View>
 
-              <View style={styles.tabContainer}>
-                <TouchableOpacity
-                  style={[styles.tab, famTab === "my_fam" && styles.activeTab]}
-                  onPress={() => setFamTab("my_fam")}
-                >
-                  <Text
-                    style={[
-                      styles.tabText,
-                      famTab === "my_fam" && styles.activeTabText,
-                    ]}
+                <View style={styles.tabContainer}>
+                  <TouchableOpacity
+                    style={[styles.tab, famTab === "my_fam" && styles.activeTab]}
+                    onPress={() => setFamTab("my_fam")}
                   >
-                    My Fam
-                  </Text>
-                  <View style={styles.tabBadge}>
-                    <Text style={styles.tabBadgeText}>
-                      {myFamMembers.length > 99 ? "99+" : myFamMembers.length}
+                    <Text
+                      style={[
+                        styles.tabText,
+                        famTab === "my_fam" && styles.activeTabText,
+                      ]}
+                    >
+                      My Fam
                     </Text>
-                  </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.tab, famTab === "incoming" && styles.activeTab]}
-                  onPress={() => setFamTab("incoming")}
-                >
-                  <Text
-                    style={[
-                      styles.tabText,
-                      famTab === "incoming" && styles.activeTabText,
-                    ]}
+                    <View style={styles.tabBadge}>
+                      <Text style={styles.tabBadgeText}>
+                        {myFamMembers.length > 99 ? "99+" : myFamMembers.length}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.tab, famTab === "incoming" && styles.activeTab]}
+                    onPress={() => setFamTab("incoming")}
                   >
-                    Incoming
-                  </Text>
-                  <View style={styles.tabBadge}>
-                    <Text style={styles.tabBadgeText}>
-                      {incomingInvites.length > 99
-                        ? "99+"
-                        : incomingInvites.length}
+                    <Text
+                      style={[
+                        styles.tabText,
+                        famTab === "incoming" && styles.activeTabText,
+                      ]}
+                    >
+                      Incoming
                     </Text>
-                  </View>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.tab, famTab === "outgoing" && styles.activeTab]}
-                  onPress={() => setFamTab("outgoing")}
-                >
-                  <Text
-                    style={[
-                      styles.tabText,
-                      famTab === "outgoing" && styles.activeTabText,
-                    ]}
+                    <View style={styles.tabBadge}>
+                      <Text style={styles.tabBadgeText}>
+                        {incomingInvites.length > 99
+                          ? "99+"
+                          : incomingInvites.length}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.tab, famTab === "outgoing" && styles.activeTab]}
+                    onPress={() => setFamTab("outgoing")}
                   >
-                    Outgoing
-                  </Text>
-                  <View style={styles.tabBadge}>
-                    <Text style={styles.tabBadgeText}>
-                      {outgoingInvites.length > 99
-                        ? "99+"
-                        : outgoingInvites.length}
+                    <Text
+                      style={[
+                        styles.tabText,
+                        famTab === "outgoing" && styles.activeTabText,
+                      ]}
+                    >
+                      Outgoing
                     </Text>
-                  </View>
-                </TouchableOpacity>
+                    <View style={styles.tabBadge}>
+                      <Text style={styles.tabBadgeText}>
+                        {outgoingInvites.length > 99
+                          ? "99+"
+                          : outgoingInvites.length}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', paddingBottom: 20 }}>
+                  {famTab === "my_fam" &&
+                    myFamMembers.map((f) =>
+                      renderFamItem(f, "Active", "✅", "my_fam"),
+                    )}
+                  {famTab === "incoming" &&
+                    incomingInvites.map((f) =>
+                      renderFamItem(f, "Incoming Invite", "⏳", "incoming"),
+                    )}
+                  {famTab === "outgoing" &&
+                    outgoingInvites.map((f) =>
+                      renderFamItem(f, "Outgoing Invite", "⏳", "outgoing"),
+                    )}
+                </View>
+
+                {famTab === "my_fam" && myFamMembers.length === 0 && (
+                  <Text style={styles.emptyText}>No contacts yet</Text>
+                )}
+                {famTab === "incoming" && incomingInvites.length === 0 && (
+                  <Text style={styles.emptyText}>No incoming invites.</Text>
+                )}
+                {famTab === "outgoing" && outgoingInvites.length === 0 && (
+                  <Text style={styles.emptyText}>No outgoing invites.</Text>
+                )}
+
+                <View style={{ alignItems: 'center', marginTop: 10, marginBottom: 20 }}>
+                  <TouchableOpacity onPress={openEmailModal}>
+                    <Text style={{ color: colors.primary, fontStyle: "italic", fontSize: 16, textDecorationLine: "underline" }}>Email Fam</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
+            )}
 
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', paddingBottom: 20 }}>
-                {famTab === "my_fam" &&
-                  myFamMembers.map((f) =>
-                    renderFamItem(f, "Active", "✅", "my_fam"),
-                  )}
-                {famTab === "incoming" &&
-                  incomingInvites.map((f) =>
-                    renderFamItem(f, "Incoming Invite", "⏳", "incoming"),
-                  )}
-                {famTab === "outgoing" &&
-                  outgoingInvites.map((f) =>
-                    renderFamItem(f, "Outgoing Invite", "⏳", "outgoing"),
-                  )}
+            {activeRootTab === "chats" && (
+              <View style={globalStyles.sectionPanel}>
+                {renderSectionHeader("💬 Group Chats", openGroupChatModal)}
+                <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.listContainer} nestedScrollEnabled>
+                  {chats.map((chat) => {
+                    const membersOfChat = chatMembers
+                      .filter((cm) => cm.chat_id === chat.id)
+                      .map((cm) => {
+                        const member = allMembers.find(
+                          (m) => m.id === cm.member_id,
+                        );
+                        return member?.name || "Unknown Member";
+                      });
+                    const infoText = membersOfChat.length > 0 ? membersOfChat.join(", ") : "No members yet";
+
+                    return renderItem(
+                      "💬",
+                      chat.name,
+                      infoText,
+                      () =>
+                        chat.url
+                          ? Linking.openURL(chat.url).catch(() =>
+                            showAlert("Error", "Could not open WhatsApp link."),
+                          )
+                          : showAlert(
+                            "Error",
+                            "No WhatsApp link provided for this chat.",
+                          ),
+                    );
+                  })}
+                </ScrollView>
+                {chats.length === 0 && (
+                  <Text style={styles.emptyText}>No group chats found.</Text>
+                )}
               </View>
-
-              {famTab === "my_fam" && myFamMembers.length === 0 && (
-                <Text style={styles.emptyText}>No contacts yet</Text>
-              )}
-              {famTab === "incoming" && incomingInvites.length === 0 && (
-                <Text style={styles.emptyText}>No incoming invites.</Text>
-              )}
-              {famTab === "outgoing" && outgoingInvites.length === 0 && (
-                <Text style={styles.emptyText}>No outgoing invites.</Text>
-              )}
-
-              <View style={{ alignItems: 'center', marginTop: 10, marginBottom: 20 }}>
-                <TouchableOpacity onPress={openEmailModal}>
-                  <Text style={{ color: colors.primary, fontStyle: "italic", fontSize: 16, textDecorationLine: "underline" }}>Email Fam</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            <View style={globalStyles.sectionPanel}>
-              {renderSectionHeader("💬 Group Chats", openGroupChatModal)}
-              <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.listContainer} nestedScrollEnabled>
-                {chats.map((chat) => {
-                  const membersOfChat = chatMembers
-                    .filter((cm) => cm.chat_id === chat.id)
-                    .map((cm) => {
-                      const member = allMembers.find(
-                        (m) => m.id === cm.member_id,
-                      );
-                      return member?.name || "Unknown Member";
-                    });
-                  const infoText = membersOfChat.length > 0 ? membersOfChat.join(", ") : "No members yet";
-
-                  return renderItem(
-                    "💬",
-                    chat.name,
-                    infoText,
-                    () =>
-                      chat.url
-                        ? Linking.openURL(chat.url).catch(() =>
-                          showAlert("Error", "Could not open WhatsApp link."),
-                        )
-                        : showAlert(
-                          "Error",
-                          "No WhatsApp link provided for this chat.",
-                        ),
-                  );
-                })}
-              </ScrollView>
-              {chats.length === 0 && (
-                <Text style={styles.emptyText}>No group chats found.</Text>
-              )}
-            </View>
+            )}
           </>
         )}
-
-        <FloralDivider color={colors.accent} />
-        
-        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
 
         <GroupChatModal
           visible={isGroupChatModalVisible}
@@ -837,24 +858,119 @@ export default function Home() {
           onCreate={handleCreateEmailThread}
           title="Email Fam"
         />
+
+        <MemberModal
+          visible={isMemberModalVisible}
+          onClose={() => setIsMemberModalVisible(false)}
+          member={selectedMemberForModal}
+          isMe={currentMember?.id === selectedMemberForModal?.id}
+          isFam={!!memberContacts && (
+            memberContacts.acceptedSources.some(c => c.subject_id === selectedMemberForModal?.id) ||
+            memberContacts.acceptedSubjects.some(c => c.source_id === selectedMemberForModal?.id)
+          )}
+          isPendingFam={!!memberContacts && (
+            memberContacts.invitedSources.some(c => c.subject_id === selectedMemberForModal?.id) ||
+            memberContacts.invitedSubjects.some(c => c.source_id === selectedMemberForModal?.id)
+          )}
+          onSendEmail={() => {
+            if (selectedMemberForModal?.email) {
+              openEmailThread([selectedMemberForModal.email], "", currentMember?.email);
+            }
+          }}
+          onSendDM={() => {
+            showAlert("Not Implemented", "Direct messaging is not yet implemented in this view.");
+          }}
+          onSendFamRequest={async () => {
+            if (!user || !currentMember?.id || !selectedMemberForModal?.id) return;
+            try {
+              const token = await user.getIdToken();
+              await createMemberContact(token, {
+                source_id: currentMember.id,
+                subject_id: selectedMemberForModal.id,
+                status: "invited",
+              });
+              showAlert("Success", `Invitation sent to ${selectedMemberForModal.name}!`);
+              fetchData(true);
+            } catch (e: any) {
+              showAlert("Error", e.message);
+            }
+          }}
+        />
       </ScrollView>
+
+      {/* Fixed Bottom Navigation */}
+      <View style={styles.bottomNav}>
+        <TouchableOpacity
+          style={styles.bottomNavItem}
+          onPress={() => setActiveRootTab("tribes")}
+        >
+          <Text style={styles.bottomNavIcon}>🏕️</Text>
+          <Text style={[styles.bottomNavText, activeRootTab === "tribes" && styles.bottomNavTextActive]}>Tribes</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.bottomNavItem}
+          onPress={() => setActiveRootTab("meetups")}
+        >
+          <Text style={styles.bottomNavIcon}>🎉</Text>
+          <Text style={[styles.bottomNavText, activeRootTab === "meetups" && styles.bottomNavTextActive]}>Meetups</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.bottomNavItem}
+          onPress={() => setActiveRootTab("fam")}
+        >
+          <Text style={styles.bottomNavIcon}>🙌</Text>
+          <Text style={[styles.bottomNavText, activeRootTab === "fam" && styles.bottomNavTextActive]}>Fam</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.bottomNavItem}
+          onPress={() => setActiveRootTab("chats")}
+        >
+          <Text style={styles.bottomNavIcon}>💬</Text>
+          <Text style={[styles.bottomNavText, activeRootTab === "chats" && styles.bottomNavTextActive]}>Chats</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  scrollContent: { padding: 20 },
+  scrollContent: { padding: 20, paddingBottom: 40 },
+  fixedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: Platform.OS === 'ios' ? 50 : 20,
+    paddingBottom: 10,
+    paddingHorizontal: 20,
+    backgroundColor: colors.background,
+  },
   header: {
     fontFamily: "Lobster_400Regular",
     fontSize: 40,
-    marginBottom: 4,
     textAlign: "center",
     color: colors.accent,
     letterSpacing: 1,
     textShadowColor: "rgba(122, 139, 115, 0.4)",
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 10,
+  },
+  headerSignOut: {
+    position: 'absolute',
+    right: 20,
+    top: Platform.OS === 'ios' ? 60 : 30,
+    backgroundColor: '#4E3629',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 12,
+  },
+  headerSignOutText: {
+    fontSize: 11,
+    fontWeight: 'bold',
+    color: colors.background,
   },
   greeting: {
     fontSize: 16,
@@ -1147,4 +1263,35 @@ const styles = StyleSheet.create({
     borderColor: "colors.border",
   },
   guidedPanelText: { fontSize: 14, color: colors.text, marginBottom: 6 },
+  bottomNav: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 12,
+    justifyContent: 'space-around',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  bottomNavItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 65,
+  },
+  bottomNavIcon: {
+    fontSize: 24,
+    marginBottom: 4,
+  },
+  bottomNavText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#aaa',
+  },
+  bottomNavTextActive: {
+    color: colors.accent || '#ff6b6b',
+  },
 });

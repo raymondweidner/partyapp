@@ -1,9 +1,9 @@
 import { Besley_600SemiBold, Besley_700Bold, Besley_800ExtraBold, useFonts as useBesleyFonts } from '@expo-google-fonts/besley';
 import { BricolageGrotesque_500Medium, useFonts as useBricolageFonts } from '@expo-google-fonts/bricolage-grotesque';
-import { PaytoneOne_400Regular, useFonts as usePaytoneFonts } from '@expo-google-fonts/paytone-one';
-import { Lobster_400Regular, useFonts as useLobsterFonts } from '@expo-google-fonts/lobster';
 import { Fraunces_200ExtraLight, useFonts as useFrauncesFonts } from '@expo-google-fonts/fraunces';
+import { Lobster_400Regular, useFonts as useLobsterFonts } from '@expo-google-fonts/lobster';
 import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraBold, Nunito_900Black, useFonts } from '@expo-google-fonts/nunito';
+import { PaytoneOne_400Regular, useFonts as usePaytoneFonts } from '@expo-google-fonts/paytone-one';
 import { Quicksand_700Bold, useFonts as useQuicksandFonts } from '@expo-google-fonts/quicksand';
 import messaging from "@react-native-firebase/messaging";
 import { BlurView } from "expo-blur";
@@ -162,11 +162,11 @@ function UserDeviceProvider({ children }: { children: React.ReactNode }) {
           if (foundDevice.user_id !== user.uid) {
             console.log("Different user_id!", "Updating device");
             foundDevice = await updateUserDevice(token, {
-                ...foundDevice,
-                user_id: user.uid,
-                platform: Platform.OS,
-                updated_at: new Date().toISOString(),
-              }
+              ...foundDevice,
+              user_id: user.uid,
+              platform: Platform.OS,
+              updated_at: new Date().toISOString(),
+            }
             );
           } else {
             console.log("Same userId...", "No change");
@@ -174,11 +174,11 @@ function UserDeviceProvider({ children }: { children: React.ReactNode }) {
         } else {
           // 3. Create if not found
           foundDevice = await createUserDevice(token, {
-              user_id: user.uid,
-              token: fcmToken,
-              updated_at: new Date().toISOString(),
-              platform: Platform.OS,
-            }
+            user_id: user.uid,
+            token: fcmToken,
+            updated_at: new Date().toISOString(),
+            platform: Platform.OS,
+          }
           );
           console.log("No matching token found", JSON.stringify(foundDevice));
         }
@@ -545,14 +545,14 @@ function RootLayoutNav() {
   useEffect(() => {
     if (loading) return;
 
-    const inLogin = segments[0] === "login";
+    const isAuthRoute = segments[0] === "login" || segments[0] === "forgot-password";
 
-    if (!user && !inLogin) {
+    if (!user && !isAuthRoute) {
       if (pathname && pathname !== "/" && pathname !== "") {
         setPendingRedirect({ pathname, params });
       }
       router.replace("/login");
-    } else if (user && inLogin) {
+    } else if (user && isAuthRoute) {
       if (pendingRedirect) {
         const target = { ...pendingRedirect };
         router.replace(target);
@@ -636,6 +636,10 @@ function RootLayoutNav() {
         <Stack.Screen
           name="login"
           options={{ title: "Login", headerShown: false }}
+        />
+        <Stack.Screen
+          name="forgot-password"
+          options={{ title: "Forgot Password", headerShown: false }}
         />
       </Stack>
       <BottomNotificationBar />

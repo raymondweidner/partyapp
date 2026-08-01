@@ -210,7 +210,8 @@ export default function EditMember() {
       if (updatedPref.id) {
         await updateMemberAlertPreference(token, updatedPref);
       } else {
-        const newPref = await createMemberAlertPreference(token, updatedPref);
+        const { id, ...prefWithoutId } = updatedPref;
+        const newPref = await createMemberAlertPreference(token, prefWithoutId);
         setAlertPreferences(prev => prev.map(p => p.alert_type === pref.alert_type ? newPref : p));
       }
     } catch (e: any) {

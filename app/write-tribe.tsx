@@ -278,16 +278,22 @@ export default function EditTribe() {
         await updateTribe(token, { ...selectedTribe, name, description, icon_type: iconType, leader_title: leaderTitle } as Tribe & { id: string }
         );
       } else {
-        const newTribe = await createTribe(token, { name, description, icon_type: iconType, leader_title: leaderTitle } as Tribe);
+        const newTribe = await createTribe(token, { name, description, icon_type: iconType, leader_title: leaderTitle, creator_id: member?.id } as Tribe);
         tribeId = newTribe.id;
       }
 
       const originalMemberIds = isEditing ? tribeMembers.map((tm) => tm.member_id) : [];
-      const toAdd = selectedMemberIds.filter(
+      
+      const finalSelectedIds = [...selectedMemberIds];
+      if (!isEditing && member?.id && !finalSelectedIds.includes(member.id)) {
+        finalSelectedIds.push(member.id);
+      }
+
+      const toAdd = finalSelectedIds.filter(
         (id) => !originalMemberIds.includes(id),
       );
       const toRemove = isEditing ? tribeMembers.filter(
-        (tm) => !selectedMemberIds.includes(tm.member_id),
+        (tm) => !finalSelectedIds.includes(tm.member_id),
       ) : [];
 
       const promises: Promise<any>[] = [];

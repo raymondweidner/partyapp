@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   DeviceEventEmitter,
   FlatList,
+  Image,
   Linking,
   Modal,
   ScrollView,
@@ -31,7 +32,9 @@ import { PollEntry } from "../lib/data/PollEntry";
 import { PollVote } from "../lib/data/PollVote";
 import { Proposal } from "../lib/data/Proposal";
 import {
+  GroupedMemberContacts,
   createChat,
+  createMemberContact,
   createSquad,
   deleteSquad,
   getAvailabilities,
@@ -39,6 +42,7 @@ import {
   getHelpRegistries,
   getMeetupEvents,
   getMeetups,
+  getMemberContacts,
   getMembers,
   getPollEntries,
   getPollVotes,
@@ -59,9 +63,10 @@ import { useAuth } from "../lib/auth";
 import { DropdownSelect } from "../lib/components/DropdownSelect";
 import { FloralDivider } from "../lib/components/FloralDivider";
 import { GroupChatModal } from "../lib/components/GroupChatModal";
+import { MemberModal } from "../lib/components/MemberModal";
 import { NumberStepper } from "../lib/components/NumberStepper";
 import { colors, globalStyles } from "../lib/theme";
-import { openMapUrl, safeBack, showAlert } from "../lib/util";
+import { openEmailThread, openMapUrl, safeBack, showAlert } from "../lib/util";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
 
 export default function ReadMeetup() {
@@ -84,6 +89,10 @@ export default function ReadMeetup() {
   const [pollTab, setPollTab] = useState("posting");
   const [registries, setRegistries] = useState<(HelpRegistry & { incompleteCount: number })[]>([]);
   const [registryTab, setRegistryTab] = useState<"Please Help!" | "Complete">("Please Help!");
+
+  const [memberContacts, setMemberContacts] = useState<GroupedMemberContacts | null>(null);
+  const [isMemberModalVisible, setIsMemberModalVisible] = useState(false);
+  const [selectedMemberForModal, setSelectedMemberForModal] = useState<Member | null>(null);
 
   const [meetupEvents, setMeetupEvents] = useState<MeetupEvent[]>([]);
 
@@ -127,6 +136,8 @@ export default function ReadMeetup() {
   const [isCancelModalVisible, setIsCancelModalVisible] = useState(false);
   const [selectedProposalForAccept, setSelectedProposalForAccept] = useState<any>(null);
 
+  const [activeTab, setActiveTab] = useState<"details" | "polls" | "registries" | "proposals" | "squad" | "pastEvents">("details");
+
   const fetchMeetups = useCallback(async () => {
     if (!user) return;
     setLoading(true);
@@ -137,6 +148,10 @@ export default function ReadMeetup() {
         getTribes(token),
         getMembers(token),
       ]);
+      if (member?.id) {
+        const contacts = await getMemberContacts(token, member.id);
+        setMemberContacts(contacts);
+      }
       setMeetups(meetupsData);
       setTribes(tribesData);
       setMembers(membersData);
@@ -358,17 +373,17 @@ export default function ReadMeetup() {
     try {
       const token = await user.getIdToken();
       await updateMeetup(token, {
-          ...selectedMeetup,
-          title,
-          event_type: eventType,
-          icon_type: iconType,
-          details,
-          tribe_id: selectedTribeId,
-          decision_method: decisionMethod,
-          days_to_decide,
-          leader_title: leaderTitleSelect === "Custom..." ? leaderTitleCustom : leaderTitleSelect,
-          ...recurrencePayload,
-        } as any
+        ...selectedMeetup,
+        title,
+        event_type: eventType,
+        icon_type: iconType,
+        details,
+        tribe_id: selectedTribeId,
+        decision_method: decisionMethod,
+        days_to_decide,
+        leader_title: leaderTitleSelect === "Custom..." ? leaderTitleCustom : leaderTitleSelect,
+        ...recurrencePayload,
+      } as any
       );
 
       showAlert("Success", "Meetup updated successfully!", [
@@ -734,232 +749,202 @@ export default function ReadMeetup() {
                 <RecurrencePicker state={recurrenceState} onChange={setRecurrenceState} />
               </View>
             </>
-          ) : (
-            <View style={{ marginBottom: 24 }}>
-              <View style={{ alignItems: "center", marginTop: 24 }}>
-                <Text style={{ fontSize: 72, marginBottom: 12 }}>{iconType || "🎉"}</Text>
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 8, flexWrap: "wrap", gap: 12 }}>
-                  <Text style={{ fontSize: 40, fontFamily: "Lobster_400Regular", color: colors.accent, textAlign: "center" }}>{title}</Text>
-                  {(() => {
-                    let bgColor = colors.accent;
-                    let textColor = "#F8F9FA";
-                    let bWidth = 0;
-                    if (status === "Scheduled" || status === "Ongoing") bgColor = "#28a745";
-                    else if (status === "Planning") bgColor = "#007bff";
-                    else if (status === "Cancelled") bgColor = "#dc3545";
-                    else if (status === "Completed") {
-                      bgColor = "#ffffff";
-                      textColor = "#000000";
-                      bWidth = 1;
-                    }
-                    return (
-                      <View style={{ backgroundColor: bgColor, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: bWidth, borderColor: "#ccc" }}>
-                        <Text style={{ color: textColor, fontWeight: "bold", fontSize: 12, textTransform: "uppercase" }}>{status}</Text>
-                      </View>
-                    );
-                  })()}
-                </View>
-                <FloralDivider color={colors.accent} />
-                {details ? (
-                  <Text style={{ fontSize: 18, fontFamily: "Fraunces_200ExtraLight", color: colors.textSecondary, textAlign: "center", paddingHorizontal: 20, marginBottom: 32 }}>{details}</Text>
-                ) : <View style={{ marginBottom: 32 }} />}
+          ) : null}
+
+          {/* Header block unconditionally rendered */}
+          <View style={{ marginBottom: 8 }}>
+            <View style={{ alignItems: "center", marginTop: 0 }}>
+              <Text style={{ fontSize: 72, marginBottom: 12 }}>{iconType || "🎉"}</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", marginBottom: 8, flexWrap: "wrap", gap: 12 }}>
+                <Text style={{ fontSize: 40, fontFamily: "Lobster_400Regular", color: colors.accent, textAlign: "center" }}>{title}</Text>
                 {(() => {
-                  const tribe = tribes.find(t => t.id === selectedMeetup.tribe_id);
-                  if (!tribe) return null;
+                  let bgColor = colors.accent;
+                  let textColor = "#F8F9FA";
+                  let bWidth = 0;
+                  if (status === "Scheduled" || status === "Ongoing") bgColor = "#28a745";
+                  else if (status === "Planning") bgColor = "#007bff";
+                  else if (status === "Cancelled") bgColor = "#dc3545";
+                  else if (status === "Completed") {
+                    bgColor = "#ffffff";
+                    textColor = "#000000";
+                    bWidth = 1;
+                  }
                   return (
-                    <Text style={{ fontSize: 18, fontFamily: "Nunito_700Bold", color: colors.textSecondary, textAlign: "center", marginBottom: 24 }}>
-                      {tribe.icon_type} {tribe.name}
-                    </Text>
+                    <View style={{ backgroundColor: bgColor, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, borderWidth: bWidth, borderColor: "#ccc" }}>
+                      <Text style={{ color: textColor, fontWeight: "bold", fontSize: 12, textTransform: "uppercase" }}>{status}</Text>
+                    </View>
                   );
                 })()}
               </View>
 
-              <View style={{ backgroundColor: colors.surface, padding: 20, borderRadius: 16, borderWidth: 1, borderColor: colors.borderLight }}>
-                {(() => {
-                  const isFinalized = ["Upcoming", "Ongoing"].includes(selectedMeetup.status || "");
-                  const currentEvent = isFinalized && meetupEvents.length > 0
-                    ? [...meetupEvents].sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime())[0]
-                    : null;
-                  const acceptedProposal = proposals.find(p => p.status?.toLowerCase() === "accepted");
+              {details ? (
+                <Text style={{ fontSize: 18, fontFamily: "Fraunces_200ExtraLight", color: colors.textSecondary, textAlign: "center", paddingHorizontal: 20, marginBottom: 8, marginTop: 4 }}>{details}</Text>
+              ) : <View style={{ marginBottom: 8 }} />}
+              {(() => {
+                const tribe = tribes.find(t => t.id === selectedMeetup.tribe_id);
+                if (!tribe) return null;
+                return (
+                  <Text style={{ fontSize: 18, fontFamily: "Nunito_700Bold", color: colors.textSecondary, textAlign: "center", marginBottom: 16 }}>
+                    {tribe.icon_type} {tribe.name}
+                  </Text>
+                );
+              })()}
 
-                  const showEventData = currentEvent || (selectedMeetup.status === "Scheduled" && acceptedProposal);
+              <FloralDivider color={colors.accent} />
+            </View>
+          </View>
 
-                  if (showEventData) {
-                    const hostId = currentEvent ? currentEvent.host_id : acceptedProposal?.host_id;
-                    const host = members.find(m => m.id === hostId);
-                    
-                    const rawStart = currentEvent ? currentEvent.start_at : acceptedProposal?.start_at;
-                    const rawEnd = currentEvent ? currentEvent.end_at : acceptedProposal?.end_at;
-                    const pStartDate = new Date(rawStart || "");
-                    const pEndDate = new Date(rawEnd || "");
-                    const hasValidDate = !isNaN(pStartDate.getTime()) && !isNaN(pEndDate.getTime());
-                    
-                    const location = currentEvent ? currentEvent.location : (acceptedProposal as any)?.location;
-                    const folderId = currentEvent ? currentEvent.root_folder_id : acceptedProposal?.root_folder_id;
+          {activeTab === "details" && (
+            <View style={{ backgroundColor: colors.surface, padding: 20, borderRadius: 16, borderWidth: 1, borderColor: colors.borderLight }}>
+              {(() => {
+                const isFinalized = ["Upcoming", "Ongoing"].includes(selectedMeetup.status || "");
+                const currentEvent = isFinalized && meetupEvents.length > 0
+                  ? [...meetupEvents].sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime())[0]
+                  : null;
+                const acceptedProposal = proposals.find(p => p.status?.toLowerCase() === "accepted");
 
-                    return (
-                      <>
-                        <View style={{ marginBottom: 12 }}>
-                          <Text style={globalStyles.attributeName}>When</Text>
-                          <Text style={globalStyles.attributeValue}>
-                            {hasValidDate ? `${pStartDate.toLocaleString([], { dateStyle: 'long', timeStyle: 'short' })} - ${pEndDate.toLocaleString([], { dateStyle: 'long', timeStyle: 'short' })}` : "TBD"}
-                          </Text>
-                        </View>
+                const showEventData = currentEvent || (selectedMeetup.status === "Scheduled" && acceptedProposal);
 
-                        <View style={{ marginBottom: 12 }}>
-                          <Text style={globalStyles.attributeName}>Where</Text>
-                          <View style={{ flexDirection: "row", alignItems: "center" }}>
-                            <Text style={[globalStyles.attributeValue, { flexShrink: 1, marginRight: 8 }]}>
-                              {location || "TBD"}
-                            </Text>
-                            {location ? (
-                              <TouchableOpacity onPress={() => openMapUrl(location)} style={{ padding: 4 }}>
-                                <Text style={{ fontSize: 16 }}>↗️</Text>
-                              </TouchableOpacity>
-                            ) : null}
-                          </View>
-                        </View>
+                if (showEventData) {
+                  const hostId = currentEvent ? currentEvent.host_id : acceptedProposal?.host_id;
+                  const host = members.find(m => m.id === hostId);
 
-                        <View style={{ marginBottom: 16 }}>
-                          <Text style={globalStyles.attributeName}>{selectedMeetup?.leader_title || 'Host'}</Text>
-                          <Text style={globalStyles.attributeValue}>
-                            {host?.name || "Unknown"}
-                          </Text>
-                        </View>
-                      </>
-                    );
-                  }
+                  const rawStart = currentEvent ? currentEvent.start_at : acceptedProposal?.start_at;
+                  const rawEnd = currentEvent ? currentEvent.end_at : acceptedProposal?.end_at;
+                  const pStartDate = new Date(rawStart || "");
+                  const pEndDate = new Date(rawEnd || "");
+                  const hasValidDate = !isNaN(pStartDate.getTime()) && !isNaN(pEndDate.getTime());
+
+                  const location = currentEvent ? currentEvent.location : (acceptedProposal as any)?.location;
+                  const folderId = currentEvent ? currentEvent.root_folder_id : acceptedProposal?.root_folder_id;
 
                   return (
                     <>
-                      <View style={{ marginBottom: 16 }}>
-                        <Text style={[globalStyles.attributeName, { marginBottom: 4 }]}>Decision Method</Text>
+                      <View style={{ marginBottom: 12 }}>
+                        <Text style={globalStyles.attributeName}>When</Text>
                         <Text style={globalStyles.attributeValue}>
-                          {decisionMethod === "most_available" ? "By most available" : "By vote"}
+                          {hasValidDate ? `${pStartDate.toLocaleString([], { dateStyle: 'long', timeStyle: 'short' })} - ${pEndDate.toLocaleString([], { dateStyle: 'long', timeStyle: 'short' })}` : "TBD"}
                         </Text>
                       </View>
 
-                      {createdAt && (
-                        <View style={{ marginBottom: 16 }}>
-                          <Text style={[globalStyles.attributeName, { marginBottom: 4 }]}>Created On</Text>
-                          <Text style={globalStyles.attributeValue}>
-                            {new Date(createdAt).toLocaleDateString()}
+                      <View style={{ marginBottom: 12 }}>
+                        <Text style={globalStyles.attributeName}>Where</Text>
+                        <View style={{ flexDirection: "row", alignItems: "center" }}>
+                          <Text style={[globalStyles.attributeValue, { flexShrink: 1, marginRight: 8 }]}>
+                            {location || "TBD"}
                           </Text>
+                          {location ? (
+                            <TouchableOpacity onPress={() => openMapUrl(location)} style={{ padding: 4 }}>
+                              <Text style={{ fontSize: 16 }}>↗️</Text>
+                            </TouchableOpacity>
+                          ) : null}
                         </View>
-                      )}
+                      </View>
 
-                      {createdAt && (
-                        <View style={{ marginBottom: 16 }}>
-                          <Text style={[globalStyles.attributeName, { marginBottom: 4 }]}>Decision Deadline</Text>
-                          <Text style={globalStyles.attributeValue}>
-                            {(() => {
-                              const createdDate = new Date(createdAt);
-                              if (isNaN(createdDate.getTime())) return "Unknown";
-                              const deadlineDate = new Date(createdDate);
-                              const num = parseInt(daysToDecideNum) || 0;
-                              if (daysToDecideUnit === "days") deadlineDate.setDate(deadlineDate.getDate() + num);
-                              else if (daysToDecideUnit === "weeks") deadlineDate.setDate(deadlineDate.getDate() + num * 7);
-                              else if (daysToDecideUnit === "months") deadlineDate.setMonth(deadlineDate.getMonth() + num);
-                              return deadlineDate.toLocaleDateString();
-                            })()}
-                          </Text>
-                        </View>
-                      )}
+                      <View style={{ marginBottom: 16 }}>
+                        <Text style={globalStyles.attributeName}>{selectedMeetup?.leader_title || 'Host'}</Text>
+                        <Text style={globalStyles.attributeValue}>
+                          {host?.name || "Unknown"}
+                        </Text>
+                      </View>
                     </>
                   );
-                })()}
+                }
 
-                {selectedMeetup.recurrence_type && (
-                  <View style={{ marginTop: 8, alignItems: "center", paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
-                    <Text style={{ fontFamily: "Nunito_700Bold", color: colors.primary, fontSize: 16 }}>
-                      {getRecurrenceString(selectedMeetup as any)}
-                    </Text>
-                  </View>
-                )}
-              </View>
+                return (
+                  <>
+                    <View style={{ marginBottom: 16 }}>
+                      <Text style={[globalStyles.attributeName, { marginBottom: 4 }]}>Decision Method</Text>
+                      <Text style={globalStyles.attributeValue}>
+                        {decisionMethod === "most_available" ? "By most available" : "By vote"}
+                      </Text>
+                    </View>
 
+                    {createdAt && (
+                      <View style={{ marginBottom: 16 }}>
+                        <Text style={[globalStyles.attributeName, { marginBottom: 4 }]}>Created On</Text>
+                        <Text style={globalStyles.attributeValue}>
+                          {new Date(createdAt).toLocaleDateString()}
+                        </Text>
+                      </View>
+                    )}
 
+                    {createdAt && (
+                      <View style={{ marginBottom: 16 }}>
+                        <Text style={[globalStyles.attributeName, { marginBottom: 4 }]}>Decision Deadline</Text>
+                        <Text style={globalStyles.attributeValue}>
+                          {(() => {
+                            const createdDate = new Date(createdAt);
+                            if (isNaN(createdDate.getTime())) return "Unknown";
+                            const deadlineDate = new Date(createdDate);
+                            const num = parseInt(daysToDecideNum) || 0;
+                            if (daysToDecideUnit === "days") deadlineDate.setDate(deadlineDate.getDate() + num);
+                            else if (daysToDecideUnit === "weeks") deadlineDate.setDate(deadlineDate.getDate() + num * 7);
+                            else if (daysToDecideUnit === "months") deadlineDate.setMonth(deadlineDate.getMonth() + num);
+                            return deadlineDate.toLocaleDateString();
+                          })()}
+                        </Text>
+                      </View>
+                    )}
+                  </>
+                );
+              })()}
+
+              {selectedMeetup.recurrence_type && (
+                <View style={{ marginTop: 8, alignItems: "center", paddingTop: 16, borderTopWidth: 1, borderTopColor: colors.borderLight }}>
+                  <Text style={{ fontFamily: "Nunito_700Bold", color: colors.primary, fontSize: 16 }}>
+                    {getRecurrenceString(selectedMeetup as any)}
+                  </Text>
+                </View>
+              )}
+              {(() => {
+                const isFinalized = ["Upcoming", "Ongoing", "Scheduled", "Completed"].includes(selectedMeetup.status || "");
+                const currentEvent = isFinalized && meetupEvents.length > 0
+                  ? [...meetupEvents].sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime())[0]
+                  : null;
+                const acceptedProposal = proposals.find(p => p.status?.toLowerCase() === "accepted");
+                const folderId = currentEvent?.root_folder_id || acceptedProposal?.root_folder_id || selectedMeetup.root_folder_id;
+
+                if (folderId) {
+                  const label = (currentEvent?.root_folder_id || acceptedProposal?.root_folder_id) ? "📸 Check out the photo album!" : "📁 Check out the meetup folder!";
+                  return (
+                    <View style={{ alignItems: "center", marginTop: 8 }}>
+                      <TouchableOpacity
+                        style={[styles.primaryButton, { paddingHorizontal: 24 }]}
+                        onPress={() => Linking.openURL(`https://drive.google.com/drive/folders/${folderId}`)}
+                      >
+                        <Text style={styles.primaryButtonText}>{label}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  );
+                }
+                return null;
+              })()}
+
+              {(selectedMeetup as any).creator_id === member?.id && !updating && (
+                <View style={{ width: "100%", marginTop: 24, gap: 10 }}>
+                  {selectedMeetup.status !== "Cancelled" && !(selectedMeetup.status === "Completed" && !selectedMeetup.recurrence_type) && (
+                    <TouchableOpacity
+                      style={[styles.primaryButton, { width: "100%" }]}
+                      onPress={() => router.push({ pathname: "/write-meetup", params: { id: selectedMeetup.id, tribeId: selectedMeetup.tribe_id } })}
+                    >
+                      <Text style={styles.primaryButtonText}>Edit Details</Text>
+                    </TouchableOpacity>
+                  )}
+                  {selectedMeetup.status !== "Cancelled" && selectedMeetup.status !== "Completed" && (
+                    <TouchableOpacity
+                      style={[styles.primaryButton, { width: "100%", backgroundColor: "#4E3629" }]}
+                      onPress={handleCancelMeetup}
+                    >
+                      <Text style={styles.primaryButtonText}>Cancel Meetup</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
             </View>
           )}
 
-          {updating ? (
-            <ActivityIndicator size="large" />
-          ) : isEditing ? (
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                marginTop: 20,
-              }}
-            >
-              <TouchableOpacity
-                style={[
-                  styles.primaryButton,
-                  {
-                    flex: 1,
-                    marginRight: 10,
-                    backgroundColor: colors.glassBackground,
-                    shadowOpacity: 0,
-                    elevation: 0,
-                  },
-                ]}
-                onPress={() => {
-                  handleSelectMeetup(selectedMeetup!);
-                  setIsEditing(false);
-                }}
-              >
-                <Text style={[styles.primaryButtonText, { color: colors.textSecondary }]}>
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.primaryButton, { flex: 1, marginLeft: 10 }]}
-                onPress={handleUpdate}
-              >
-                <Text style={styles.primaryButtonText}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (selectedMeetup as any).creator_id === member?.id ? (
-            <View style={{ marginTop: -32, marginBottom: 54, zIndex: 1 }}>
-              {selectedMeetup.status === "Cancelled" ? null :
-                selectedMeetup.status === "Completed" && !selectedMeetup.recurrence_type ? null : (
-                  <TouchableOpacity
-                    style={styles.primaryButton}
-                    onPress={() => router.push({ pathname: "/write-meetup", params: { id: selectedMeetup.id, tribeId: selectedMeetup.tribe_id } })}
-                  >
-                    <Text style={styles.primaryButtonText}>Edit Meetup</Text>
-                  </TouchableOpacity>
-                )}
-            </View>
-          ) : null}
-
-          <FloralDivider color={colors.accent} />
-
-          {(() => {
-            const isFinalized = ["Upcoming", "Ongoing", "Scheduled", "Completed"].includes(selectedMeetup.status || "");
-            const currentEvent = isFinalized && meetupEvents.length > 0
-              ? [...meetupEvents].sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime())[0]
-              : null;
-            const acceptedProposal = proposals.find(p => p.status?.toLowerCase() === "accepted");
-            const folderId = currentEvent?.root_folder_id || acceptedProposal?.root_folder_id || selectedMeetup.root_folder_id;
-
-            if (folderId) {
-              const label = (currentEvent?.root_folder_id || acceptedProposal?.root_folder_id) ? "📸 Check out the photo album!" : "📁 Check out the meetup folder!";
-              return (
-                <View style={{ alignItems: "center", marginBottom: 24, marginTop: 16 }}>
-                  <TouchableOpacity
-                    style={[styles.primaryButton, { paddingHorizontal: 24 }]}
-                    onPress={() => Linking.openURL(`https://drive.google.com/drive/folders/${folderId}`)}
-                  >
-                    <Text style={styles.primaryButtonText}>{label}</Text>
-                  </TouchableOpacity>
-                </View>
-              );
-            }
-            return null;
-          })()}
-
-          {selectedMeetup.root_folder_id && (
+          {activeTab === "polls" && selectedMeetup.root_folder_id && (
             <View style={globalStyles.sectionPanel}>
               <View style={globalStyles.sectionHeader}>
                 <Text style={globalStyles.sectionTitle}>📊 Polls</Text>
@@ -1034,7 +1019,7 @@ export default function ReadMeetup() {
             </View>
           )}
 
-          {(() => {
+          {activeTab === "registries" && (() => {
             if ((selectedMeetup?.status || "").toLowerCase() === "planning") return null;
 
             const isSquadMember = squads.some(c => c.member_id === member?.id) || selectedMeetup?.creator_id === member?.id;
@@ -1102,7 +1087,7 @@ export default function ReadMeetup() {
             );
           })()}
 
-          {selectedMeetup.status === "Planning" && (
+          {activeTab === "proposals" && selectedMeetup.status === "Planning" && (
             <View style={[globalStyles.sectionPanel, { marginBottom: 24 }]}>
               <View style={globalStyles.sectionHeader}>
                 <Text style={globalStyles.sectionTitle}>
@@ -1288,7 +1273,7 @@ export default function ReadMeetup() {
             </View>
           )}
 
-          {(
+          {activeTab === "pastEvents" && (
             <View style={globalStyles.sectionPanel}>
               <View style={globalStyles.sectionHeader}>
                 <Text style={globalStyles.sectionTitle}>
@@ -1321,7 +1306,7 @@ export default function ReadMeetup() {
           )}
 
           {/* Squad Section */}
-          {(
+          {activeTab === "squad" && (
             <View style={globalStyles.sectionPanel}>
               <View style={globalStyles.sectionHeader}>
                 <Text style={globalStyles.sectionTitle}>👑 Squad</Text>
@@ -1348,7 +1333,14 @@ export default function ReadMeetup() {
                         <Text style={[globalStyles.attributeName, { marginBottom: 4 }]}>
                           {selectedMeetup.leader_title || "Tribal Chieftain"}
                         </Text>
-                        <TouchableOpacity onPress={() => router.push(`/read-member?id=${creatorMember.id}` as any)}>
+                        <TouchableOpacity onPress={() => {
+                          if (creatorMember.id === member?.id) {
+                            router.push(`/read-member?id=${creatorMember.id}&profile=true` as any);
+                          } else {
+                            setSelectedMemberForModal(creatorMember);
+                            setIsMemberModalVisible(true);
+                          }
+                        }}>
                           <Text style={globalStyles.attributeValue}>
                             {creatorMember.name}
                           </Text>
@@ -1372,7 +1364,14 @@ export default function ReadMeetup() {
                     const mem = members.find((m) => m.id === c.member_id);
                     if (!mem) return null;
                     return (
-                      <TouchableOpacity key={c.id} onPress={() => router.push(`/read-member?id=${mem.id}` as any)} style={{ marginBottom: 4 }}>
+                      <TouchableOpacity key={c.id} onPress={() => {
+                        if (mem.id === member?.id) {
+                          router.push(`/read-member?id=${mem.id}&profile=true` as any);
+                        } else {
+                          setSelectedMemberForModal(mem);
+                          setIsMemberModalVisible(true);
+                        }
+                      }} style={{ marginBottom: 4 }}>
                         <Text style={globalStyles.attributeValue}>{mem.name}</Text>
                       </TouchableOpacity>
                     );
@@ -1409,16 +1408,7 @@ export default function ReadMeetup() {
             </View>
           )}
 
-          {(selectedMeetup as any).creator_id === member?.id && selectedMeetup.status !== "Cancelled" && selectedMeetup.status !== "Completed" && (
-            <View style={{ marginTop: 10, marginBottom: 20 }}>
-              <TouchableOpacity
-                style={[styles.primaryButton, { backgroundColor: "#4E3629" }]}
-                onPress={handleCancelMeetup}
-              >
-                <Text style={styles.primaryButtonText}>Cancel Meetup</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+
 
           <Modal
             visible={isCancelModalVisible}
@@ -1552,31 +1542,43 @@ export default function ReadMeetup() {
                   Edit Squad
                 </Text>
 
-                <ScrollView style={{ maxHeight: 300, marginBottom: 16 }}>
-                  {tribeMembers.map((tm) => {
-                    const mem = members.find((m) => m.id === tm.member_id);
-                    if (!mem) return null;
-                    const isCreator = mem.id === (selectedMeetup as any).creator_id;
-                    if (isCreator) return null;
-                    const isSelected = squadMemberIds.includes(mem.id!);
+                <FlatList
+                  style={{ maxHeight: 300, flexGrow: 0, marginBottom: 16 }}
+                  data={tribeMembers.map(tm => members.find(m => m.id === tm.member_id)).filter(m => m && m.id !== (selectedMeetup as any).creator_id) as Member[]}
+                  keyExtractor={(item) => item.id!}
+                  numColumns={3}
+                  columnWrapperStyle={{ justifyContent: 'flex-start' }}
+                  renderItem={({ item }) => {
+                    const isSelected = squadMemberIds.includes(item.id!);
                     return (
                       <TouchableOpacity
-                        key={mem.id}
+                        style={[styles.memberItem, isSelected && styles.memberItemSelected]}
                         onPress={() => {
                           setSquadMemberIds((prev) =>
-                            isSelected ? prev.filter((id) => id !== mem.id!) : [...prev, mem.id!]
+                            isSelected ? prev.filter((id) => id !== item.id!) : [...prev, item.id!]
                           );
                         }}
-                        style={{ flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.borderLight }}
                       >
-                        <View style={{ width: 24, height: 24, borderRadius: 4, borderWidth: 2, borderColor: isSelected ? colors.primary : colors.textMuted, backgroundColor: isSelected ? colors.primary : "transparent", marginRight: 12, alignItems: "center", justifyContent: "center" }}>
-                          {isSelected && <Text style={{ color: colors.background, fontSize: 16, fontWeight: "bold" }}>✓</Text>}
+                        <View style={styles.memberCardImageContainer}>
+                          {item.profile_pic_data ? (
+                            <Image source={{ uri: item.profile_pic_data }} style={styles.memberCardImage} />
+                          ) : (
+                            <Text style={styles.memberCardSilhouette}>👤</Text>
+                          )}
+                          {isSelected && (
+                            <View style={{ position: 'absolute', top: -5, right: -5, backgroundColor: colors.surface, borderRadius: 10 }}>
+                              <Text style={styles.checkmark}>✓</Text>
+                            </View>
+                          )}
                         </View>
-                        <Text style={{ color: colors.text, fontSize: 16 }}>{mem.name}</Text>
+                        <Text style={styles.memberCardName} numberOfLines={1}>{item.name}</Text>
                       </TouchableOpacity>
                     );
-                  })}
-                </ScrollView>
+                  }}
+                  ListEmptyComponent={
+                    <Text style={styles.emptyText}>No members available.</Text>
+                  }
+                />
 
                 <View style={{ flexDirection: 'row', gap: 12 }}>
                   <TouchableOpacity
@@ -1611,7 +1613,103 @@ export default function ReadMeetup() {
             }}
           />
 
+          <MemberModal
+            visible={isMemberModalVisible}
+            onClose={() => setIsMemberModalVisible(false)}
+            member={selectedMemberForModal}
+            isMe={member?.id === selectedMemberForModal?.id}
+            isFam={!!memberContacts && (
+              memberContacts.acceptedSources.some(c => c.subject_id === selectedMemberForModal?.id) ||
+              memberContacts.acceptedSubjects.some(c => c.source_id === selectedMemberForModal?.id)
+            )}
+            isPendingFam={!!memberContacts && (
+              memberContacts.invitedSources.some(c => c.subject_id === selectedMemberForModal?.id) ||
+              memberContacts.invitedSubjects.some(c => c.source_id === selectedMemberForModal?.id)
+            )}
+            onSendEmail={() => {
+              if (selectedMemberForModal?.email) {
+                openEmailThread([selectedMemberForModal.email], "", member?.email);
+              }
+            }}
+            onSendDM={() => {
+              showAlert("Not Implemented", "Direct messaging is not yet implemented in this view.");
+            }}
+            onSendFamRequest={async () => {
+              if (!user || !member?.id || !selectedMemberForModal?.id) return;
+              try {
+                const token = await user.getIdToken();
+                await createMemberContact(token, {
+                  source_id: member.id,
+                  subject_id: selectedMemberForModal.id,
+                  status: "invited",
+                });
+                showAlert("Success", `Invitation sent to ${selectedMemberForModal.name}!`);
+                const newContacts = await getMemberContacts(token, member.id);
+                setMemberContacts(newContacts);
+              } catch (e: any) {
+                showAlert("Error", e.message);
+              }
+            }}
+          />
+
         </ScrollView>
+
+        {/* Fixed Bottom Navigation */}
+        <View style={styles.bottomNav}>
+          <TouchableOpacity
+            style={styles.bottomNavItem}
+            onPress={() => setActiveTab("details")}
+          >
+            <Text style={styles.bottomNavIcon}>ℹ️</Text>
+            <Text style={[styles.bottomNavText, activeTab === "details" && styles.bottomNavTextActive]}>Overview</Text>
+          </TouchableOpacity>
+
+          {selectedMeetup.root_folder_id ? (
+            <TouchableOpacity
+              style={styles.bottomNavItem}
+              onPress={() => setActiveTab("polls")}
+            >
+              <Text style={styles.bottomNavIcon}>📊</Text>
+              <Text style={[styles.bottomNavText, activeTab === "polls" && styles.bottomNavTextActive]}>Polls</Text>
+            </TouchableOpacity>
+          ) : null}
+
+          {(selectedMeetup.status || "").toLowerCase() !== "planning" ? (
+            <TouchableOpacity
+              style={styles.bottomNavItem}
+              onPress={() => setActiveTab("registries")}
+            >
+              <Text style={styles.bottomNavIcon}>📋</Text>
+              <Text style={[styles.bottomNavText, activeTab === "registries" && styles.bottomNavTextActive]}>Registries</Text>
+            </TouchableOpacity>
+          ) : null}
+
+          {selectedMeetup.status === "Planning" ? (
+            <TouchableOpacity
+              style={styles.bottomNavItem}
+              onPress={() => setActiveTab("proposals")}
+            >
+              <Text style={styles.bottomNavIcon}>💡</Text>
+              <Text style={[styles.bottomNavText, activeTab === "proposals" && styles.bottomNavTextActive]}>Proposals</Text>
+            </TouchableOpacity>
+          ) : null}
+
+          <TouchableOpacity
+            style={styles.bottomNavItem}
+            onPress={() => setActiveTab("squad")}
+          >
+            <Text style={styles.bottomNavIcon}>🔥</Text>
+            <Text style={[styles.bottomNavText, activeTab === "squad" && styles.bottomNavTextActive]}>Squad</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.bottomNavItem}
+            onPress={() => setActiveTab("pastEvents")}
+          >
+            <Text style={styles.bottomNavIcon}>⏪</Text>
+            <Text style={[styles.bottomNavText, activeTab === "pastEvents" && styles.bottomNavTextActive]}>Past Events</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -1709,7 +1807,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
-    elevation: 2,
+    elevation: 3,
   },
   addButtonText: {
     color: "#F8F9FA",
@@ -1774,6 +1872,82 @@ const styles = StyleSheet.create({
   tabBadgeText: {
     color: colors.textSecondary,
     fontSize: 12,
+    fontWeight: "bold",
+  },
+  memberItem: {
+    width: 80,
+    marginRight: 10,
+    padding: 5,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "flex-start",
+  },
+  memberCardImageContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: colors.glassBackground,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 5,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  memberCardImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
+  },
+  memberCardSilhouette: {
+    fontSize: 32,
+  },
+  memberCardName: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    color: colors.text,
+  },
+  memberItemSelected: {
+    backgroundColor: "rgba(157, 78, 221, 0.2)",
+  },
+  checkmark: {
+    fontSize: 20,
+    color: colors.accent,
+    fontWeight: "bold",
+  },
+  bottomNav: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: colors.borderLight,
+    paddingBottom: 24,
+    paddingTop: 8,
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  bottomNavItem: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bottomNavIcon: {
+    fontSize: 24,
+    marginBottom: 4,
+  },
+  bottomNavText: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontWeight: "600",
+  },
+  bottomNavTextActive: {
+    color: colors.accent,
     fontWeight: "bold",
   },
 });
