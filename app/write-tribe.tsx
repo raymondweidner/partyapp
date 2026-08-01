@@ -22,12 +22,17 @@ import { Meetup } from "../lib/data/Meetup";
 import { Member } from "../lib/data/Member";
 import { Tribe } from "../lib/data/Tribe";
 import { TribeMember } from "../lib/data/TribeMember";
+import { TribalCouncil } from "../lib/data/TribalCouncil";
 import {
   createChat,
   createChatMember,
   createMemberContact,
+  createTribe,
   createTribeMember,
   deleteTribeMember,
+  getTribalCouncils,
+  createTribalCouncil,
+  deleteTribalCouncil,
   getMeetups,
   getMemberContacts,
   getMembers,
@@ -54,7 +59,7 @@ export default function EditTribe() {
   // Form state
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [iconType, setIconType] = useState("≡ƒÿè");
+  const [iconType, setIconType] = useState("😊");
   const [updating, setUpdating] = useState(false);
 
   // Members state
@@ -62,11 +67,13 @@ export default function EditTribe() {
   const [tribeMembers, setTribeMembers] = useState<TribeMember[]>([]);
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [membersLoading, setMembersLoading] = useState(false);
-  const [memberContacts, setMemberContacts] =
+  const [leaderTitle, setLeaderTitle] = useState("");
+  const [tribalCouncils, setTribalCouncils] = useState<TribalCouncil[]>([]);
+  const [councilMemberIds, setCouncilMemberIds] = useState<string[]>([]);
+    const [memberContacts, setMemberContacts] =
     useState<GroupedMemberContacts | null>(null);
 
-  const [isModalVisible, setIsModalVisible] = useState(false);
-
+  
   const [isGroupChatModalVisible, setIsGroupChatModalVisible] = useState(false);
   const [creatingChat, setCreatingChat] = useState(false);
 
@@ -152,21 +159,31 @@ export default function EditTribe() {
   };
 
   const fetchMembersAndTribeMembers = useCallback(
-    async (tribeId: string) => {
+    async (tribeId?: string) => {
       if (!user || !member?.id) return;
       setMembersLoading(true);
       try {
         const token = await user.getIdToken();
-        const [membersData, tribeMembersData, contactsData] =
-          await Promise.all([
-            getMembers(token),
-            getTribeMembers(token, tribeId),
-            getMemberContacts(token, member.id),
-          ]);
-        setAllMembers(membersData);
-        setTribeMembers(tribeMembersData);
-        setSelectedMemberIds(tribeMembersData.map((tm) => tm.member_id));
-        setMemberContacts(contactsData);
+        const promises: Promise<any>[] = [
+          getMembers(token),
+          getMemberContacts(token, member.id),
+        ];
+        
+        if (tribeId) {
+          promises.push(getTribeMembers(token, tribeId));
+          promises.push(getTribalCouncils(token, tribeId));
+        }
+        
+        const results = await Promise.all(promises);
+        setAllMembers(results[0]);
+        setMemberContacts(results[1]);
+        
+        if (tribeId) {
+          setTribeMembers(results[2]);
+          setSelectedMemberIds(results[2].map((tm: any) => tm.member_id));
+          setTribalCouncils(results[3]);
+          setCouncilMemberIds(results[3].map((c: any) => c.member_id));
+        }
       } catch (error: any) {
         showAlert("Error", error.message);
       } finally {
@@ -194,32 +211,25 @@ export default function EditTribe() {
     setLoading(true);
     try {
       const token = await user.getIdToken();
-      const data = await getTribes(token);
-      setTribes(data);
-
       if (paramTribeId) {
+        const data = await getTribes(token);
+        setTribes(data);
         const found = data.find((t) => t.id === paramTribeId);
         if (found) handleSelectTribe(found);
+      } else {
+        fetchMembersAndTribeMembers();
       }
     } catch (error: any) {
       showAlert("Error", error.message);
     } finally {
       setLoading(false);
     }
-  }, [user, paramTribeId, handleSelectTribe]);
+  }, [user, paramTribeId, handleSelectTribe, fetchMembersAndTribeMembers]);
 
   useFocusEffect(
     useCallback(() => {
       fetchTribes();
     }, [fetchTribes])
-  );
-
-  useFocusEffect(
-    useCallback(() => {
-      if (selectedTribe?.id) {
-        fetchMembersAndTribeMembers(selectedTribe.id);
-      }
-    }, [selectedTribe?.id, fetchMembersAndTribeMembers])
   );
 
   useEffect(() => {
@@ -251,7 +261,8 @@ export default function EditTribe() {
   };
 
   const handleUpdate = async () => {
-    if (!selectedTribe || !user) return;
+    if (!user) return;
+    if (isEditing && !selectedTribe) return;
 
     if (!name || !description) {
       showAlert("Validation Error", "Name and description are required.");
@@ -261,49 +272,51 @@ export default function EditTribe() {
     setUpdating(true);
     try {
       const token = await user.getIdToken();
-      await updateTribe(token, { ...selectedTribe, name, description, icon_type: iconType } as Tribe & { id: string }
-      );
+      let tribeId = selectedTribe?.id;
+      
+      if (isEditing && selectedTribe) {
+        await updateTribe(token, { ...selectedTribe, name, description, icon_type: iconType, leader_title: leaderTitle } as Tribe & { id: string }
+        );
+      } else {
+        const newTribe = await createTribe(token, { name, description, icon_type: iconType, leader_title: leaderTitle } as Tribe);
+        tribeId = newTribe.id;
+      }
 
-      const originalMemberIds = tribeMembers.map((tm) => tm.member_id);
+      const originalMemberIds = isEditing ? tribeMembers.map((tm) => tm.member_id) : [];
       const toAdd = selectedMemberIds.filter(
         (id) => !originalMemberIds.includes(id),
       );
-      const toRemove = tribeMembers.filter(
+      const toRemove = isEditing ? tribeMembers.filter(
         (tm) => !selectedMemberIds.includes(tm.member_id),
-      );
+      ) : [];
 
       const promises: Promise<any>[] = [];
       toAdd.forEach((memberId) => {
         promises.push(
-          createTribeMember(token, { tribe_id: selectedTribe.id!, member_id: memberId }
+          createTribeMember(token, { tribe_id: tribeId!, member_id: memberId }
           ),
         );
       });
       toRemove.forEach((tm) => {
         promises.push(
-          deleteTribeMember(token, tm.id, selectedTribe.id!, tm.member_id),
+          deleteTribeMember(token, tm.id, tribeId!, tm.member_id),
         );
       });
 
       await Promise.all(promises);
 
-      showAlert("Success", "Tribe updated successfully!", [
+      showAlert("Success", `Tribe ${isEditing ? "updated" : "created"} successfully!`, [
         {
           text: "OK",
           onPress: () => {
-            if (paramTribeId) {
-              safeBack(router, "/");
-            } else {
-              setSelectedTribe(null);
-              fetchTribes();
-            }
+            safeBack(router, "/");
           },
         },
       ]);
     } catch (error: any) {
       showAlert(
         "Error",
-        error.message || "An error occurred while updating the tribe.",
+        error.message || "An error occurred while saving the tribe.",
       );
     } finally {
       setUpdating(false);
@@ -334,153 +347,6 @@ export default function EditTribe() {
     );
   };
 
-  const renderCurrentMemberItem = ({ item }: { item: Member }) => {
-    const cleanEmail = item.email ? String(item.email).trim() : "";
-    const cleanPhone = (item as any).phone
-      ? String((item as any).phone).trim()
-      : "";
-    const hasEmail =
-      cleanEmail.length > 0 &&
-      cleanEmail !== "undefined" &&
-      cleanEmail !== "null";
-    const hasPhone =
-      cleanPhone.length > 0 &&
-      cleanPhone !== "undefined" &&
-      cleanPhone !== "null";
-    const isPending = item.status === "invited";
-    const statusText = isPending ? "Pending App Join" : "Active";
-    const infoText = [
-      hasEmail ? `Email: ${cleanEmail}` : null,
-      hasPhone ? `Phone: ${cleanPhone}` : null,
-      `Status: ${statusText}`,
-    ]
-      .filter(Boolean)
-      .join("\n");
-
-    let isMe = item.id === member?.id;
-    let isFam = false;
-    let isInvited = false;
-    let isIncoming = false;
-
-    if (memberContacts) {
-      isFam =
-        memberContacts.acceptedSources.some((c) => c.subject_id === item.id) ||
-        memberContacts.acceptedSubjects.some((c) => c.source_id === item.id);
-      isInvited = memberContacts.invitedSources.some(
-        (c) => c.subject_id === item.id,
-      );
-      isIncoming = memberContacts.invitedSubjects.some(
-        (c) => c.source_id === item.id,
-      );
-    }
-
-    const handleInvite = async () => {
-      if (!user || !member?.id || !item.id) return;
-      try {
-        const token = await user.getIdToken();
-        await createMemberContact(token, {
-            source_id: member.id,
-            subject_id: item.id,
-            status: "invited",
-          }
-        );
-        showAlert("Success", `Invitation sent to ${item.name}!`);
-        const newContacts = await getMemberContacts(token, member.id);
-        setMemberContacts(newContacts);
-      } catch (e: any) {
-        showAlert("Error", e.message);
-      }
-    };
-
-    return (
-      <View
-        style={styles.memberItem}
-      >
-        <View style={styles.memberCardImageContainer}>
-          {item.profile_pic_data ? (
-            <Image source={{ uri: item.profile_pic_data }} style={styles.memberCardImage} />
-          ) : (
-            <Text style={styles.memberCardSilhouette}>👤</Text>
-          )}
-          <View style={{ position: 'absolute', top: -5, right: -10 }}>
-            {!isMe && !isFam && !isInvited && !isIncoming && (
-              <TouchableOpacity
-                onPress={(e) => {
-                  e.stopPropagation();
-                  handleInvite();
-                }}
-                style={{ paddingHorizontal: 5, backgroundColor: colors.surface, borderRadius: 10 }}
-              >
-                <Text style={{ fontSize: 18 }}>➕</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-        <Text style={styles.memberCardName} numberOfLines={1}>{item.name || "Unnamed"}</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-          {isPending && (
-            <View>
-              <Text style={{ fontSize: 12 }}>📩 </Text>
-            </View>
-          )}
-        </View>
-      </View>
-    );
-  };
-
-  const renderModalMemberItem = ({ item }: { item: Member }) => {
-    const isSelected = selectedMemberIds.includes(item.id!);
-    const cleanEmail = item.email ? String(item.email).trim() : "";
-    const cleanPhone = (item as any).phone
-      ? String((item as any).phone).trim()
-      : "";
-    const hasEmail =
-      cleanEmail.length > 0 &&
-      cleanEmail !== "undefined" &&
-      cleanEmail !== "null";
-    const hasPhone =
-      cleanPhone.length > 0 &&
-      cleanPhone !== "undefined" &&
-      cleanPhone !== "null";
-    const isPending = item.status === "invited";
-    const statusText = isPending ? "Pending App Join" : "Active";
-    const infoText = [
-      hasEmail ? `Email: ${cleanEmail}` : null,
-      hasPhone ? `Phone: ${cleanPhone}` : null,
-      `Status: ${statusText}`,
-    ]
-      .filter(Boolean)
-      .join("\n");
-
-    return (
-      <TouchableOpacity
-        style={[styles.memberItem, isSelected && styles.memberItemSelected]}
-        onPress={() => item.id && toggleMemberSelection(item.id)}
-      >
-        <View style={styles.memberCardImageContainer}>
-          {item.profile_pic_data ? (
-            <Image source={{ uri: item.profile_pic_data }} style={styles.memberCardImage} />
-          ) : (
-            <Text style={styles.memberCardSilhouette}>👤</Text>
-          )}
-          {isSelected && (
-            <View style={{ position: 'absolute', top: -5, right: -5, backgroundColor: colors.surface, borderRadius: 10 }}>
-              <Text style={styles.checkmark}>✓</Text>
-            </View>
-          )}
-        </View>
-        <Text style={styles.memberCardName} numberOfLines={1}>{item.name}</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-          {isPending && (
-            <View>
-              <Text style={{ fontSize: 12 }}>📩 </Text>
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
-    );
-  };
-
   const sortedMembers = [...allMembers].sort((a, b) => {
     if (member && a.id === member.id) return -1;
     if (member && b.id === member.id) return 1;
@@ -496,12 +362,12 @@ export default function EditTribe() {
     selectedMemberIds.includes(member.id!),
   );
 
-  if (selectedTribe) {
+  if (selectedTribe || !isEditing) {
     return (
       <View style={styles.container}>
         <Stack.Screen
           options={{
-            title: isEditing ? `Edit ${selectedTribe.name} Tribe` : selectedTribe.name || "Tribe Details",
+            title: isEditing ? `Edit ${selectedTribe?.name || ""} Tribe` : "Create Tribe",
             headerLeft: () => <CustomHeaderLeft onBack={handleBack} />,
           }}
         />
@@ -546,6 +412,16 @@ export default function EditTribe() {
             </View>
           </View>
 
+
+          <Text style={styles.label}>Leader Title</Text>
+          <TextInput
+            style={[styles.input, { marginBottom: 12 }]}
+            value={leaderTitle}
+            onChangeText={setLeaderTitle}
+            placeholder="e.g. Chief"
+            placeholderTextColor="#888888"
+          />
+
           <Text style={styles.label}>Description</Text>
           <TextInput
             style={[styles.input, styles.textArea, { marginBottom: 24 }]}
@@ -557,46 +433,10 @@ export default function EditTribe() {
             placeholderTextColor={colors.textMuted}
           />
 
-          <View style={globalStyles.sectionPanel}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>
-                🙌 Tribe Members
-              </Text>
-              <View style={{ flexDirection: "row", gap: 8 }}>
-                <TouchableOpacity
-                  onPress={openGroupChatModal}
-                  style={styles.editButton}
-                >
-                  <Text style={styles.editButtonText}>💬 Chat</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={openEmailModal}
-                  style={styles.editButton}
-                >
-                  <Text style={styles.editButtonText}>📧 Email</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setIsModalVisible(true)}
-                  style={styles.editButton}
-                >
-                  <Text style={styles.editButtonText}>Edit</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-            {membersLoading && <ActivityIndicator size="small" />}
 
-            {!membersLoading && currentMembers.length === 0 ? (
-              <Text style={styles.emptyText}>No members in this tribe.</Text>
-            ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
-                {currentMembers.map((item) => (
-                  <React.Fragment key={item.id}>
-                    {renderCurrentMemberItem({ item })}
-                  </React.Fragment>
-                ))}
-              </ScrollView>
-            )}
-          </View>
+
+
+
 
           <FloralDivider color={colors.accent} />
           <View
@@ -644,65 +484,7 @@ export default function EditTribe() {
             )}
           </View>
 
-          <Modal
-            visible={isModalVisible}
-            animationType="slide"
-            transparent={true}
-            onRequestClose={() => setIsModalVisible(false)}
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Manage Membership</Text>
-                {membersLoading ? (
-                  <ActivityIndicator size="large" />
-                ) : (
-                  <FlatList
-                    style={{ maxHeight: 300, flexGrow: 0 }}
-                    data={sortedMembers}
-                    keyExtractor={(item) => item.id!}
-                    numColumns={3}
-                    columnWrapperStyle={{ justifyContent: 'flex-start' }}
-                    renderItem={renderModalMemberItem}
-                    ListEmptyComponent={
-                      <Text style={styles.emptyText}>No members available.</Text>
-                    }
-                  />
-                )}
-                <View style={styles.modalButtons}>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                    <TouchableOpacity
-                      style={[
-                        styles.primaryButton,
-                        {
-                          flex: 1,
-                          marginRight: 10,
-                          backgroundColor: "#f0f0f0",
-                          shadowOpacity: 0,
-                          elevation: 0,
-                        },
-                      ]}
-                      onPress={() => {
-                        setSelectedMemberIds(tribeMembers.map((tm) => tm.member_id));
-                        setIsModalVisible(false);
-                      }}
-                    >
-                      <Text style={[styles.primaryButtonText, { color: colors.textSecondary }]}>
-                        Cancel
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.primaryButton, { flex: 1, marginLeft: 10 }]}
-                      onPress={() => setIsModalVisible(false)}
-                    >
-                      <Text style={styles.primaryButtonText}>
-                        Done
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            </View>
-          </Modal>
+
 
           <GroupChatModal
             visible={isGroupChatModalVisible}
@@ -743,32 +525,13 @@ export default function EditTribe() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen
-        options={{
-          title: "Select Tribe to Edit",
-          headerLeft: () => (
-            <CustomHeaderLeft onBack={() => router.navigate("/")} />
-          ),
-        }}
-      />
-      {loading ? (
-        <ActivityIndicator size="large" style={{ marginTop: 20 }} />
-      ) : (
-        <FlatList
-          style={{ maxHeight: 212, flexGrow: 0 }}
-          data={tribes}
-          keyExtractor={(item: any) => item.id || Math.random().toString()}
-          renderItem={renderTribeItem}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>No tribes found.</Text>
-          }
-        />
-      )}
+      <ActivityIndicator size="large" style={{ marginTop: 20 }} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  membersContainer: { flexDirection: "row", flexWrap: "wrap", marginVertical: 10 },
   container: { ...globalStyles.container, padding: 20 },
   item: { padding: 10, borderBottomWidth: 1, borderBottomColor: colors.border },
   itemTitle: { fontSize: 16, fontWeight: "bold", color: colors.text },

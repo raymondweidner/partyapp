@@ -30,10 +30,10 @@ import {
   getProposals,
   getRegistryItems,
   getTribeMembers,
-  getTribalCouncils,
+  getSquads,
   createProposal, updateProposal,
 } from "../lib/data/service";
-import { TribalCouncil } from "../lib/data/TribalCouncil";
+import { Squad } from "../lib/data/Squad";
 import { colors, globalStyles } from "../lib/theme";
 import { openMapUrl, showAlert } from "../lib/util";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
@@ -67,20 +67,20 @@ export default function WriteProposal() {
 
   const [registries, setRegistries] = useState<(HelpRegistry & { incompleteCount: number })[]>([]);
   const [registryTab, setRegistryTab] = useState<"Please Help!" | "Complete">("Please Help!");
-  const [tribalCouncils, setTribalCouncils] = useState<TribalCouncil[]>([]);
+  const [squads, setSquads] = useState<Squad[]>([]);
 
   const fetchDetails = useCallback(async () => {
     if (!user || !paramProposalId || !paramMeetupId) return;
     setLoading(true);
     try {
       const token = await user.getIdToken();
-      const [proposalsData, meetupsData, membersData, councilsData] = await Promise.all([
+      const [proposalsData, meetupsData, membersData, squadsData] = await Promise.all([
         getProposals(token, undefined, paramMeetupId),
         getMeetups(token),
         getMembers(token),
-        getTribalCouncils(token, paramMeetupId as string),
+        getSquads(token, paramMeetupId as string),
       ]);
-      setTribalCouncils(councilsData);
+      setSquads(squadsData);
 
       const found = proposalsData.find((p) => p.id === paramProposalId);
       if (found) {
@@ -397,14 +397,14 @@ export default function WriteProposal() {
         </View>
 
         {(() => {
-          const isCouncilMember = tribalCouncils.some(c => c.member_id === member?.id) || meetup?.creator_id === member?.id;
-          const visibleRegistries = registries.filter(r => !r.is_council || isCouncilMember);
+          const isSquadMember = squads.some(c => c.member_id === member?.id) || meetup?.creator_id === member?.id;
+          const visibleRegistries = registries.filter(r => !r.is_squad || isSquadMember);
 
           return (
             <View style={globalStyles.sectionPanel}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <Text style={styles.sectionTitle}>Help Registries</Text>
-                {isCouncilMember && (
+                {isSquadMember && (
                   <TouchableOpacity
                     style={styles.addButton}
                     onPress={() => router.push({ pathname: "/write-registry", params: { proposalId: paramProposalId } })}

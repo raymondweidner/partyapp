@@ -9,15 +9,13 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View
 } from "react-native";
 import { useAuth } from "../lib/auth";
-import { DropdownSelect } from "../lib/components/DropdownSelect";
 import { EmailModal } from "../lib/components/EmailModal";
-import { GroupChatModal } from "../lib/components/GroupChatModal";
 import { FloralDivider } from "../lib/components/FloralDivider";
+import { GroupChatModal } from "../lib/components/GroupChatModal";
 import { Meetup } from "../lib/data/Meetup";
 import { Member } from "../lib/data/Member";
 import { Tribe } from "../lib/data/Tribe";
@@ -35,7 +33,11 @@ import {
   getTribes,
   GroupedMemberContacts,
   updateTribe,
+  getTribalCouncils,
+  createTribalCouncil,
+  deleteTribalCouncil,
 } from "../lib/data/service";
+import { TribalCouncil } from "../lib/data/TribalCouncil";
 import { colors, globalStyles } from "../lib/theme";
 import { openEmailThread, safeBack, showAlert } from "../lib/util";
 import { CustomHeaderLeft, useCurrentMember } from "./_layout";
@@ -65,8 +67,16 @@ export default function ReadTribe() {
   const [memberContacts, setMemberContacts] =
     useState<GroupedMemberContacts | null>(null);
 
+  // Tribal Council state
+  const [tribalCouncils, setTribalCouncils] = useState<TribalCouncil[]>([]);
+  const [councilMemberIds, setCouncilMemberIds] = useState<string[]>([]);
+  const [showCouncilEditModal, setShowCouncilEditModal] = useState(false);
+  const [councilLoading, setCouncilLoading] = useState(false);
+
   // Meetups state
   const [meetups, setMeetups] = useState<Meetup[]>([]);
+  const [meetupTab, setMeetupTab] = useState<string>("proposed");
+  const [meetupsExpanded, setMeetupsExpanded] = useState(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const [isGroupChatModalVisible, setIsGroupChatModalVisible] = useState(false);
@@ -159,18 +169,23 @@ export default function ReadTribe() {
       setMembersLoading(true);
       try {
         const token = await user.getIdToken();
-        const [membersData, tribeMembersData, meetupsData, contactsData] =
+        const [membersData, tribeMembersData, meetupsData, contactsData, councilsData] =
           await Promise.all([
             getMembers(token),
             getTribeMembers(token, tribeId),
             getMeetups(token, tribeId),
             getMemberContacts(token, member.id),
+            getTribalCouncils(token, tribeId),
           ]);
         setAllMembers(membersData);
         setTribeMembers(tribeMembersData);
         setSelectedMemberIds(tribeMembersData.map((tm) => tm.member_id));
         setMeetups(meetupsData);
         setMemberContacts(contactsData);
+        setTribalCouncils(councilsData);
+        if (meetupsData.some((m: Meetup) => m.status?.toLowerCase() === "ongoing")) {
+          setMeetupTab("ongoing");
+        }
       } catch (error: any) {
         showAlert("Error", error.message);
       } finally {
@@ -384,10 +399,10 @@ export default function ReadTribe() {
       try {
         const token = await user.getIdToken();
         await createMemberContact(token, {
-            source_id: member.id,
-            subject_id: item.id,
-            status: "invited",
-          }
+          source_id: member.id,
+          subject_id: item.id,
+          status: "invited",
+        }
         );
         showAlert("Success", `Invitation sent to ${item.name}!`);
         const newContacts = await getMemberContacts(token, member.id);
@@ -486,6 +501,107 @@ export default function ReadTribe() {
     );
   };
 
+  const handleUpdateMembers = async () => {
+    if (!selectedTribe || !user) return;
+    setMembersLoading(true);
+    try {
+      const token = await user.getIdToken();
+      const currentIds = tribeMembers.map(tm => tm.member_id);
+      const toAdd = selectedMemberIds.filter(id => !currentIds.includes(id));
+      const toRemove = tribeMembers.filter(tm => !selectedMemberIds.includes(tm.member_id));
+      
+      const promises: Promise<any>[] = [];
+      
+      for (const id of toAdd) {
+        promises.push(createTribeMember(token, {
+          tribe_id: selectedTribe.id!,
+          member_id: id
+        }));
+      }
+      for (const tm of toRemove) {
+        if (tm.id) {
+          promises.push(deleteTribeMember(token, tm.id, selectedTribe.id!, tm.member_id));
+        }
+      }
+      
+      await Promise.all(promises);
+      const updated = await getTribeMembers(token, selectedTribe.id!);
+      setTribeMembers(updated);
+      setIsModalVisible(false);
+    } catch (e: any) {
+      showAlert("Error", e.message);
+    } finally {
+      setMembersLoading(false);
+    }
+  };
+
+  const handleUpdateCouncil = async () => {
+    if (!selectedTribe || !user) return;
+    setCouncilLoading(true);
+    try {
+      const token = await user.getIdToken();
+      const currentIds = tribalCouncils.map(c => c.member_id);
+      
+      const toAdd = councilMemberIds.filter(id => !currentIds.includes(id));
+      const toRemove = tribalCouncils.filter(c => !councilMemberIds.includes(c.member_id));
+      
+      const promises: Promise<any>[] = [];
+      
+      for (const id of toAdd) {
+        promises.push(createTribalCouncil(token, {
+          tribe_id: selectedTribe.id!,
+          member_id: id,
+        }));
+      }
+      for (const c of toRemove) {
+        if (c.id) {
+          promises.push(deleteTribalCouncil(token, c.id));
+        }
+      }
+      
+      await Promise.all(promises);
+      const updated = await getTribalCouncils(token, selectedTribe.id!);
+      setTribalCouncils(updated);
+      setShowCouncilEditModal(false);
+    } catch (e: any) {
+      showAlert("Error", e.message);
+    } finally {
+      setCouncilLoading(false);
+    }
+  };
+
+  const toggleCouncilSelection = (memberId: string) => {
+    setCouncilMemberIds((prev) =>
+      prev.includes(memberId)
+        ? prev.filter((id) => id !== memberId)
+        : [...prev, memberId],
+    );
+  };
+
+  const renderModalCouncilItem = ({ item }: { item: Member }) => {
+    const isSelected = councilMemberIds.includes(item.id!);
+    return (
+      <TouchableOpacity
+        style={[styles.memberItem, isSelected && styles.memberItemSelected]}
+        onPress={() => item.id && toggleCouncilSelection(item.id)}
+      >
+        <View style={styles.memberCardImageContainer}>
+          {item.profile_pic_data ? (
+            <Image source={{ uri: item.profile_pic_data }} style={styles.memberCardImage} />
+          ) : (
+            <Text style={styles.memberCardSilhouette}>👤</Text>
+          )}
+          {isSelected && (
+            <View style={{ position: 'absolute', top: -5, right: -5, backgroundColor: colors.surface, borderRadius: 10 }}>
+              <Text style={styles.checkmark}>✓</Text>
+            </View>
+          )}
+        </View>
+        <Text style={styles.memberCardName} numberOfLines={1}>{item.name}</Text>
+      </TouchableOpacity>
+    );
+  };
+
   const sortedMembers = [...allMembers].sort((a, b) => {
     if (member && a.id === member.id) return -1;
     if (member && b.id === member.id) return 1;
@@ -502,6 +618,8 @@ export default function ReadTribe() {
   );
 
   if (selectedTribe) {
+    const isCreator = member?.id === selectedTribe?.creator_id;
+    const isCouncilOrCreator = isCreator || tribalCouncils.some(c => c.member_id === member?.id);
     return (
       <View style={styles.container}>
         <Stack.Screen
@@ -515,13 +633,247 @@ export default function ReadTribe() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={{ alignItems: "center", marginVertical: 24 }}>
-              <Text style={{ fontSize: 72, marginBottom: 12 }}>{iconType || "😊"}</Text>
-              <Text style={{ fontSize: 40, fontFamily: "Lobster_400Regular", color: colors.accent, textAlign: "center", marginBottom: 8 }}>{name}</Text>
-              {description ? (
-                <Text style={{ fontSize: 16, color: colors.textSecondary, textAlign: "center", paddingHorizontal: 20 }}>{description}</Text>
-              ) : null}
+            <Text style={{ fontSize: 72, marginBottom: 12 }}>{iconType || "😊"}</Text>
+            <Text style={{ fontSize: 40, fontFamily: "Lobster_400Regular", color: colors.accent, textAlign: "center", marginBottom: 8 }}>{name}</Text>
+            {description ? (
+              <Text style={{ fontSize: 16, color: colors.textSecondary, textAlign: "center", paddingHorizontal: 20 }}>{description}</Text>
+            ) : null}
+          </View>
+          
+          {isCreator && (
+            <View
+              style={[styles.buttonContainer, { marginBottom: 20, marginTop: 12, paddingHorizontal: 20 }]}
+            >
+              <TouchableOpacity
+                style={styles.primaryButton}
+                onPress={() => router.push({ pathname: "/write-tribe", params: { id: selectedTribe.id } })}
+              >
+                <Text style={styles.primaryButtonText}>Edit Details</Text>
+              </TouchableOpacity>
             </View>
-            <FloralDivider color={colors.accent} />
+          )}
+          
+          <FloralDivider color={colors.accent} />
+
+          <View style={globalStyles.sectionPanel}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>
+                🎉 Tribe Meetups
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <TouchableOpacity
+                  onPress={() => setMeetupsExpanded(!meetupsExpanded)}
+                  style={{ marginRight: 15 }}
+                >
+                  <Text style={{ fontSize: 18, color: colors.textSecondary }}>
+                    {meetupsExpanded ? "▲" : "▼"}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.addButton}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/write-meetup",
+                      params: { tribeId: selectedTribe.id },
+                    })
+                  }
+                >
+                  <Text style={styles.addButtonText}>+ Add</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {(() => {
+              const ongoingMeetups = meetups.filter(m => m.status && m.status.toLowerCase() === "ongoing");
+              const proposedMeetups = meetups.filter(m => !m.status || !["upcoming", "selected", "scheduled", "completed", "complete", "cancelled", "ongoing"].includes(m.status.toLowerCase()));
+              const upcomingMeetups = meetups.filter(m => m.status && ["upcoming", "selected", "scheduled"].includes(m.status.toLowerCase()));
+              const completedMeetups = meetups.filter(m => m.status && ["completed", "complete"].includes(m.status.toLowerCase()));
+              const cancelledMeetups = meetups.filter(m => m.status && m.status.toLowerCase() === "cancelled");
+
+              let currentMeetups: Meetup[] = [];
+              if (meetupTab === "ongoing") currentMeetups = ongoingMeetups;
+              else if (meetupTab === "proposed") currentMeetups = proposedMeetups;
+              else if (meetupTab === "upcoming") currentMeetups = upcomingMeetups;
+              else if (meetupTab === "completed") currentMeetups = completedMeetups;
+              else if (meetupTab === "cancelled") currentMeetups = cancelledMeetups;
+
+              return (
+                <>
+                  <View style={styles.tabContainer}>
+                    {ongoingMeetups.length > 0 && (
+                      <TouchableOpacity
+                        style={[styles.tab, meetupTab === "ongoing" && styles.activeTab]}
+                        onPress={() => setMeetupTab("ongoing")}
+                      >
+                        <Text style={[styles.tabText, meetupTab === "ongoing" && styles.activeTabText]}>
+                          Ongoing
+                        </Text>
+                        <View style={styles.tabBadge}>
+                          <Text style={styles.tabBadgeText}>
+                            {ongoingMeetups.length > 99 ? "99+" : ongoingMeetups.length}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity
+                      style={[styles.tab, meetupTab === "proposed" && styles.activeTab]}
+                      onPress={() => setMeetupTab("proposed")}
+                    >
+                      <Text style={[styles.tabText, meetupTab === "proposed" && styles.activeTabText]}>
+                        Proposed
+                      </Text>
+                      <View style={styles.tabBadge}>
+                        <Text style={styles.tabBadgeText}>
+                          {proposedMeetups.length > 99 ? "99+" : proposedMeetups.length}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.tab, meetupTab === "upcoming" && styles.activeTab]}
+                      onPress={() => setMeetupTab("upcoming")}
+                    >
+                      <Text style={[styles.tabText, meetupTab === "upcoming" && styles.activeTabText]}>
+                        Upcoming
+                      </Text>
+                      <View style={styles.tabBadge}>
+                        <Text style={styles.tabBadgeText}>
+                          {upcomingMeetups.length > 99 ? "99+" : upcomingMeetups.length}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                    {meetupsExpanded && (
+                      <>
+                        <TouchableOpacity
+                          style={[styles.tab, meetupTab === "completed" && styles.activeTab]}
+                          onPress={() => setMeetupTab("completed")}
+                        >
+                          <Text style={[styles.tabText, meetupTab === "completed" && styles.activeTabText]}>
+                            Completed
+                          </Text>
+                          <View style={styles.tabBadge}>
+                            <Text style={styles.tabBadgeText}>
+                              {completedMeetups.length > 99 ? "99+" : completedMeetups.length}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.tab, meetupTab === "cancelled" && styles.activeTab]}
+                          onPress={() => setMeetupTab("cancelled")}
+                        >
+                          <Text style={[styles.tabText, meetupTab === "cancelled" && styles.activeTabText]}>
+                            Cancelled
+                          </Text>
+                          <View style={styles.tabBadge}>
+                            <Text style={styles.tabBadgeText}>
+                              {cancelledMeetups.length > 99 ? "99+" : cancelledMeetups.length}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                      </>
+                    )}
+                  </View>
+
+                  {currentMeetups.length === 0 ? (
+                    <Text style={styles.emptyText}>No meetups in this category.</Text>
+                  ) : (
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
+                      {currentMeetups.map((meetup) => {
+                        return (
+                          <TouchableOpacity
+                            key={meetup.id}
+                            style={styles.squareCard}
+                            onPress={() =>
+                              router.push({
+                                pathname: "/read-meetup",
+                                params: { id: meetup.id, tribeId: selectedTribe.id },
+                              })
+                            }
+                          >
+                            <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                              <Text style={styles.squareCardIcon}>
+                                {meetup.icon_type || "🎉"}
+                              </Text>
+                              <Text
+                                style={styles.squareCardTitle}
+                                numberOfLines={2}
+                                ellipsizeMode="tail"
+                              >
+                                {meetup.title || "Unnamed Meetup"}
+                              </Text>
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
+                  )}
+                </>
+              );
+            })()}
+          </View>
+          
+          <View style={globalStyles.sectionPanel}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>🔥 Tribal Council</Text>
+              {isCreator && (
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={() => {
+                    setCouncilMemberIds(tribalCouncils.map((c) => c.member_id));
+                    setShowCouncilEditModal(true);
+                  }}
+                >
+                  <Text style={styles.editButtonText}>Edit</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {councilLoading && <ActivityIndicator size="small" />}
+            
+            {!councilLoading && (
+              <>
+                {/* Creator as leader */}
+                <View style={{ marginBottom: 16 }}>
+                  {(() => {
+                    const creatorMember = allMembers.find((m) => m.id === selectedTribe?.creator_id);
+                    if (creatorMember) {
+                      return (
+                        <View style={{ marginBottom: 8 }}>
+                          <Text style={[globalStyles.attributeName, { marginBottom: 4 }]}>
+                            {selectedTribe.leader_title || "Tribe Leader"}
+                          </Text>
+                          <TouchableOpacity onPress={() => router.push(`/read-member?id=${creatorMember.id}` as any)}>
+                            <Text style={globalStyles.attributeValue}>
+                              {creatorMember.name}
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
+                      );
+                    }
+                    return null;
+                  })()}
+                </View>
+
+                {/* Council Members */}
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={[globalStyles.attributeName, { marginBottom: 4 }]}>Council Members</Text>
+                  {(() => {
+                    const regularCouncils = tribalCouncils.filter(c => c.member_id !== selectedTribe?.creator_id);
+                    if (regularCouncils.length === 0) {
+                      return <Text style={{ color: colors.textMuted }}>No council members</Text>;
+                    }
+                    return regularCouncils.map((c) => {
+                      const mem = allMembers.find((m) => m.id === c.member_id);
+                      if (!mem) return null;
+                      return (
+                        <TouchableOpacity key={c.id} onPress={() => router.push(`/read-member?id=${mem.id}` as any)} style={{ marginBottom: 4 }}>
+                          <Text style={globalStyles.attributeValue}>{mem.name}</Text>
+                        </TouchableOpacity>
+                      );
+                    });
+                  })()}
+                </View>
+              </>
+            )}
+          </View>
 
           <View style={globalStyles.sectionPanel}>
             <View style={styles.sectionHeader}>
@@ -529,6 +881,17 @@ export default function ReadTribe() {
                 🙌 Tribe Members
               </Text>
               <View style={{ flexDirection: "row", gap: 8 }}>
+                {isCouncilOrCreator && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSelectedMemberIds(tribeMembers.map((tm) => tm.member_id));
+                      setIsModalVisible(true);
+                    }}
+                    style={styles.editButton}
+                  >
+                    <Text style={styles.editButtonText}>Edit</Text>
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity
                   onPress={openGroupChatModal}
                   style={styles.editButton}
@@ -558,80 +921,7 @@ export default function ReadTribe() {
             )}
           </View>
 
-          <View style={globalStyles.sectionPanel}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>
-                🎉 Tribe Meetups
-              </Text>
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={() =>
-                  router.push({
-                    pathname: "/write-meetup",
-                    params: { tribeId: selectedTribe.id },
-                  })
-                }
-              >
-                <Text style={styles.addButtonText}>+ Add</Text>
-              </TouchableOpacity>
-            </View>
-
-            {meetups.length === 0 ? (
-              <Text style={styles.emptyText}>No meetups in this tribe.</Text>
-            ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
-                {meetups.map((meetup) => {
-                  const cleanDetails = meetup.details
-                    ? String(meetup.details).trim()
-                    : "";
-                  const eventInfo = meetup.event_type ? `Type: ${meetup.event_type}\n` : "";
-                  const infoText =
-                    cleanDetails.length > 0 &&
-                      cleanDetails !== "undefined" &&
-                      cleanDetails !== "null"
-                      ? `${eventInfo}Status: ${meetup.status || "Planning"}\n\n${cleanDetails}`
-                      : `${eventInfo}Status: ${meetup.status || "Planning"}`;
-                  return (
-                    <TouchableOpacity
-                      key={meetup.id}
-                      style={styles.squareCard}
-                      onPress={() =>
-                        router.push({
-                          pathname: "/read-meetup",
-                          params: { id: meetup.id, tribeId: selectedTribe.id },
-                        })
-                      }
-                    >
-                      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                        <Text style={styles.squareCardIcon}>
-                          {meetup.icon_type || "🎉"}
-                        </Text>
-                        <Text
-                          style={styles.squareCardTitle}
-                          numberOfLines={2}
-                          ellipsizeMode="tail"
-                        >
-                          {meetup.title || "Unnamed Meetup"}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            )}
-          </View>
-
           <FloralDivider color={colors.accent} />
-          <View
-            style={[styles.buttonContainer, { marginBottom: 20, marginTop: 30 }]}
-          >
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={() => router.push({ pathname: "/write-tribe", params: { id: selectedTribe.id } })}
-            >
-              <Text style={styles.primaryButtonText}>Edit Details</Text>
-            </TouchableOpacity>
-          </View>
 
           <Modal
             visible={isModalVisible}
@@ -681,7 +971,67 @@ export default function ReadTribe() {
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.primaryButton, { flex: 1, marginLeft: 10 }]}
-                      onPress={() => setIsModalVisible(false)}
+                      onPress={() => handleUpdateMembers()}
+                    >
+                      <Text style={styles.primaryButtonText}>
+                        Done
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </Modal>
+
+          <Modal
+            visible={showCouncilEditModal}
+            animationType="slide"
+            transparent={true}
+            onRequestClose={() => setShowCouncilEditModal(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Manage Council</Text>
+                {councilLoading ? (
+                  <ActivityIndicator size="large" />
+                ) : (
+                  <FlatList
+                    style={{ maxHeight: 300, flexGrow: 0 }}
+                    data={sortedMembers.filter(m => m.id !== selectedTribe?.creator_id)}
+                    keyExtractor={(item) => item.id!}
+                    numColumns={3}
+                    columnWrapperStyle={{ justifyContent: 'flex-start' }}
+                    renderItem={renderModalCouncilItem}
+                    ListEmptyComponent={
+                      <Text style={styles.emptyText}>No members available.</Text>
+                    }
+                  />
+                )}
+                <View style={styles.modalButtons}>
+                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                    <TouchableOpacity
+                      style={[
+                        styles.primaryButton,
+                        {
+                          flex: 1,
+                          marginRight: 10,
+                          backgroundColor: "#f0f0f0",
+                          shadowOpacity: 0,
+                          elevation: 0,
+                        },
+                      ]}
+                      onPress={() => {
+                        setCouncilMemberIds(tribalCouncils.map((c) => c.member_id));
+                        setShowCouncilEditModal(false);
+                      }}
+                    >
+                      <Text style={[styles.primaryButtonText, { color: colors.textSecondary }]}>
+                        Cancel
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.primaryButton, { flex: 1, marginLeft: 10 }]}
+                      onPress={() => handleUpdateCouncil()}
                     >
                       <Text style={styles.primaryButtonText}>
                         Done
@@ -852,24 +1202,74 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   squareCard: {
-    backgroundColor: colors.glassBackground,
+    backgroundColor: colors.glassCardBackground,
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.border,
     padding: 16,
-    width: 150,
-    height: 150,
+    width: 120,
+    height: 120,
     marginRight: 15,
-    justifyContent: "space-between",
+    justifyContent: "center",
+    alignItems: "center",
   },
   squareCardTitle: {
-    fontSize: 16,
-    fontWeight: "bold",
+    fontSize: 17,
+    fontFamily: "BricolageGrotesque_500Medium",
     color: colors.text,
+    textAlign: "center",
   },
   squareCardIcon: {
     fontSize: 32,
     marginBottom: 8,
+    textAlign: "center",
+  },
+  tabContainer: {
+    flexDirection: "row",
+    marginBottom: 16,
+    backgroundColor: colors.borderLight,
+    borderRadius: 14,
+    padding: 4,
+    gap: 4,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    borderRadius: 10,
+    backgroundColor: "transparent",
+  },
+  activeTab: {
+    backgroundColor: colors.accent,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  tabText: {
+    fontSize: 14,
+    color: colors.textMuted,
+    fontWeight: "600",
+  },
+  activeTabText: {
+    color: "#FFFFFF",
+  },
+  tabBadge: {
+    backgroundColor: "#E2DDD5",
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginLeft: 6,
+    minWidth: 20,
+    alignItems: "center",
+  },
+  tabBadgeText: {
+    color: "#555555",
+    fontSize: 12,
+    fontWeight: "bold",
   },
   sectionHeaderRow: {
     flexDirection: "row",

@@ -30,7 +30,8 @@ const ALL_ALERT_TYPES = [
   'meetup_state_changed', 'proposal_selected', 'chat_invite', 'tribe_invite',
   'meetup_created', 'proposal_created', 'tribe_member_added', 'app_invite_accepted',
   'availability_updated', 'contact_request_received', 'contact_request_accepted', 'meetup_cancelled', 'poll_created',
-  'poll_voting_open', 'poll_completed', 'poll_no_entries', 'poll_no_votes', 'registry_item_updated'
+  'poll_voting_open', 'poll_completed', 'poll_no_entries', 'poll_no_votes', 'registry_item_updated',
+  'tribal_council_added', 'tribal_council_removed', 'squad_added', 'squad_removed'
 ];
 
 WebBrowser.maybeCompleteAuthSession();

@@ -4,5 +4,5 @@ export interface HelpRegistry {
   meetup_event_id?: string;
   name: string;
   details?: string;
-  is_council?: boolean;
+  is_squad?: boolean;
 }

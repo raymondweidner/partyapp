@@ -32,8 +32,8 @@ import { PollVote } from "../lib/data/PollVote";
 import { Proposal } from "../lib/data/Proposal";
 import {
   createChat,
-  createTribalCouncil,
-  deleteTribalCouncil,
+  createSquad,
+  deleteSquad,
   getAvailabilities,
   getChats,
   getHelpRegistries,
@@ -45,13 +45,13 @@ import {
   getPolls,
   getProposals,
   getRegistryItems,
-  getTribalCouncils,
+  getSquads,
   getTribeMembers,
   getTribes,
   updateMeetup,
   updateProposal,
 } from "../lib/data/service";
-import { TribalCouncil } from "../lib/data/TribalCouncil";
+import { Squad } from "../lib/data/Squad";
 import { Tribe } from "../lib/data/Tribe";
 import { TribeMember } from "../lib/data/TribeMember";
 
@@ -87,14 +87,14 @@ export default function ReadMeetup() {
 
   const [meetupEvents, setMeetupEvents] = useState<MeetupEvent[]>([]);
 
-  // Tribal Council State
-  const [tribalCouncils, setTribalCouncils] = useState<TribalCouncil[]>([]);
+  // Squad State
+  const [squads, setSquads] = useState<Squad[]>([]);
   const [chats, setChats] = useState<Chat[]>([]);
-  const [showCouncilEditModal, setShowCouncilEditModal] = useState(false);
-  const [showCouncilChatModal, setShowCouncilChatModal] = useState(false);
-  const [councilChatName, setCouncilChatName] = useState("");
-  const [councilChatUrl, setCouncilChatUrl] = useState("");
-  const [councilMemberIds, setCouncilMemberIds] = useState<string[]>([]);
+  const [showSquadEditModal, setShowSquadEditModal] = useState(false);
+  const [showSquadChatModal, setShowSquadChatModal] = useState(false);
+  const [squadChatName, setSquadChatName] = useState("");
+  const [squadChatUrl, setSquadChatUrl] = useState("");
+  const [squadMemberIds, setSquadMemberIds] = useState<string[]>([]);
 
   const [meetups, setMeetups] = useState<Meetup[]>([]);
   const [selectedMeetup, setSelectedMeetup] = useState<Meetup | null>(null);
@@ -156,21 +156,21 @@ export default function ReadMeetup() {
             const availPromises = proposalsData.map((p) =>
               getAvailabilities(token, undefined, p.id!),
             );
-            const [availResults, tribeMems, fetchedPolls, fetchedEvents, fetchedCouncils, fetchedChats] = await Promise.all([
+            const [availResults, tribeMems, fetchedPolls, fetchedEvents, fetchedSquads, fetchedChats] = await Promise.all([
               Promise.all(availPromises),
               getTribeMembers(token, found.tribe_id || paramTribeId!),
               getPolls(token, paramMeetupId),
               getMeetupEvents(token, paramMeetupId),
-              getTribalCouncils(token, paramMeetupId),
+              getSquads(token, paramMeetupId),
               getChats(token),
             ]);
             setAvailabilities(availResults.flat());
             setTribeMembers(tribeMems);
             setPolls(fetchedPolls);
             setMeetupEvents(fetchedEvents);
-            setTribalCouncils(fetchedCouncils);
+            setSquads(fetchedSquads);
             setChats(fetchedChats);
-            setCouncilMemberIds(fetchedCouncils.map(c => c.member_id));
+            setSquadMemberIds(fetchedSquads.map(c => c.member_id));
 
             const entryPromises = fetchedPolls.map(p => getPollEntries(token, p.id!));
             const votePromises = fetchedPolls.map(p => getPollVotes(token, p.id!));
@@ -246,17 +246,17 @@ export default function ReadMeetup() {
         const availResults = await Promise.all(availPromises);
         setAvailabilities(availResults.flat());
 
-        const [fetchedPolls, fetchedEvents, fetchedCouncils, fetchedChats] = await Promise.all([
+        const [fetchedPolls, fetchedEvents, fetchedSquads, fetchedChats] = await Promise.all([
           getPolls(token, meetup.id),
           getMeetupEvents(token, meetup.id),
-          getTribalCouncils(token, meetup.id),
+          getSquads(token, meetup.id),
           getChats(token),
         ]);
         setPolls(fetchedPolls);
         setMeetupEvents(fetchedEvents);
-        setTribalCouncils(fetchedCouncils);
+        setSquads(fetchedSquads);
         setChats(fetchedChats);
-        setCouncilMemberIds(fetchedCouncils.map(c => c.member_id));
+        setSquadMemberIds(fetchedSquads.map(c => c.member_id));
 
         const entryPromises = fetchedPolls.map(p => getPollEntries(token, p.id!));
         const votePromises = fetchedPolls.map(p => getPollVotes(token, p.id!));
@@ -478,27 +478,27 @@ export default function ReadMeetup() {
     ]);
   };
 
-  const handleUpdateCouncil = async () => {
+  const handleUpdateSquad = async () => {
     if (!user || !selectedMeetup?.id) return;
     setUpdating(true);
     try {
       const token = await user.getIdToken();
-      await Promise.all(tribalCouncils.map(c => deleteTribalCouncil(token, c.id!)));
-      const newCouncils = await Promise.all(
-        councilMemberIds.map(cid =>
-          createTribalCouncil(token, { meetup_id: selectedMeetup.id!, member_id: cid })
+      await Promise.all(squads.map(c => deleteSquad(token, c.id!)));
+      const newSquads = await Promise.all(
+        squadMemberIds.map(cid =>
+          createSquad(token, { meetup_id: selectedMeetup.id!, member_id: cid })
         )
       );
-      setTribalCouncils(newCouncils);
-      setShowCouncilEditModal(false);
+      setSquads(newSquads);
+      setShowSquadEditModal(false);
     } catch (e: any) {
-      showAlert("Error", "Failed to update Tribal Council: " + e.message);
+      showAlert("Error", "Failed to update Squad: " + e.message);
     } finally {
       setUpdating(false);
     }
   };
 
-  const handleSaveCouncilChat = async (name: string, url: string) => {
+  const handleSaveSquadChat = async (name: string, url: string) => {
     if (!user || !selectedMeetup?.id || !name || !url) return;
     setUpdating(true);
     try {
@@ -506,14 +506,14 @@ export default function ReadMeetup() {
       const chat = await createChat(token, {
         name: name,
         url: url,
-        is_council: true,
+        chat_type: 'squad',
         meetup_id: selectedMeetup.id,
         tribe_id: selectedMeetup.tribe_id,
       });
       setChats(prev => [...prev, chat]);
-      setShowCouncilChatModal(false);
-      setCouncilChatName("");
-      setCouncilChatUrl("");
+      setShowSquadChatModal(false);
+      setSquadChatName("");
+      setSquadChatUrl("");
     } catch (e: any) {
       showAlert("Error", "Failed to create chat: " + e.message);
     } finally {
@@ -821,7 +821,7 @@ export default function ReadMeetup() {
                         </View>
 
                         <View style={{ marginBottom: 16 }}>
-                          <Text style={globalStyles.attributeName}>Host</Text>
+                          <Text style={globalStyles.attributeName}>{selectedMeetup?.leader_title || 'Host'}</Text>
                           <Text style={globalStyles.attributeValue}>
                             {host?.name || "Unknown"}
                           </Text>
@@ -1037,7 +1037,7 @@ export default function ReadMeetup() {
           {(() => {
             if ((selectedMeetup?.status || "").toLowerCase() === "planning") return null;
 
-            const isCouncilMember = tribalCouncils.some(c => c.member_id === member?.id) || selectedMeetup?.creator_id === member?.id;
+            const isSquadMember = squads.some(c => c.member_id === member?.id) || selectedMeetup?.creator_id === member?.id;
             const isFinalized = ["upcoming", "scheduled", "ongoing"].includes((selectedMeetup?.status || "").toLowerCase());
             const currentEvent = isFinalized && meetupEvents.length > 0
               ? [...meetupEvents].sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime())[0]
@@ -1047,13 +1047,13 @@ export default function ReadMeetup() {
             let relevantEventId = currentEvent?.id;
             let relevantProposalId = acceptedProposal?.id;
 
-            const visibleRegistries = registries.filter(r => (!r.is_council || isCouncilMember) && relevantEventId && r.meetup_event_id === relevantEventId);
+            const visibleRegistries = registries.filter(r => (!r.is_squad || isSquadMember) && relevantEventId && r.meetup_event_id === relevantEventId);
 
             return (
               <View style={globalStyles.sectionPanel}>
                 <View style={globalStyles.sectionHeader}>
                   <Text style={globalStyles.sectionTitle}>📋 Help Registries</Text>
-                  {isCouncilMember && relevantEventId && (
+                  {isSquadMember && relevantEventId && (
                     <TouchableOpacity
                       style={styles.addButton}
                       onPress={() => {
@@ -1320,20 +1320,20 @@ export default function ReadMeetup() {
             </View>
           )}
 
-          {/* Tribal Council Section */}
+          {/* Squad Section */}
           {(
             <View style={globalStyles.sectionPanel}>
               <View style={globalStyles.sectionHeader}>
-                <Text style={globalStyles.sectionTitle}>👑 Tribal Council</Text>
+                <Text style={globalStyles.sectionTitle}>👑 Squad</Text>
                 {(selectedMeetup as any).creator_id === member?.id && (
                   <TouchableOpacity
                     style={styles.addButton}
                     onPress={() => {
-                      setCouncilMemberIds(tribalCouncils.map((c) => c.member_id));
-                      setShowCouncilEditModal(true);
+                      setSquadMemberIds(squads.map((c) => c.member_id));
+                      setShowSquadEditModal(true);
                     }}
                   >
-                    <Text style={styles.addButtonText}>Edit Council</Text>
+                    <Text style={styles.addButtonText}>Edit Squad</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -1360,15 +1360,15 @@ export default function ReadMeetup() {
                 })()}
               </View>
 
-              {/* Council Members */}
+              {/* Squad Members */}
               <View style={{ marginBottom: 16 }}>
-                <Text style={[globalStyles.attributeName, { marginBottom: 4 }]}>Council Members</Text>
+                <Text style={[globalStyles.attributeName, { marginBottom: 4 }]}>Squad Members</Text>
                 {(() => {
-                  const regularCouncils = tribalCouncils.filter(c => c.member_id !== (selectedMeetup as any).creator_id);
-                  if (regularCouncils.length === 0) {
-                    return <Text style={{ color: colors.textMuted }}>No council members</Text>;
+                  const regularSquads = squads.filter(c => c.member_id !== (selectedMeetup as any).creator_id);
+                  if (regularSquads.length === 0) {
+                    return <Text style={{ color: colors.textMuted }}>No squad members</Text>;
                   }
-                  return regularCouncils.map((c) => {
+                  return regularSquads.map((c) => {
                     const mem = members.find((m) => m.id === c.member_id);
                     if (!mem) return null;
                     return (
@@ -1380,25 +1380,25 @@ export default function ReadMeetup() {
                 })()}
               </View>
 
-              {/* Council Chat */}
+              {/* Squad Chat */}
               <View style={{ alignItems: "center" }}>
                 {(() => {
-                  const councilChat = chats.find(c => c.meetup_id === selectedMeetup.id && c.is_council);
-                  if (councilChat) {
+                  const squadChat = chats.find(c => c.meetup_id === selectedMeetup.id && c.chat_type === 'squad');
+                  if (squadChat) {
                     return (
-                      <TouchableOpacity onPress={() => Linking.openURL(councilChat.url)}>
-                        <Text style={{ color: colors.primary, fontSize: 16, textDecorationLine: "underline" }}>{councilChat.name}</Text>
+                      <TouchableOpacity onPress={() => Linking.openURL(squadChat.url)}>
+                        <Text style={{ color: colors.primary, fontSize: 16, textDecorationLine: "underline" }}>{squadChat.name}</Text>
                       </TouchableOpacity>
                     );
                   } else {
-                    const isCouncil = tribalCouncils.some(c => c.member_id === member?.id);
-                    if (isCouncil || (selectedMeetup as any).creator_id === member?.id) {
+                    const isSquad = squads.some(c => c.member_id === member?.id);
+                    if (isSquad || (selectedMeetup as any).creator_id === member?.id) {
                       return (
                         <TouchableOpacity
                           style={styles.addButton}
-                          onPress={() => setShowCouncilChatModal(true)}
+                          onPress={() => setShowSquadChatModal(true)}
                         >
-                          <Text style={styles.addButtonText}>+ Create Council Chat</Text>
+                          <Text style={styles.addButtonText}>+ Create Squad Chat</Text>
                         </TouchableOpacity>
                       );
                     }
@@ -1412,7 +1412,7 @@ export default function ReadMeetup() {
           {(selectedMeetup as any).creator_id === member?.id && selectedMeetup.status !== "Cancelled" && selectedMeetup.status !== "Completed" && (
             <View style={{ marginTop: 10, marginBottom: 20 }}>
               <TouchableOpacity
-                style={[styles.primaryButton, { backgroundColor: colors.danger }]}
+                style={[styles.primaryButton, { backgroundColor: "#4E3629" }]}
                 onPress={handleCancelMeetup}
               >
                 <Text style={styles.primaryButtonText}>Cancel Meetup</Text>
@@ -1545,11 +1545,11 @@ export default function ReadMeetup() {
             </View>
           </Modal>
 
-          <Modal visible={showCouncilEditModal} transparent animationType="slide">
+          <Modal visible={showSquadEditModal} transparent animationType="slide">
             <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
               <View style={{ backgroundColor: colors.background, padding: 20, borderRadius: 12 }}>
                 <Text style={{ fontSize: 20, fontFamily: "Besley_700Bold", color: colors.text, marginBottom: 16 }}>
-                  Edit Tribal Council
+                  Edit Squad
                 </Text>
 
                 <ScrollView style={{ maxHeight: 300, marginBottom: 16 }}>
@@ -1558,12 +1558,12 @@ export default function ReadMeetup() {
                     if (!mem) return null;
                     const isCreator = mem.id === (selectedMeetup as any).creator_id;
                     if (isCreator) return null;
-                    const isSelected = councilMemberIds.includes(mem.id!);
+                    const isSelected = squadMemberIds.includes(mem.id!);
                     return (
                       <TouchableOpacity
                         key={mem.id}
                         onPress={() => {
-                          setCouncilMemberIds((prev) =>
+                          setSquadMemberIds((prev) =>
                             isSelected ? prev.filter((id) => id !== mem.id!) : [...prev, mem.id!]
                           );
                         }}
@@ -1581,13 +1581,13 @@ export default function ReadMeetup() {
                 <View style={{ flexDirection: 'row', gap: 12 }}>
                   <TouchableOpacity
                     style={[styles.primaryButton, { flex: 1, backgroundColor: colors.surface }]}
-                    onPress={() => setShowCouncilEditModal(false)}
+                    onPress={() => setShowSquadEditModal(false)}
                   >
                     <Text style={[styles.primaryButtonText, { color: colors.primary }]}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.primaryButton, { flex: 1 }]}
-                    onPress={handleUpdateCouncil}
+                    onPress={handleUpdateSquad}
                   >
                     <Text style={styles.primaryButtonText}>Save</Text>
                   </TouchableOpacity>
@@ -1597,17 +1597,17 @@ export default function ReadMeetup() {
           </Modal>
 
           <GroupChatModal
-            visible={showCouncilChatModal}
-            onClose={() => setShowCouncilChatModal(false)}
+            visible={showSquadChatModal}
+            onClose={() => setShowSquadChatModal(false)}
             members={[]}
             hideMemberSelection={true}
             hideNameInput={true}
-            title="Tribal Council Group Chat"
-            defaultName={`${title || "Meetup"} Tribal Council Group Chat`}
+            title="Squad Group Chat"
+            defaultName={`${title || "Meetup"} Squad Group Chat`}
             onCreate={(_name, url) => {
-              setCouncilChatName(`${title || "Meetup"} Tribal Council Group Chat`);
-              setCouncilChatUrl(url);
-              handleSaveCouncilChat(`${title || "Meetup"} Tribal Council Group Chat`, url);
+              setSquadChatName(`${title || "Meetup"} Squad Group Chat`);
+              setSquadChatUrl(url);
+              handleSaveSquadChat(`${title || "Meetup"} Squad Group Chat`, url);
             }}
           />
 

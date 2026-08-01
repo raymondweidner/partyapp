@@ -3,4 +3,6 @@ export interface Tribe {
   name?: string;
   description: string;
   icon_type?: string;
+  creator_id?: string;
+  leader_title?: string;
 }

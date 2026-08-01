@@ -48,7 +48,7 @@ export default function EditRegistry() {
   // Registry Details
   const [name, setName] = useState("");
   const [details, setDetails] = useState("");
-  const [isCouncil, setIsCouncil] = useState(false);
+  const [isSquad, setIsSquad] = useState(false);
 
   // Item List State
   const [activeTab, setActiveTab] = useState("Todo");
@@ -68,7 +68,7 @@ export default function EditRegistry() {
         setRegistry(reg);
         setName(reg.name || "");
         setDetails(reg.details || "");
-        setIsCouncil(reg.is_council || false);
+        setIsSquad(reg.is_squad || false);
         const itms = await getRegistryItems(token, paramId);
         setItems(itms);
       }
@@ -93,12 +93,12 @@ export default function EditRegistry() {
     try {
       const token = await user.getIdToken();
       if (registry && registry.id) {
-        const updated = await updateHelpRegistry(token, { ...registry, name, details, is_council: isCouncil, id: registry.id as string });
+        const updated = await updateHelpRegistry(token, { ...registry, name, details, is_squad: isSquad, id: registry.id as string });
         setRegistry(updated);
         router.back();
         showAlert("Success", "Registry updated successfully!");
       } else {
-        const newReg = await createHelpRegistry(token, { name, details, is_council: isCouncil, proposal_id: proposalId, meetup_event_id: meetupEventId }
+        const newReg = await createHelpRegistry(token, { name, details, is_squad: isSquad, proposal_id: proposalId, meetup_event_id: meetupEventId }
         );
         setRegistry(newReg);
         router.back();
@@ -178,16 +178,16 @@ export default function EditRegistry() {
           <TouchableOpacity
             style={[
               styles.checkbox,
-              isCouncil && styles.checkboxSelected
+              isSquad && styles.checkboxSelected
             ]}
-            onPress={() => setIsCouncil(!isCouncil)}
+            onPress={() => setIsSquad(!isSquad)}
           >
-            {isCouncil && (
+            {isSquad && (
               <Text style={{ color: colors.background, fontWeight: "bold", fontSize: 14 }}>✓</Text>
             )}
           </TouchableOpacity>
           <Text style={[globalStyles.label, { marginLeft: 10, marginTop: 0 }]}>
-            Tribal Council Eyes Only?
+            Squad Eyes Only?
           </Text>
         </View>
         <TouchableOpacity

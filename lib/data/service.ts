@@ -20,6 +20,7 @@ import { PollWinner } from "./PollWinner";
 import { HelpRegistry } from "./HelpRegistry";
 import { RegistryItem } from "./RegistryItem";
 import { TribalCouncil } from "./TribalCouncil";
+import { Squad } from "./Squad";
 import { EventCheckIn } from "./EventCheckIn";
 
 const getHeaders = (token: string) => ({
@@ -1193,10 +1194,10 @@ export const deleteRegistryItem = async (
 // TribalCouncil Services
 export const getTribalCouncils = async (
   authToken: string,
-  meetupId: string
+  tribeId: string
 ): Promise<TribalCouncil[]> => {
   const response = await fetch(
-    `${getResourceEndpoint()}/tribal_council?meetup_id=${encodeURIComponent(meetupId)}`,
+    `${getResourceEndpoint()}/tribal_council?tribe_id=${encodeURIComponent(tribeId)}`,
     {
       headers: { Authorization: `Bearer ${authToken}` },
     }
@@ -1231,4 +1232,47 @@ export const deleteTribalCouncil = async (
     headers: { Authorization: `Bearer ${authToken}` },
   });
   if (!response.ok) throw new Error("Failed to delete tribal council");
+};
+
+// Squad Services
+export const getSquads = async (
+  authToken: string,
+  meetupId: string
+): Promise<Squad[]> => {
+  const response = await fetch(
+    `${getResourceEndpoint()}/squad?meetup_id=${encodeURIComponent(meetupId)}`,
+    {
+      headers: { Authorization: `Bearer ${authToken}` },
+    }
+  );
+  if (!response.ok) {
+    if (response.status === 404) return [];
+    throw new Error("Failed to fetch squads");
+  }
+  const data = await response.json();
+  return Array.isArray(data) ? data : [data];
+};
+
+export const createSquad = async (
+  authToken: string,
+  squad: Omit<Squad, "id">
+): Promise<Squad> => {
+  const response = await fetch(`${getResourceEndpoint()}/squad`, {
+    method: "POST",
+    headers: getHeaders(authToken),
+    body: JSON.stringify(squad),
+  });
+  if (!response.ok) throw new Error("Failed to create squad");
+  return response.json();
+};
+
+export const deleteSquad = async (
+  authToken: string,
+  id: string
+): Promise<void> => {
+  const response = await fetch(`${getResourceEndpoint()}/squad/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${authToken}` },
+  });
+  if (!response.ok) throw new Error("Failed to delete squad");
 };

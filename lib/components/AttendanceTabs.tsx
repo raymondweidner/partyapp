@@ -40,7 +40,7 @@ export const AttendanceTabs: React.FC<AttendanceTabsProps> = ({ eventId }) => {
   const inAttendance = checkIns.filter(c => c.status === 'checked_in');
   const notInAttendance = checkIns.filter(c => c.status === 'checked_out'); // or no record
 
-  const isTribalCouncil = false; // TODO: Query TribalCouncil table for current member
+  const isSquad = false; // TODO: Query Squad table for current member
 
   const handleLocateUser = (memberId: string) => {
     setTargetUserId(memberId);
@@ -69,7 +69,7 @@ export const AttendanceTabs: React.FC<AttendanceTabsProps> = ({ eventId }) => {
         </TouchableOpacity>
       </View>
 
-      {isTribalCouncil && activeTab === 'in_attendance' && (
+      {isSquad && activeTab === 'in_attendance' && (
         <TouchableOpacity style={styles.locateAllButton} onPress={handleLocateAll}>
           <Text style={styles.locateAllText}>Map All Attendees</Text>
         </TouchableOpacity>

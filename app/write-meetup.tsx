@@ -31,8 +31,8 @@ import { PollVote } from "../lib/data/PollVote";
 import { Proposal } from "../lib/data/Proposal";
 import {
   createChat,
-  createTribalCouncil,
-  deleteTribalCouncil,
+  createSquad,
+  deleteSquad,
   getAvailabilities,
   getChats,
   getHelpRegistries,
@@ -44,13 +44,13 @@ import {
   getPolls,
   getProposals,
   getRegistryItems,
-  getTribalCouncils,
+  getSquads,
   getTribeMembers,
   getTribes,
   updateMeetup,
   updateProposal
 } from "../lib/data/service";
-import { TribalCouncil } from "../lib/data/TribalCouncil";
+import { Squad } from "../lib/data/Squad";
 import { Tribe } from "../lib/data/Tribe";
 import { TribeMember } from "../lib/data/TribeMember";
 
@@ -89,14 +89,14 @@ export default function WriteMeetup() {
 
   const [meetupEvents, setMeetupEvents] = useState<MeetupEvent[]>([]);
 
-  // Tribal Council State
-  const [tribalCouncils, setTribalCouncils] = useState<TribalCouncil[]>([]);
+  // Squad State
+  const [squads, setSquads] = useState<Squad[]>([]);
   const [chats, setChats] = useState<Chat[]>([]);
-  const [showCouncilEditModal, setShowCouncilEditModal] = useState(false);
-  const [showCouncilChatModal, setShowCouncilChatModal] = useState(false);
-  const [councilChatName, setCouncilChatName] = useState("");
-  const [councilChatUrl, setCouncilChatUrl] = useState("");
-  const [councilMemberIds, setCouncilMemberIds] = useState<string[]>([]);
+  const [showSquadEditModal, setShowSquadEditModal] = useState(false);
+  const [showSquadChatModal, setShowSquadChatModal] = useState(false);
+  const [squadChatName, setSquadChatName] = useState("");
+  const [squadChatUrl, setSquadChatUrl] = useState("");
+  const [squadMemberIds, setSquadMemberIds] = useState<string[]>([]);
 
   const [meetups, setMeetups] = useState<Meetup[]>([]);
   const [selectedMeetup, setSelectedMeetup] = useState<Meetup | null>(null);
@@ -158,21 +158,21 @@ export default function WriteMeetup() {
             const availPromises = proposalsData.map((p) =>
               getAvailabilities(token, undefined, p.id!),
             );
-            const [availResults, tribeMems, fetchedPolls, fetchedEvents, fetchedCouncils, fetchedChats] = await Promise.all([
+            const [availResults, tribeMems, fetchedPolls, fetchedEvents, fetchedSquads, fetchedChats] = await Promise.all([
               Promise.all(availPromises),
               getTribeMembers(token, found.tribe_id || paramTribeId!),
               getPolls(token, paramMeetupId),
               getMeetupEvents(token, paramMeetupId),
-              getTribalCouncils(token, paramMeetupId),
+              getSquads(token, paramMeetupId),
               getChats(token),
             ]);
             setAvailabilities(availResults.flat());
             setTribeMembers(tribeMems);
             setPolls(fetchedPolls);
             setMeetupEvents(fetchedEvents);
-            setTribalCouncils(fetchedCouncils);
+            setSquads(fetchedSquads);
             setChats(fetchedChats);
-            setCouncilMemberIds(fetchedCouncils.map(c => c.member_id));
+            setSquadMemberIds(fetchedSquads.map(c => c.member_id));
 
             const entryPromises = fetchedPolls.map(p => getPollEntries(token, p.id!));
             const votePromises = fetchedPolls.map(p => getPollVotes(token, p.id!));
@@ -248,17 +248,17 @@ export default function WriteMeetup() {
         const availResults = await Promise.all(availPromises);
         setAvailabilities(availResults.flat());
 
-        const [fetchedPolls, fetchedEvents, fetchedCouncils, fetchedChats] = await Promise.all([
+        const [fetchedPolls, fetchedEvents, fetchedSquads, fetchedChats] = await Promise.all([
           getPolls(token, meetup.id),
           getMeetupEvents(token, meetup.id),
-          getTribalCouncils(token, meetup.id),
+          getSquads(token, meetup.id),
           getChats(token),
         ]);
         setPolls(fetchedPolls);
         setMeetupEvents(fetchedEvents);
-        setTribalCouncils(fetchedCouncils);
+        setSquads(fetchedSquads);
         setChats(fetchedChats);
-        setCouncilMemberIds(fetchedCouncils.map(c => c.member_id));
+        setSquadMemberIds(fetchedSquads.map(c => c.member_id));
 
         const entryPromises = fetchedPolls.map(p => getPollEntries(token, p.id!));
         const votePromises = fetchedPolls.map(p => getPollVotes(token, p.id!));
@@ -480,28 +480,28 @@ export default function WriteMeetup() {
     ]);
   };
 
-  const handleUpdateCouncil = async () => {
+  const handleUpdateSquad = async () => {
     const meetupId = selectedMeetup?.id;
     if (!user || !meetupId) return;
     setUpdating(true);
     try {
       const token = await user.getIdToken();
-      await Promise.all(tribalCouncils.map(c => deleteTribalCouncil(token, c.id!)));
-      const newCouncils = await Promise.all(
-        councilMemberIds.map(cid =>
-          createTribalCouncil(token, { meetup_id: meetupId, member_id: cid })
+      await Promise.all(squads.map(c => deleteSquad(token, c.id!)));
+      const newSquads = await Promise.all(
+        squadMemberIds.map(cid =>
+          createSquad(token, { meetup_id: meetupId, member_id: cid })
         )
       );
-      setTribalCouncils(newCouncils);
-      setShowCouncilEditModal(false);
+      setSquads(newSquads);
+      setShowSquadEditModal(false);
     } catch (e: any) {
-      showAlert("Error", "Failed to update Tribal Council: " + e.message);
+      showAlert("Error", "Failed to update Squad: " + e.message);
     } finally {
       setUpdating(false);
     }
   };
 
-  const handleSaveCouncilChat = async (name: string, url: string) => {
+  const handleSaveSquadChat = async (name: string, url: string) => {
     if (!user || !selectedMeetup?.id! || !name || !url) return;
     setUpdating(true);
     try {
@@ -509,14 +509,14 @@ export default function WriteMeetup() {
       const chat = await createChat(token, {
         name: name,
         url: url,
-        is_council: true,
+        chat_type: 'squad',
         meetup_id: selectedMeetup?.id!,
         tribe_id: selectedMeetup?.tribe_id,
       });
       setChats(prev => [...prev, chat]);
-      setShowCouncilChatModal(false);
-      setCouncilChatName("");
-      setCouncilChatUrl("");
+      setShowSquadChatModal(false);
+      setSquadChatName("");
+      setSquadChatUrl("");
     } catch (e: any) {
       showAlert("Error", "Failed to create chat: " + e.message);
     } finally {
@@ -790,7 +790,7 @@ export default function WriteMeetup() {
 
 
 
-          {/* Tribal Council Section */}
+          {/* Squad Section */}
 
 
 
@@ -920,11 +920,11 @@ export default function WriteMeetup() {
             </View>
           </Modal>
 
-          <Modal visible={showCouncilEditModal} transparent animationType="slide">
+          <Modal visible={showSquadEditModal} transparent animationType="slide">
             <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }}>
               <View style={{ backgroundColor: colors.background, padding: 20, borderRadius: 12 }}>
                 <Text style={{ fontSize: 20, fontFamily: "Besley_700Bold", color: colors.text, marginBottom: 16 }}>
-                  Edit Tribal Council
+                  Edit Squad
                 </Text>
 
                 <ScrollView style={{ maxHeight: 300, marginBottom: 16 }}>
@@ -933,12 +933,12 @@ export default function WriteMeetup() {
                     if (!mem) return null;
                     const isCreator = mem.id === (selectedMeetup as any).creator_id;
                     if (isCreator) return null;
-                    const isSelected = councilMemberIds.includes(mem.id!);
+                    const isSelected = squadMemberIds.includes(mem.id!);
                     return (
                       <TouchableOpacity
                         key={mem.id}
                         onPress={() => {
-                          setCouncilMemberIds((prev) =>
+                          setSquadMemberIds((prev) =>
                             isSelected ? prev.filter((id) => id !== mem.id!) : [...prev, mem.id!]
                           );
                         }}
@@ -956,13 +956,13 @@ export default function WriteMeetup() {
                 <View style={{ flexDirection: 'row', gap: 12 }}>
                   <TouchableOpacity
                     style={[styles.primaryButton, { flex: 1, backgroundColor: colors.surface }]}
-                    onPress={() => setShowCouncilEditModal(false)}
+                    onPress={() => setShowSquadEditModal(false)}
                   >
                     <Text style={[styles.primaryButtonText, { color: colors.primary }]}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.primaryButton, { flex: 1 }]}
-                    onPress={handleUpdateCouncil}
+                    onPress={handleUpdateSquad}
                   >
                     <Text style={styles.primaryButtonText}>Save</Text>
                   </TouchableOpacity>
@@ -972,17 +972,17 @@ export default function WriteMeetup() {
           </Modal>
 
           <GroupChatModal
-            visible={showCouncilChatModal}
-            onClose={() => setShowCouncilChatModal(false)}
+            visible={showSquadChatModal}
+            onClose={() => setShowSquadChatModal(false)}
             members={[]}
             hideMemberSelection={true}
             hideNameInput={true}
-            title="Tribal Council Group Chat"
-            defaultName={`${title || "Meetup"} Tribal Council Group Chat`}
+            title="Squad Group Chat"
+            defaultName={`${title || "Meetup"} Squad Group Chat`}
             onCreate={(_name, url) => {
-              setCouncilChatName(`${title || "Meetup"} Tribal Council Group Chat`);
-              setCouncilChatUrl(url);
-              handleSaveCouncilChat(`${title || "Meetup"} Tribal Council Group Chat`, url);
+              setSquadChatName(`${title || "Meetup"} Squad Group Chat`);
+              setSquadChatUrl(url);
+              handleSaveSquadChat(`${title || "Meetup"} Squad Group Chat`, url);
             }}
           />
 

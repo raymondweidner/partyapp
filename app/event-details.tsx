@@ -26,9 +26,9 @@ import {
   getPolls,
   getPollVotes,
   getRegistryItems,
-  getTribalCouncils,
+  getSquads,
 } from "../lib/data/service";
-import { TribalCouncil } from "../lib/data/TribalCouncil";
+import { Squad } from "../lib/data/Squad";
 import { colors, globalStyles } from "../lib/theme";
 import { safeBack } from "../lib/util";
 import { FloralDivider } from "../lib/components/FloralDivider";
@@ -49,7 +49,7 @@ export default function EventDetails() {
   const [pollTab, setPollTab] = useState("complete");
   const [registries, setRegistries] = useState<(HelpRegistry & { incompleteCount: number })[]>([]);
   const [registryTab, setRegistryTab] = useState<"Please Help!" | "Complete">("Please Help!");
-  const [tribalCouncils, setTribalCouncils] = useState<TribalCouncil[]>([]);
+  const [squads, setSquads] = useState<Squad[]>([]);
   const { member } = useCurrentMember();
 
   useEffect(() => {
@@ -57,19 +57,19 @@ export default function EventDetails() {
     const fetchData = async () => {
       try {
         const token = await user.getIdToken();
-        const [eventsData, meetupsData, pollsData, membersData, councilsData] = await Promise.all([
+        const [eventsData, meetupsData, pollsData, membersData, squadsData] = await Promise.all([
           getMeetupEvents(token, meetupId),
           getMeetups(token),
           getPolls(token, meetupId),
           getMembers(token),
-          getTribalCouncils(token, meetupId as string),
+          getSquads(token, meetupId as string),
         ]);
 
         const event = eventsData.find(e => e.id === eventId);
         setMeetupEvent(event || null);
         setMeetup(meetupsData.find(m => m.id === meetupId) || null);
         setMembers(membersData);
-        setTribalCouncils(councilsData);
+        setSquads(squadsData);
 
         const eventPolls = pollsData.filter(p => p.meetup_event_id === eventId);
         setPolls(eventPolls);
@@ -177,7 +177,7 @@ export default function EventDetails() {
         </View>
 
         {(() => {
-          const isCouncilMember = tribalCouncils.some(c => c.member_id === member?.id) || meetup?.creator_id === member?.id;
+          const isSquadMember = squads.some(c => c.member_id === member?.id) || meetup?.creator_id === member?.id;
 
           return (
             <View style={globalStyles.sectionPanel}>
@@ -185,7 +185,7 @@ export default function EventDetails() {
                 <>
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                     <Text style={styles.sectionTitle}>Event Polls</Text>
-                    {isCouncilMember && (
+                    {isSquadMember && (
                       <TouchableOpacity
                         style={styles.addButton}
                         onPress={() => router.push({ pathname: "/write-poll", params: { meetupId: meetupId } } as any)}
@@ -250,14 +250,14 @@ export default function EventDetails() {
         })()}
 
         {(() => {
-          const isCouncilMember = tribalCouncils.some(c => c.member_id === member?.id) || meetup?.creator_id === member?.id;
-          const visibleRegistries = registries.filter(r => !r.is_council || isCouncilMember);
+          const isSquadMember = squads.some(c => c.member_id === member?.id) || meetup?.creator_id === member?.id;
+          const visibleRegistries = registries.filter(r => !r.is_squad || isSquadMember);
 
           return (
             <View style={globalStyles.sectionPanel}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <Text style={styles.sectionTitle}>Help Registries</Text>
-                {isCouncilMember && (
+                {isSquadMember && (
                   <TouchableOpacity
                     style={styles.addButton}
                     onPress={() => router.push({ pathname: "/write-registry", params: { meetupEventId: eventId } })}
