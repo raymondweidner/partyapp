@@ -32,7 +32,7 @@ import { Squad } from "../lib/data/Squad";
 import { colors, globalStyles } from "../lib/theme";
 import { safeBack } from "../lib/util";
 import { FloralDivider } from "../lib/components/FloralDivider";
-import { useCurrentMember } from "./_layout";
+import { useCurrentMember } from "../lib/RootContext";
 
 export default function EventDetails() {
   const router = useRouter();

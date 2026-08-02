@@ -22,7 +22,7 @@ import {
 import { auth } from "../lib/firebaseConfig";
 import { showAlert } from "../lib/util";
 import { colors, globalStyles } from "../lib/theme";
-import { useCurrentMember } from "./_layout";
+import { useCurrentMember } from "../lib/RootContext";
 import PhoneInput from "../lib/components/PhoneInput";
 
 export default function Login() {

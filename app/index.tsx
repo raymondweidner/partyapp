@@ -43,7 +43,7 @@ import {
 
 import { colors, globalStyles } from "../lib/theme";
 import { openEmailThread, showAlert } from "../lib/util";
-import { useCurrentMember } from "./_layout";
+import { useCurrentMember } from "../lib/RootContext";
 
 export default function Home() {
   const router = useRouter();

@@ -41,7 +41,8 @@ import { Tribe } from "../lib/data/Tribe";
 import { TribeMember } from "../lib/data/TribeMember";
 import { colors, globalStyles } from "../lib/theme";
 import { openEmailThread, safeBack, showAlert } from "../lib/util";
-import { CustomHeaderLeft, useCurrentMember } from "./_layout";
+import { CustomHeaderLeft } from "../lib/components/CustomHeaderLeft";
+import { useCurrentMember } from "../lib/RootContext";
 
 export default function ReadTribe() {
   const router = useRouter();

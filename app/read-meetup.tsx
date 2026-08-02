@@ -67,7 +67,8 @@ import { MemberModal } from "../lib/components/MemberModal";
 import { NumberStepper } from "../lib/components/NumberStepper";
 import { colors, globalStyles } from "../lib/theme";
 import { openEmailThread, openMapUrl, safeBack, showAlert } from "../lib/util";
-import { CustomHeaderLeft, useCurrentMember } from "./_layout";
+import { CustomHeaderLeft } from "../lib/components/CustomHeaderLeft";
+import { useCurrentMember } from "../lib/RootContext";
 
 export default function ReadMeetup() {
   const router = useRouter();

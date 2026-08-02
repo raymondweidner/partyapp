@@ -61,7 +61,8 @@ import { GroupChatModal } from "../lib/components/GroupChatModal";
 import { NumberStepper } from "../lib/components/NumberStepper";
 import { colors, globalStyles } from "../lib/theme";
 import { safeBack, showAlert } from "../lib/util";
-import { CustomHeaderLeft, useCurrentMember } from "./_layout";
+import { CustomHeaderLeft } from "../lib/components/CustomHeaderLeft";
+import { useCurrentMember } from "../lib/RootContext";
 
 export default function WriteMeetup() {
   const router = useRouter();

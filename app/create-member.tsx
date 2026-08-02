@@ -13,7 +13,8 @@ import { createMember, createMemberContact, createTribeMember } from "../lib/dat
 import { showAlert, safeBack, openWhatsApp } from "../lib/util";
 import { colors, globalStyles } from "../lib/theme";
 import PhoneInput from "../lib/components/PhoneInput";
-import { CustomHeaderLeft, useCurrentMember } from "./_layout";
+import { CustomHeaderLeft } from "../lib/components/CustomHeaderLeft";
+import { useCurrentMember } from "../lib/RootContext";
 
 export default function CreateMember() {
   const router = useRouter();

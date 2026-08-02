@@ -89,7 +89,13 @@
           "remindersPermission": "Allow PartyApp to add meetup reminders."
         }
       ],
-      "@sentry/react-native"
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "kith-and-kin-technologies",
+          "project": "tribal-vibe"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

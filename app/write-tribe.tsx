@@ -43,7 +43,8 @@ import {
 } from "../lib/data/service";
 import { colors, globalStyles } from "../lib/theme";
 import { openEmailThread, safeBack, showAlert } from "../lib/util";
-import { CustomHeaderLeft, useCurrentMember } from "./_layout";
+import { CustomHeaderLeft } from "../lib/components/CustomHeaderLeft";
+import { useCurrentMember } from "../lib/RootContext";
 
 export default function EditTribe() {
   const router = useRouter();

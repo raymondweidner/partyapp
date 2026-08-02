@@ -25,7 +25,8 @@ import {
 import { colors, globalStyles } from "../lib/theme";
 import { FloralDivider } from "../lib/components/FloralDivider";
 import { showAlert } from "../lib/util";
-import { CustomHeaderLeft, useCurrentMember } from "./_layout";
+import { CustomHeaderLeft } from "../lib/components/CustomHeaderLeft";
+import { useCurrentMember } from "../lib/RootContext";
 import { EditRegistryItemModal } from "../lib/components/EditRegistryItemModal";
 
 const TABS = ["Todo", "In Progress", "Blocked", "Completed", "Cancelled"];

@@ -19,7 +19,8 @@ import {
 } from "../lib/data/service";
 import { showAlert, safeBack } from "../lib/util";
 import { colors, globalStyles } from "../lib/theme";
-import { CustomHeaderLeft, useCurrentMember } from "./_layout";
+import { CustomHeaderLeft } from "../lib/components/CustomHeaderLeft";
+import { useCurrentMember } from "../lib/RootContext";
 
 export default function UpdateAvailability() {
   const router = useRouter();

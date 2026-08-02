@@ -37,7 +37,8 @@ import {
 import { Squad } from "../lib/data/Squad";
 import { colors, globalStyles } from "../lib/theme";
 import { openMapUrl, showAlert } from "../lib/util";
-import { CustomHeaderLeft, useCurrentMember } from "./_layout";
+import { CustomHeaderLeft } from "../lib/components/CustomHeaderLeft";
+import { useCurrentMember } from "../lib/RootContext";
 
 export default function ReadProposal() {
   const router = useRouter();

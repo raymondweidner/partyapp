@@ -32,7 +32,8 @@ import {
 } from "../lib/data/service";
 import { colors, globalStyles } from "../lib/theme";
 import { showAlert } from "../lib/util";
-import { CustomHeaderLeft, useCurrentMember } from "./_layout";
+import { CustomHeaderLeft } from "../lib/components/CustomHeaderLeft";
+import { useCurrentMember } from "../lib/RootContext";
 
 export default function WritePoll() {
   const { id, meetupId } = useLocalSearchParams();

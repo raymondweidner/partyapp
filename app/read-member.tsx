@@ -45,7 +45,8 @@ import { updatePassword } from "firebase/auth";
 import { auth } from "../lib/firebaseConfig";
 import { colors, globalStyles } from "../lib/theme";
 import { safeBack, showAlert } from "../lib/util";
-import { CustomHeaderLeft, useCurrentMember, useUserDevice } from "./_layout";
+import { CustomHeaderLeft } from "../lib/components/CustomHeaderLeft";
+import { useCurrentMember, useUserDevice } from "../lib/RootContext";
 
 export default function ReadMember() {
   const router = useRouter();
