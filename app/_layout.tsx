@@ -1,5 +1,3 @@
-import { CurrentMemberProvider, NotificationsProvider, UserDeviceProvider, useCurrentMember, useNotifications, useUserDevice } from "../lib/RootContext";
-import { CustomHeaderLeft } from "../lib/components/CustomHeaderLeft";
 import { Besley_600SemiBold, Besley_700Bold, Besley_800ExtraBold, useFonts as useBesleyFonts } from '@expo-google-fonts/besley';
 import { BricolageGrotesque_500Medium, useFonts as useBricolageFonts } from '@expo-google-fonts/bricolage-grotesque';
 import { Fraunces_200ExtraLight, useFonts as useFrauncesFonts } from '@expo-google-fonts/fraunces';
@@ -10,23 +8,20 @@ import { Quicksand_700Bold, useFonts as useQuicksandFonts } from '@expo-google-f
 import messaging from "@react-native-firebase/messaging";
 import * as Sentry from '@sentry/react-native';
 import { BlurView } from "expo-blur";
+import { Ionicons } from "@expo/vector-icons";
 import { Stack, useGlobalSearchParams, usePathname, useRouter, useSegments } from "expo-router";
 import { useShareIntent } from "expo-share-intent";
 import * as SplashScreen from 'expo-splash-screen';
 import { getApp } from "firebase/app";
 import {
   getMessaging,
-  getToken as getWebToken,
   isSupported,
-  onMessage,
+  onMessage
 } from "firebase/messaging";
 import React, {
-  createContext,
-  useCallback,
-  useContext,
   useEffect,
   useRef,
-  useState,
+  useState
 } from "react";
 import {
   ActivityIndicator, Animated, DeviceEventEmitter,
@@ -38,26 +33,20 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
+import { CurrentMemberProvider, NotificationsProvider, UserDeviceProvider, useCurrentMember, useNotifications } from "../lib/RootContext";
 import { AuthProvider, useAuth } from "../lib/auth";
+import { CustomHeaderLeft } from "../lib/components/CustomHeaderLeft";
 import { Meetup } from "../lib/data/Meetup";
-import { Member } from "../lib/data/Member";
 import type { Notification } from "../lib/data/Notification";
-import { UserDevice } from "../lib/data/UserDevice";
 import {
   createPoll,
-  createUserDevice,
   deleteNotification,
   getMeetups,
-  getMembers,
-  getNotifications,
   getPolls,
-  getUserDeviceByToken,
-  updateUserDevice,
-  uploadMedia,
+  uploadMedia
 } from "../lib/data/service";
-import { auth } from "../lib/firebaseConfig";
 import { colors, globalStyles } from "../lib/theme";
-import { handleNotificationPress, pendingRedirect, safeBack, setPendingRedirect, showAlert } from "../lib/util";
+import { handleNotificationPress, pendingRedirect, setPendingRedirect, showAlert } from "../lib/util";
 
 Sentry.init({
   dsn: 'https://09f4d814dc579175cc11b2f1dbf0c8ae@o4511842072133632.ingest.us.sentry.io/4511842076327936', // REQUIRED: Please replace with your actual Sentry DSN
@@ -184,7 +173,7 @@ function RootLayoutNav() {
   const pathname = usePathname();
   const params = useGlobalSearchParams();
   const { refreshNotifications } = useNotifications();
-
+  const { member } = useCurrentMember();
   useEffect(() => {
     if (params.deleteNotifId && user) {
       user.getIdToken().then(token => {
@@ -320,7 +309,33 @@ function RootLayoutNav() {
       <Stack
         screenOptions={{
           headerTitle: "",
-          headerRight: () => <Header />,
+          headerRight: () => (
+            <TouchableOpacity 
+              onPress={() => {
+                if (member?.id) {
+                  router.push(`/read-member?id=${member.id}&profile=true`);
+                } else {
+                  router.push("/read-member?profile=true");
+                }
+              }} 
+              style={{ marginRight: 15, alignItems: 'center' }}
+            >
+              {member?.profile_pic_data ? (
+                <Image source={{ uri: member.profile_pic_data }} style={{ width: 28, height: 28, borderRadius: 14 }} />
+              ) : (
+                <Ionicons name="person-circle-outline" size={30} color={colors.primary} />
+              )}
+              {member?.name && (
+                <Text 
+                  numberOfLines={1} 
+                  ellipsizeMode="tail"
+                  style={{ fontSize: 10, color: colors.primary, fontFamily: 'Nunito_600SemiBold', marginTop: 2, maxWidth: 70, textAlign: 'center' }}
+                >
+                  {member.name}
+                </Text>
+              )}
+            </TouchableOpacity>
+          ),
           headerLeft: ({ canGoBack }) =>
             canGoBack ? <CustomHeaderLeft /> : null,
         }}

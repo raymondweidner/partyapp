@@ -62,7 +62,7 @@ export default function ReadMember() {
   const [loading, setLoading] = useState(false);
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
 
-  const isProfile = profile === "true";
+  const isProfile = true;
 
   // Form state
   const [name, setName] = useState("");
