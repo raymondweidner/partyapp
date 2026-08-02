@@ -671,25 +671,23 @@ export default function Home() {
 
             {activeRootTab === "fam" && (
               <View style={globalStyles.sectionPanel}>
-                <View style={{ marginBottom: 16, borderBottomWidth: 1, borderBottomColor: "rgba(0, 0, 0, 0.08)", paddingBottom: 5 }}>
-                  <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <Text style={styles.sectionTitle}>🙌 Fam</Text>
-                    <View style={styles.headerButtonsRow}>
-                      <TouchableOpacity
-                        style={styles.actionButton}
-                        onPress={() => router.push("/find-friend" as any)}
-                      >
-                        <Text style={styles.actionButtonText}>🙌 Find</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.actionButton}
-                        onPress={() => router.push("/create-member" as any)}
-                      >
-                        <Text style={styles.actionButtonText}>
-                          🚪 Invite
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>🙌 Fam</Text>
+                  <View style={styles.headerButtonsRow}>
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => router.push("/find-friend" as any)}
+                    >
+                      <Text style={styles.actionButtonText}>🙌 Find</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.actionButton}
+                      onPress={() => router.push("/create-member" as any)}
+                    >
+                      <Text style={styles.actionButtonText}>
+                        🚪 Invite
+                      </Text>
+                    </TouchableOpacity>
                   </View>
                 </View>
 
@@ -967,11 +965,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 20,
     marginBottom: 16,
-    paddingBottom: 5,
+    paddingBottom: 13,
     borderBottomWidth: 1,
-    borderBottomColor: "colors.border",
+    borderBottomColor: "rgba(0, 0, 0, 0.08)",
   },
   sectionTitle: { fontSize: 24, fontFamily: "PaytoneOne_400Regular", color: colors.text, textAlign: "center" },
   addButton: {

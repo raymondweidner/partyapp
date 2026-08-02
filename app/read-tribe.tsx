@@ -1282,11 +1282,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 10,
     marginBottom: 16,
-    paddingBottom: 5,
+    paddingBottom: 13,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: "rgba(0, 0, 0, 0.08)",
   },
   sectionTitle: { fontSize: 22, fontWeight: "800", color: colors.text, textAlign: "center" },
   addButton: {

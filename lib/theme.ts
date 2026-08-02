@@ -56,10 +56,10 @@ export const globalStyles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
-    paddingBottom: 12,
+    marginBottom: 16,
+    paddingBottom: 13,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: "rgba(0, 0, 0, 0.08)",
   },
   sectionPanel: {
     backgroundColor: colors.surface,

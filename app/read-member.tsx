@@ -503,8 +503,9 @@ export default function ReadMember() {
           <View style={styles.formCard}>
             {activeTab === "profile" && (
               <>
-                <Text style={styles.sectionTitle}>👤 Profile Details</Text>
-                <FloralDivider color={colors.accent} />
+                <View style={globalStyles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>👤 Profile Details</Text>
+                </View>
                 
                 <View style={{ alignItems: 'center', marginBottom: 20 }}>
                   <TouchableOpacity onPress={pickImage} style={styles.profilePicContainer}>
@@ -617,8 +618,9 @@ export default function ReadMember() {
 
             {activeTab === "apps" && (
               <>
-                <Text style={styles.sectionTitle}>📱 Integrations</Text>
-                <FloralDivider color={colors.accent} />
+                <View style={globalStyles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>📱 Integrations</Text>
+                </View>
                 
                 <Text style={styles.label}>Preferred Map App</Text>
                 <View style={{ marginBottom: 20, zIndex: 10 }}>
@@ -678,8 +680,9 @@ export default function ReadMember() {
 
             {activeTab === "notifications" && isProfile && (
               <>
-                <Text style={styles.sectionTitle}>🔔 Alert Preferences</Text>
-                <FloralDivider color={colors.accent} />
+                <View style={globalStyles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>🔔 Alert Preferences</Text>
+                </View>
 
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 10 }}>
                   <Text style={{ fontWeight: 'bold', width: '40%' }}>Type</Text>
@@ -875,5 +878,5 @@ const styles = StyleSheet.create({
   bottomNavTextActive: {
     color: colors.accent || '#ff6b6b',
   },
-  sectionTitle: { fontSize: 24, fontFamily: "PaytoneOne_400Regular", color: colors.text, textAlign: "left", marginBottom: 15 },
+  sectionTitle: { fontSize: 24, fontFamily: "PaytoneOne_400Regular", color: colors.text, textAlign: "left" },
 });
