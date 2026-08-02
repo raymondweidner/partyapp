@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
-import firestore from '@react-native-firebase/firestore';
+// import firestore from '@react-native-firebase/firestore'; // Removed uninstalled dependency
 
 interface LiveMapModalProps {
   visible: boolean;
@@ -23,15 +23,16 @@ export const LiveMapModal: React.FC<LiveMapModalProps> = ({ visible, onClose, ev
     if (!visible || !eventId) return;
 
     // Subscribe to Firestore live locations for this event
+    /*
     const unsubscribe = firestore()
       .collection('events')
       .doc(eventId)
       .collection('locations')
       .onSnapshot(
-        (snapshot) => {
+        (snapshot: any) => {
           if (!snapshot) return;
           const newLocations: UserLocation[] = [];
-          snapshot.forEach((doc) => {
+          snapshot.forEach((doc: any) => {
             if (!targetUserId || doc.id === targetUserId) {
               const data = doc.data();
               if (data.latitude && data.longitude) {
@@ -45,12 +46,14 @@ export const LiveMapModal: React.FC<LiveMapModalProps> = ({ visible, onClose, ev
           });
           setLocations(newLocations);
         },
-        (error) => {
+        (error: any) => {
           console.error("Error fetching live locations:", error);
         }
       );
-
     return () => unsubscribe();
+    */
+    console.warn("LiveMapModal: firestore live locations are disabled because the package is not installed.");
+    return () => {};
   }, [visible, eventId, targetUserId]);
 
   if (!visible) return null;

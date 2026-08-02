@@ -4,7 +4,7 @@ import { useAuth } from '../auth';
 import { getEventCheckIns } from '../data/service';
 import { EventCheckIn } from '../data/EventCheckIn';
 import { LiveMapModal } from './LiveMapModal';
-import { useCurrentMember } from '../../app/_layout';
+import { useCurrentMember } from '../RootContext';
 
 interface AttendanceTabsProps {
   eventId: string;
