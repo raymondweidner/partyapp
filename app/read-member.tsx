@@ -24,7 +24,7 @@ import {
 } from "react-native";
 import { Member } from "../lib/data/Member";
 import { MemberAlertPreference } from "../lib/data/MemberAlertPreference";
-import { createMemberAlertPreference, getMeetups, getMemberAlertPreferences, getMembers, getProposals, updateMeetup, updateMember, updateMemberAlertPreference, updateProposal } from "../lib/data/service";
+import { createMemberAlertPreference, deleteUserDevice, getMeetups, getMemberAlertPreferences, getMembers, getProposals, updateMeetup, updateMember, updateMemberAlertPreference, updateProposal } from "../lib/data/service";
 
 const ALL_ALERT_TYPES = [
   'meetup_state_changed', 'proposal_selected', 'chat_invite', 'tribe_invite',
@@ -40,9 +40,12 @@ import { parsePhoneNumber } from "libphonenumber-js";
 import { useAuth } from "../lib/auth";
 import { DropdownSelect } from "../lib/components/DropdownSelect";
 import PhoneInput from "../lib/components/PhoneInput";
+import { FloralDivider } from "../lib/components/FloralDivider";
+import { updatePassword } from "firebase/auth";
+import { auth } from "../lib/firebaseConfig";
 import { colors, globalStyles } from "../lib/theme";
 import { safeBack, showAlert } from "../lib/util";
-import { CustomHeaderLeft, useCurrentMember } from "./_layout";
+import { CustomHeaderLeft, useCurrentMember, useUserDevice } from "./_layout";
 
 export default function ReadMember() {
   const router = useRouter();
@@ -52,6 +55,7 @@ export default function ReadMember() {
   }>();
   const { user, loading: authLoading } = useAuth();
   const { refreshMember } = useCurrentMember();
+  const { userDevice } = useUserDevice();
 
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(false);
@@ -68,7 +72,16 @@ export default function ReadMember() {
   const [updating, setUpdating] = useState(false);
 
   const [alertPreferences, setAlertPreferences] = useState<MemberAlertPreference[]>([]);
+  const [originalAlertPreferences, setOriginalAlertPreferences] = useState<MemberAlertPreference[]>([]);
   const [loadingAlerts, setLoadingAlerts] = useState(false);
+
+  const [activeTab, setActiveTab] = useState<"profile" | "apps" | "notifications">("profile");
+
+  // Change Password state
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPasswordLoader, setChangingPasswordLoader] = useState(false);
 
   const discovery = AuthSession.useAutoDiscovery('https://accounts.google.com');
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
@@ -168,6 +181,19 @@ export default function ReadMember() {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      const deviceId = userDevice?.id;
+      if (user && deviceId) {
+        const token = await user.getIdToken();
+        await deleteUserDevice(token, deviceId);
+      }
+      await auth.signOut();
+    } catch (e: any) {
+      showAlert("Error", e.message);
+    }
+  };
+
   const handleSelectMember = (member: Member) => {
     setSelectedMember(member);
     setName(member.name || "");
@@ -180,7 +206,9 @@ export default function ReadMember() {
       setLoadingAlerts(true);
       user.getIdToken().then(token => {
         getMemberAlertPreferences(token, member.id!).then(prefs => {
-          setAlertPreferences(prefs.sort((a, b) => a.alert_type.localeCompare(b.alert_type)));
+          const sorted = prefs.sort((a, b) => a.alert_type.localeCompare(b.alert_type));
+          setAlertPreferences(sorted);
+          setOriginalAlertPreferences(JSON.parse(JSON.stringify(sorted)));
           setLoadingAlerts(false);
         }).catch(err => {
           console.error("Failed to fetch alert preferences", err);
@@ -190,13 +218,12 @@ export default function ReadMember() {
     }
   };
 
-  const handleToggleAlert = async (pref: MemberAlertPreference, type: 'email' | 'push', value: boolean) => {
-    if (!user || !selectedMember?.id) return;
+  const handleToggleAlert = (pref: MemberAlertPreference, type: 'email' | 'push', value: boolean) => {
+    if (!selectedMember?.id) return;
     const updatedPref = { ...pref, member_id: selectedMember.id };
     if (type === 'email') updatedPref.email_enabled = value;
     if (type === 'push') updatedPref.push_enabled = value;
 
-    // Optimistic update
     setAlertPreferences(prev => {
       if (prev.some(p => p.alert_type === pref.alert_type)) {
         return prev.map(p => p.alert_type === pref.alert_type ? updatedPref : p);
@@ -204,27 +231,6 @@ export default function ReadMember() {
         return [...prev, updatedPref];
       }
     });
-
-    try {
-      const token = await user.getIdToken();
-      if (updatedPref.id) {
-        await updateMemberAlertPreference(token, updatedPref);
-      } else {
-        const { id, ...prefWithoutId } = updatedPref;
-        const newPref = await createMemberAlertPreference(token, prefWithoutId);
-        setAlertPreferences(prev => prev.map(p => p.alert_type === pref.alert_type ? newPref : p));
-      }
-    } catch (e: any) {
-      showAlert("Error", "Failed to update alert preference: " + e.message);
-      // Revert optimistic update
-      setAlertPreferences(prev => {
-        if (pref.id) {
-          return prev.map(p => p.alert_type === pref.alert_type ? pref : p);
-        } else {
-          return prev.filter(p => p.alert_type !== pref.alert_type);
-        }
-      });
-    }
   };
 
   const pickImage = async () => {
@@ -235,14 +241,17 @@ export default function ReadMember() {
       quality: 1,
     });
 
-    if (!result.canceled && result.assets[0]) {
-      const manipResult = await ImageManipulator.manipulateAsync(
-        result.assets[0].uri,
-        [{ resize: { width: 400, height: 400 } }],
-        { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true }
-      );
-      if (manipResult.base64) {
+    if (!result.canceled) {
+      try {
+        const manipResult = await ImageManipulator.manipulateAsync(
+          result.assets[0].uri,
+          [{ resize: { width: 300, height: 300 } }],
+          { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+        );
         setProfilePicData(`data:image/jpeg;base64,${manipResult.base64}`);
+      } catch (error) {
+        console.error("Error manipulating image:", error);
+        showAlert("Error", "Failed to process image.");
       }
     }
   };
@@ -307,7 +316,23 @@ export default function ReadMember() {
       // @ts-ignore
       await updateMember(token, { ...selectedMember, name, email, phone, map_type: mapType, profile_pic_data: profilePicData });
 
-      showAlert("Success", "Member updated successfully!", [
+      const hasNotificationChanges = JSON.stringify(alertPreferences) !== JSON.stringify(originalAlertPreferences);
+      if (isProfile && hasNotificationChanges) {
+        for (const pref of alertPreferences) {
+          const orig = originalAlertPreferences.find(p => p.alert_type === pref.alert_type);
+          if (JSON.stringify(pref) !== JSON.stringify(orig)) {
+            if (pref.id) {
+              await updateMemberAlertPreference(token, pref);
+            } else {
+              const { id, ...prefWithoutId } = pref;
+              await createMemberAlertPreference(token, prefWithoutId);
+            }
+          }
+        }
+        setOriginalAlertPreferences(JSON.parse(JSON.stringify(alertPreferences)));
+      }
+
+      showAlert("Success", "Profile updated successfully!", [
         {
           text: "OK",
           onPress: () => {
@@ -330,6 +355,69 @@ export default function ReadMember() {
       );
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const toggleChangePassword = () => {
+    if (!isChangingPassword) {
+      if (Platform.OS === 'web') {
+        const confirmed = window.confirm("You will be logged off after making this change. Are you sure you want to proceed?");
+        if (confirmed) {
+          setIsChangingPassword(true);
+        }
+      } else {
+        Alert.alert(
+          "Confirm Password Change",
+          "You will be logged off after making this change. Are you sure you want to proceed?",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Continue", style: "default", onPress: () => setIsChangingPassword(true) }
+          ]
+        );
+      }
+    } else {
+      setIsChangingPassword(false);
+      setNewPassword("");
+      setConfirmPassword("");
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || newPassword !== confirmPassword) {
+      showAlert("Error", "Passwords do not match or are empty.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      showAlert("Error", "Password must be at least 6 characters.");
+      return;
+    }
+    
+    if (!auth.currentUser) return;
+    setChangingPasswordLoader(true);
+    try {
+      if (Platform.OS === 'web') {
+        await updatePassword(auth.currentUser as any, newPassword);
+      } else {
+        await auth.currentUser.updatePassword(newPassword);
+      }
+      showAlert("Success", "Password updated successfully! You will now be logged out.", [
+        { text: "OK", onPress: () => handleSignOut() }
+      ]);
+    } catch (error: any) {
+      if (error.code === 'auth/requires-recent-login') {
+        if (Platform.OS === 'web') {
+          alert("Session Expired: For security reasons, please log in again to change your password.");
+          handleSignOut();
+        } else {
+          Alert.alert("Session Expired", "For security reasons, please log in again to change your password.", [
+            { text: "OK", onPress: () => handleSignOut() }
+          ]);
+        }
+      } else {
+        showAlert("Error", error.message || "Failed to update password.");
+      }
+    } finally {
+      setChangingPasswordLoader(false);
     }
   };
 
@@ -391,160 +479,291 @@ export default function ReadMember() {
   };
 
   if (selectedMember) {
-    const hasChanges =
+    const hasProfileChanges =
       name !== (selectedMember.name || "") ||
       email !== (selectedMember.email || "") ||
       phone !== ((selectedMember as any).phone || "") ||
-      mapType !== (selectedMember.map_type || "google") ||
       profilePicData !== (selectedMember.profile_pic_data || null);
+
+    const hasAppsChanges =
+      mapType !== (selectedMember.map_type || "google");
+
+    const hasNotificationChanges = JSON.stringify(alertPreferences) !== JSON.stringify(originalAlertPreferences);
+
     return (
       <View style={styles.container}>
         <Stack.Screen
           options={{
             title: isProfile ? "My Profile" : "Member Details",
             headerLeft: () => <CustomHeaderLeft onBack={handleBack} />,
-            headerRight: () => (isProfile || user) ? (
-              <TouchableOpacity onPress={() => router.push({ pathname: "/update-profile", params: { id: selectedMember.id, profile: isProfile ? "true" : "false" } })}>
-                <Text style={{ color: colors.primary, fontSize: 16, fontWeight: "bold" }}>Edit</Text>
-              </TouchableOpacity>
-            ) : null,
           }}
         />
 
         <ScrollView contentContainerStyle={{ paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
           <View style={styles.formCard}>
-            <View style={{ alignItems: 'center', marginBottom: 20 }}>
-              <View style={styles.profilePicContainer}>
-                {profilePicData ? (
-                  <Image source={{ uri: profilePicData }} style={styles.profilePic} />
-                ) : (
-                  <View style={styles.profilePicPlaceholder}>
-                    <Text style={styles.profilePicPlaceholderText}>Add Photo</Text>
-                  </View>
-                )}
-              </View>
-            </View>
-
-            <Text style={styles.label}>Name</Text>
-            <TextInput
-              style={[styles.input, styles.readOnlyInput]}
-              value={name}
-              editable={false}
-            />
-
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={[styles.input, isProfile && styles.readOnlyInput]}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="email@example.com"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              placeholderTextColor={colors.textMuted}
-              editable={!isProfile}
-            />
-
-            <Text style={styles.label}>Phone Number</Text>
-            <PhoneInput
-              value={phone}
-              onChangeText={setPhone}
-              defaultCountry="US"
-            />
-
-            <View style={styles.buttonContainer}>
-              {updating ? (
-                <ActivityIndicator size="large" color="#007bff" />
-              ) : (
-                <TouchableOpacity
-                  style={[styles.primaryButton, !hasChanges && { opacity: 0.5 }]}
-                  onPress={handleUpdate}
-                  disabled={!hasChanges}
-                >
-                  <Text style={styles.primaryButtonText}>Update Profile</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-
-          {isProfile && (
-            <View style={[styles.formCard, { marginTop: 20 }]}>
-              <Text style={[styles.label, { fontSize: 18, marginBottom: 15 }]}>Google Drive Integration</Text>
-              {!selectedMember.google_refresh_token ? (
-                <TouchableOpacity onPress={() => promptAsync()} disabled={!request}>
-                  <Text style={{ color: colors.primary, fontWeight: 'bold' }}>Setup Google Drive Photo Album</Text>
-                </TouchableOpacity>
-              ) : (
-                <View>
-                  <TouchableOpacity
-                    onPress={() => {
-                      const url = selectedMember.root_folder_id
-                        ? `https://drive.google.com/drive/folders/${selectedMember.root_folder_id}`
-                        : 'https://drive.google.com/';
-                      Linking.openURL(url);
-                    }}
-                    style={{ marginBottom: 15 }}
-                  >
-                    <Text style={{ color: colors.primary, fontWeight: 'bold' }}>Go To Google Drive Photo Album</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={handleDisconnectDrive}>
-                    <Text style={{ color: '#d9534f', fontWeight: 'bold' }}>Disconnect Google Drive Photo Album</Text>
+            {activeTab === "profile" && (
+              <>
+                <Text style={styles.sectionTitle}>👤 Profile Details</Text>
+                <FloralDivider color={colors.accent} />
+                
+                <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                  <TouchableOpacity onPress={pickImage} style={styles.profilePicContainer}>
+                    {profilePicData ? (
+                      <Image source={{ uri: profilePicData }} style={styles.profilePic} />
+                    ) : (
+                      <View style={styles.profilePicPlaceholder}>
+                        <Text style={styles.profilePicPlaceholderText}>Add Photo</Text>
+                      </View>
+                    )}
                   </TouchableOpacity>
                 </View>
-              )}
-            </View>
-          )}
+
+                <Text style={styles.label}>Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="Member Name"
+                  placeholderTextColor={colors.textMuted}
+                />
+
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  style={[styles.input, isProfile && styles.readOnlyInput]}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="email@example.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  placeholderTextColor={colors.textMuted}
+                  editable={!isProfile}
+                />
+
+                <Text style={styles.label}>Phone Number</Text>
+                <PhoneInput
+                  value={phone}
+                  onChangeText={setPhone}
+                  defaultCountry="US"
+                />
+
+                {isProfile && (
+                  <View style={{ marginBottom: 20, marginTop: 20 }}>
+                    <TouchableOpacity onPress={toggleChangePassword}>
+                      <Text style={{ color: colors.primary, fontWeight: 'bold' }}>
+                        {isChangingPassword ? "Cancel password change" : "Change Password"}
+                      </Text>
+                    </TouchableOpacity>
+
+                    {isChangingPassword && (
+                      <View style={{ marginTop: 15, padding: 15, backgroundColor: colors.glassBackground, borderRadius: 8, borderWidth: 1, borderColor: colors.border }}>
+                        <Text style={[styles.label, { marginTop: 0 }]}>New Password</Text>
+                        <TextInput
+                          style={[styles.input, { paddingVertical: 10, fontSize: 14 }]}
+                          value={newPassword}
+                          onChangeText={setNewPassword}
+                          secureTextEntry
+                          placeholder="New Password"
+                          placeholderTextColor={colors.textMuted}
+                        />
+                        <Text style={[styles.label, { marginTop: 10 }]}>Confirm New Password</Text>
+                        <TextInput
+                          style={[styles.input, { paddingVertical: 10, fontSize: 14 }]}
+                          value={confirmPassword}
+                          onChangeText={setConfirmPassword}
+                          secureTextEntry
+                          placeholder="Confirm New Password"
+                          placeholderTextColor={colors.textMuted}
+                        />
+                        
+                        <TouchableOpacity
+                          style={[styles.primaryButton, { marginTop: 10 }, (!newPassword || newPassword !== confirmPassword) && { opacity: 0.5 }]}
+                          onPress={handleChangePassword}
+                          disabled={changingPasswordLoader || !newPassword || newPassword !== confirmPassword}
+                        >
+                          {changingPasswordLoader ? (
+                            <ActivityIndicator color="#fff" />
+                          ) : (
+                            <Text style={styles.primaryButtonText}>Submit Password Change</Text>
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                <View style={styles.buttonContainer}>
+                  {updating ? (
+                    <ActivityIndicator size="large" color="#007bff" />
+                  ) : (
+                    <TouchableOpacity
+                      style={[styles.primaryButton, !hasProfileChanges && { opacity: 0.5 }]}
+                      onPress={handleUpdate}
+                      disabled={!hasProfileChanges}
+                    >
+                      <Text style={styles.primaryButtonText}>Update Profile</Text>
+                    </TouchableOpacity>
+                  )}
+                  {isProfile && (
+                    <TouchableOpacity
+                      style={[styles.secondaryButton, { marginTop: 12, width: '100%', backgroundColor: colors.primary, borderColor: colors.primary }]}
+                      onPress={handleSignOut}
+                    >
+                      <Text style={[styles.secondaryButtonText, { color: colors.background }]}>Sign Out</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </>
+            )}
+
+            {activeTab === "apps" && (
+              <>
+                <Text style={styles.sectionTitle}>📱 Integrations</Text>
+                <FloralDivider color={colors.accent} />
+                
+                <Text style={styles.label}>Preferred Map App</Text>
+                <View style={{ marginBottom: 20, zIndex: 10 }}>
+                  <DropdownSelect
+                    options={[
+                      { label: "Google Maps", value: "google" },
+                      { label: "Apple Maps", value: "apple" }
+                    ]}
+                    value={mapType}
+                    onSelect={setMapType}
+                  />
+                </View>
+
+                {isProfile && (
+                  <View style={{ marginBottom: 20 }}>
+                    <Text style={[styles.label, { marginBottom: 15 }]}>Google Drive Integration</Text>
+                    {!selectedMember.google_refresh_token ? (
+                      <TouchableOpacity onPress={() => promptAsync()} disabled={!request}>
+                        <Text style={{ color: colors.primary, fontWeight: 'bold' }}>Setup Google Drive Photo Album</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <View>
+                        <TouchableOpacity
+                          onPress={() => {
+                            const url = selectedMember.root_folder_id
+                              ? `https://drive.google.com/drive/folders/${selectedMember.root_folder_id}`
+                              : 'https://drive.google.com/';
+                            Linking.openURL(url);
+                          }}
+                          style={{ marginBottom: 15 }}
+                        >
+                          <Text style={{ color: colors.primary, fontWeight: 'bold' }}>Go To Google Drive Photo Album</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={handleDisconnectDrive}>
+                          <Text style={{ color: '#d9534f', fontWeight: 'bold' }}>Disconnect Google Drive Photo Album</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                <View style={styles.buttonContainer}>
+                  {updating ? (
+                    <ActivityIndicator size="large" color="#007bff" />
+                  ) : (
+                    <TouchableOpacity
+                      style={[styles.primaryButton, !hasAppsChanges && { opacity: 0.5 }]}
+                      onPress={handleUpdate}
+                      disabled={!hasAppsChanges}
+                    >
+                      <Text style={styles.primaryButtonText}>Update Profile</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </>
+            )}
+
+            {activeTab === "notifications" && isProfile && (
+              <>
+                <Text style={styles.sectionTitle}>🔔 Alert Preferences</Text>
+                <FloralDivider color={colors.accent} />
+
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 10 }}>
+                  <Text style={{ fontWeight: 'bold', width: '40%' }}>Type</Text>
+                  <Text style={{ fontWeight: 'bold', width: '30%', textAlign: 'center' }}>Email</Text>
+                  <Text style={{ fontWeight: 'bold', width: '30%', textAlign: 'center' }}>Push</Text>
+                </View>
+                {loadingAlerts ? (
+                  <ActivityIndicator size="large" />
+                ) : (
+                  ALL_ALERT_TYPES.map(type => {
+                    const pref = alertPreferences.find(p => p.alert_type === type) || {
+                      id: "",
+                      alert_type: type,
+                      email_enabled: false,
+                      push_enabled: false,
+                      member_id: selectedMember.id!
+                    };
+                    return (
+                      <View key={type} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 8, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: colors.glassBorder }}>
+                        <Text style={{ width: '40%', fontSize: 13 }}>
+                          {type.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                        </Text>
+                        <View style={{ width: '30%', alignItems: 'center' }}>
+                          <Switch
+                            value={pref.email_enabled}
+                            onValueChange={(val) => handleToggleAlert(pref, 'email', val)}
+                          />
+                        </View>
+                        <View style={{ width: '30%', alignItems: 'center' }}>
+                          <Switch
+                            value={pref.push_enabled}
+                            onValueChange={(val) => handleToggleAlert(pref, 'push', val)}
+                          />
+                        </View>
+                      </View>
+                    );
+                  })
+                )}
+
+                <View style={styles.buttonContainer}>
+                  {updating ? (
+                    <ActivityIndicator size="large" color="#007bff" />
+                  ) : (
+                    <TouchableOpacity
+                      style={[styles.primaryButton, !hasNotificationChanges && { opacity: 0.5 }]}
+                      onPress={handleUpdate}
+                      disabled={!hasNotificationChanges}
+                    >
+                      <Text style={styles.primaryButtonText}>Update Profile</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </>
+            )}
+          </View>
+        </ScrollView>
+
+        <View style={styles.bottomNav}>
+          <TouchableOpacity
+            style={styles.bottomNavItem}
+            onPress={() => setActiveTab("profile")}
+          >
+            <Text style={styles.bottomNavIcon}>👤</Text>
+            <Text style={[styles.bottomNavText, activeTab === "profile" && styles.bottomNavTextActive]}>Profile</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.bottomNavItem}
+            onPress={() => setActiveTab("apps")}
+          >
+            <Text style={styles.bottomNavIcon}>📱</Text>
+            <Text style={[styles.bottomNavText, activeTab === "apps" && styles.bottomNavTextActive]}>Apps</Text>
+          </TouchableOpacity>
 
           {isProfile && (
-            <View style={[styles.formCard, { marginTop: 20 }]}>
-              <Text style={[styles.label, { fontSize: 18, marginBottom: 15 }]}>Alert Preferences</Text>
-
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: 10 }}>
-                <Text style={{ flex: 2, fontWeight: 'bold', color: colors.text }}>Scenario</Text>
-                <Text style={{ flex: 1, textAlign: 'center', fontWeight: 'bold', color: colors.text }}>Email</Text>
-                <Text style={{ flex: 1, textAlign: 'center', fontWeight: 'bold', color: colors.text }}>Push</Text>
-              </View>
-
-              {loadingAlerts ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                ALL_ALERT_TYPES.map(alertType => {
-                  const existingPref = alertPreferences.find(p => p.alert_type === alertType);
-                  const prefToUse = existingPref || {
-                    id: "",
-                    member_id: selectedMember.id || "",
-                    alert_type: alertType,
-                    email_enabled: false,
-                    push_enabled: false
-                  };
-
-                  return (
-                    <View key={alertType} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border }}>
-                      <Text style={{ flex: 2, fontSize: 14, color: colors.text }}>
-                        {alertType.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-                      </Text>
-                      <View style={{ flex: 1, alignItems: 'center' }}>
-                        <Switch
-                          value={prefToUse.email_enabled}
-                          onValueChange={(val) => handleToggleAlert(prefToUse, 'email', val)}
-                          trackColor={{ false: "#767577", true: colors.primary }}
-                          thumbColor={prefToUse.email_enabled ? colors.accent : "#f4f3f4"}
-                        />
-                      </View>
-                      <View style={{ flex: 1, alignItems: 'center' }}>
-                        <Switch
-                          value={prefToUse.push_enabled}
-                          onValueChange={(val) => handleToggleAlert(prefToUse, 'push', val)}
-                          trackColor={{ false: "#767577", true: colors.primary }}
-                          thumbColor={prefToUse.push_enabled ? colors.accent : "#f4f3f4"}
-                        />
-                      </View>
-                    </View>
-                  );
-                })
-              )}
-            </View>
+            <TouchableOpacity
+              style={styles.bottomNavItem}
+              onPress={() => setActiveTab("notifications")}
+            >
+              <Text style={styles.bottomNavIcon}>🔔</Text>
+              <Text style={[styles.bottomNavText, activeTab === "notifications" && styles.bottomNavTextActive]}>Alerts</Text>
+            </TouchableOpacity>
           )}
-        </ScrollView>
+        </View>
       </View>
     );
   }
@@ -593,6 +812,8 @@ const styles = StyleSheet.create({
   buttonContainer: { marginTop: 8 },
   primaryButton: globalStyles.primaryButton,
   primaryButtonText: globalStyles.primaryButtonText,
+  secondaryButton: globalStyles.secondaryButton,
+  secondaryButtonText: globalStyles.secondaryButtonText,
   emptyText: {
     textAlign: "center",
     marginTop: 20,
@@ -623,4 +844,36 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: 'bold',
   },
+  bottomNav: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+    paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 12,
+    justifyContent: 'space-around',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  bottomNavItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 65,
+  },
+  bottomNavIcon: {
+    fontSize: 24,
+    marginBottom: 4,
+  },
+  bottomNavText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#aaa',
+  },
+  bottomNavTextActive: {
+    color: colors.accent || '#ff6b6b',
+  },
+  sectionTitle: { fontSize: 24, fontFamily: "PaytoneOne_400Regular", color: colors.text, textAlign: "left", marginBottom: 15 },
 });

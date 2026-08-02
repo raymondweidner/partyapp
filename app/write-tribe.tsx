@@ -245,11 +245,7 @@ export default function EditTribe() {
   }, [user, authLoading, router]);
 
   const handleBack = () => {
-    if (paramTribeId) {
-      safeBack(router, "/");
-    } else {
-      setSelectedTribe(null);
-    }
+    safeBack(router, "/");
   };
 
   const toggleMemberSelection = (memberId: string) => {
@@ -468,13 +464,7 @@ export default function EditTribe() {
                       elevation: 0,
                     },
                   ]}
-                  onPress={() => {
-                    if (paramTribeId) {
-                      safeBack(router, "/");
-                    } else {
-                      setSelectedTribe(null);
-                    }
-                  }}
+                  onPress={handleBack}
                 >
                   <Text style={[styles.primaryButtonText, { color: colors.textSecondary }]}>
                     Cancel

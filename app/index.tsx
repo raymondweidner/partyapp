@@ -29,7 +29,7 @@ import {
   createChatMember,
   createMemberContact,
   deleteMemberContact,
-  deleteUserDevice,
+
   getChatMembers,
   getChats,
   getMeetups,
@@ -40,15 +40,15 @@ import {
   GroupedMemberContacts,
   updateMemberContact,
 } from "../lib/data/service";
-import { auth } from "../lib/firebaseConfig";
+
 import { colors, globalStyles } from "../lib/theme";
 import { openEmailThread, showAlert } from "../lib/util";
-import { useCurrentMember, useUserDevice } from "./_layout";
+import { useCurrentMember } from "./_layout";
 
 export default function Home() {
   const router = useRouter();
   const { user } = useAuth();
-  const { userDevice } = useUserDevice();
+
   const { member: currentMember } = useCurrentMember();
 
 
@@ -279,19 +279,6 @@ export default function Home() {
     return () => sub.remove();
   }, [fetchData]);
 
-  const handleSignOut = async () => {
-    try {
-      const deviceId = userDevice?.id;
-      if (user && deviceId) {
-        const token = await user.getIdToken();
-        await deleteUserDevice(token, deviceId);
-      }
-      await auth.signOut();
-    } catch (e: any) {
-      showAlert("Error", e.message);
-    }
-  };
-
   const renderSectionHeader = (
     title: string,
     action: string | (() => void),
@@ -480,9 +467,6 @@ export default function Home() {
             Vibe
           </Text>
         </Text>
-        <TouchableOpacity style={styles.headerSignOut} onPress={handleSignOut}>
-          <Text style={styles.headerSignOutText}>Sign Out</Text>
-        </TouchableOpacity>
       </View>
       <FloralDivider color={colors.accent} />
 
