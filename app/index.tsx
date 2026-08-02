@@ -69,7 +69,7 @@ export default function Home() {
   const [memberContacts, setMemberContacts] =
     useState<GroupedMemberContacts | null>(null);
 
-  const [activeRootTab, setActiveRootTab] = useState<"tribes" | "meetups" | "fam" | "chats">("tribes");
+  const [activeRootTab, setActiveRootTab] = useState<"tribes" | "meetups" | "fam" | "chats">("meetups");
 
   const [isGroupChatModalVisible, setIsGroupChatModalVisible] = useState(false);
   const [creatingChat, setCreatingChat] = useState(false);
@@ -886,18 +886,18 @@ export default function Home() {
       <View style={styles.bottomNav}>
         <TouchableOpacity
           style={styles.bottomNavItem}
-          onPress={() => setActiveRootTab("tribes")}
-        >
-          <Text style={styles.bottomNavIcon}>🏕️</Text>
-          <Text style={[styles.bottomNavText, activeRootTab === "tribes" && styles.bottomNavTextActive]}>Tribes</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.bottomNavItem}
           onPress={() => setActiveRootTab("meetups")}
         >
           <Text style={styles.bottomNavIcon}>🎉</Text>
           <Text style={[styles.bottomNavText, activeRootTab === "meetups" && styles.bottomNavTextActive]}>Meetups</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.bottomNavItem}
+          onPress={() => setActiveRootTab("tribes")}
+        >
+          <Text style={styles.bottomNavIcon}>🏕️</Text>
+          <Text style={[styles.bottomNavText, activeRootTab === "tribes" && styles.bottomNavTextActive]}>Tribes</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
