@@ -858,7 +858,7 @@ export default function ReadMeetup() {
               {(() => {
                 const isFinalized = ["Upcoming", "Ongoing"].includes(selectedMeetup.status || "");
                 const currentEvent = isFinalized && meetupEvents.length > 0
-                  ? [...meetupEvents].sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime())[0]
+                  ? [...meetupEvents].sort((a, b) => (new Date(b.start_at).getTime() || 0) - (new Date(a.start_at).getTime() || 0))[0]
                   : null;
                 const acceptedProposal = proposals.find(p => p.status?.toLowerCase() === "accepted");
 
@@ -973,7 +973,7 @@ export default function ReadMeetup() {
               {(() => {
                 const isFinalized = ["Upcoming", "Ongoing", "Scheduled", "Completed"].includes(selectedMeetup.status || "");
                 const currentEvent = isFinalized && meetupEvents.length > 0
-                  ? [...meetupEvents].sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime())[0]
+                  ? [...meetupEvents].sort((a, b) => (new Date(b.start_at).getTime() || 0) - (new Date(a.start_at).getTime() || 0))[0]
                   : null;
                 const acceptedProposal = proposals.find(p => p.status?.toLowerCase() === "accepted");
                 const folderId = currentEvent?.root_folder_id || acceptedProposal?.root_folder_id || selectedMeetup.root_folder_id;
@@ -1098,7 +1098,7 @@ export default function ReadMeetup() {
             const isSquadMember = squads.some(c => c.member_id === member?.id) || selectedMeetup?.creator_id === member?.id;
             const isFinalized = ["upcoming", "scheduled", "ongoing"].includes((selectedMeetup?.status || "").toLowerCase());
             const currentEvent = isFinalized && meetupEvents.length > 0
-              ? [...meetupEvents].sort((a, b) => new Date(b.start_at).getTime() - new Date(a.start_at).getTime())[0]
+              ? [...meetupEvents].sort((a, b) => (new Date(b.start_at).getTime() || 0) - (new Date(a.start_at).getTime() || 0))[0]
               : null;
             const acceptedProposal = proposals.find(p => p.status === "Accepted");
 
