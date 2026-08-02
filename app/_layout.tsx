@@ -6,6 +6,7 @@ import { Nunito_400Regular, Nunito_600SemiBold, Nunito_700Bold, Nunito_800ExtraB
 import { PaytoneOne_400Regular, useFonts as usePaytoneFonts } from '@expo-google-fonts/paytone-one';
 import { Quicksand_700Bold, useFonts as useQuicksandFonts } from '@expo-google-fonts/quicksand';
 import messaging from "@react-native-firebase/messaging";
+import * as Sentry from '@sentry/react-native';
 import { BlurView } from "expo-blur";
 import { Stack, useGlobalSearchParams, usePathname, useRouter, useSegments } from "expo-router";
 import { useShareIntent } from "expo-share-intent";
@@ -55,6 +56,14 @@ import {
 import { auth } from "../lib/firebaseConfig";
 import { colors, globalStyles } from "../lib/theme";
 import { handleNotificationPress, pendingRedirect, safeBack, setPendingRedirect, showAlert } from "../lib/util";
+
+Sentry.init({
+  dsn: 'https://09f4d814dc579175cc11b2f1dbf0c8ae@o4511842072133632.ingest.us.sentry.io/4511842076327936', // REQUIRED: Please replace with your actual Sentry DSN
+  debug: true, // Prints Sentry debug logs to the terminal
+  tracesSampleRate: 1.0, // Captures 100% of transactions for performance monitoring
+  enableNative: true, // Ensures native iOS/Android crashes are caught
+  attachScreenshot: true, // Attach a screenshot of the app at the time of a crash
+});
 
 SplashScreen.preventAutoHideAsync();
 
@@ -740,7 +749,7 @@ function NotificationsModal({ visible, onClose }: { visible: boolean; onClose: (
   );
 }
 
-export default function RootLayout() {
+function RootLayout() {
   return (
     <AuthProvider>
       <UserDeviceProvider>
@@ -754,6 +763,8 @@ export default function RootLayout() {
     </AuthProvider>
   );
 }
+
+export default Sentry.wrap(RootLayout);
 
 function ShareIntentHandler() {
   const { hasShareIntent, shareIntent, resetShareIntent, error } = useShareIntent();

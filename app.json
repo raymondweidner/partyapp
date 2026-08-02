@@ -88,7 +88,8 @@
           "calendarPermission": "Allow PartyApp to add meetups to your calendar.",
           "remindersPermission": "Allow PartyApp to add meetup reminders."
         }
-      ]
+      ],
+      "@sentry/react-native"
     ],
     "experiments": {
       "typedRoutes": true,
