@@ -4,8 +4,6 @@ import {
   useLocalSearchParams,
   useRouter,
 } from "expo-router";
-import { Platform } from "react-native";
-const Calendar = Platform.OS !== 'web' ? require('expo-calendar') : null;
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -13,8 +11,7 @@ import {
   FlatList,
   Image,
   Linking,
-  Modal,
-  ScrollView,
+  Modal, Platform, ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -60,6 +57,7 @@ import {
 import { Squad } from "../lib/data/Squad";
 import { Tribe } from "../lib/data/Tribe";
 import { TribeMember } from "../lib/data/TribeMember";
+const Calendar = Platform.OS !== 'web' ? require('expo-calendar') : null;
 
 import { useAuth } from "../lib/auth";
 import { DropdownSelect } from "../lib/components/DropdownSelect";
@@ -472,7 +470,7 @@ export default function ReadMeetup() {
         const formatDateICS = (date: Date) => {
           return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
         };
-        
+
         const icsData = [
           "BEGIN:VCALENDAR",
           "VERSION:2.0",
@@ -505,8 +503,8 @@ export default function ReadMeetup() {
       const { status } = await Calendar.requestCalendarPermissionsAsync();
       if (status === 'granted') {
         const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
-        const defaultCalendar = calendars.find(c => c.isPrimary) || calendars[0];
-        
+        const defaultCalendar = calendars.find((c: { isPrimary: any; }) => c.isPrimary) || calendars[0];
+
         if (defaultCalendar) {
           await Calendar.createEventAsync(defaultCalendar.id, {
             title,
