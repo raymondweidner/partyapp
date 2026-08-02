@@ -52,7 +52,7 @@ import {
   updateUserDevice,
   uploadMedia,
 } from "../lib/data/service";
-import "../lib/firebaseConfig";
+import { auth } from "../lib/firebaseConfig";
 import { colors, globalStyles } from "../lib/theme";
 import { handleNotificationPress, pendingRedirect, safeBack, setPendingRedirect, showAlert } from "../lib/util";
 
@@ -229,6 +229,7 @@ function CurrentMemberProvider({ children }: { children: React.ReactNode }) {
       setMember(null);
       return;
     }
+    setLoading(true);
     try {
       const token = await user.getIdToken();
       const members = await getMembers(token);
@@ -238,6 +239,7 @@ function CurrentMemberProvider({ children }: { children: React.ReactNode }) {
         setMember(foundMember);
       } else {
         setMember(null);
+        await auth.signOut();
       }
     } catch (error) {
       console.error("Failed to fetch member", error);

@@ -4,6 +4,8 @@ import {
   useLocalSearchParams,
   useRouter,
 } from "expo-router";
+import { Platform } from "react-native";
+const Calendar = Platform.OS !== 'web' ? require('expo-calendar') : null;
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -464,6 +466,65 @@ export default function ReadMeetup() {
       }
     ]);
   };
+  const handleAddToCalendar = async (title: string, startDate: Date, endDate: Date, location?: string) => {
+    if (Platform.OS === 'web') {
+      try {
+        const formatDateICS = (date: Date) => {
+          return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+        };
+        
+        const icsData = [
+          "BEGIN:VCALENDAR",
+          "VERSION:2.0",
+          "PRODID:-//PartyApp//EN",
+          "BEGIN:VEVENT",
+          `DTSTART:${formatDateICS(startDate)}`,
+          `DTEND:${formatDateICS(endDate)}`,
+          `SUMMARY:${title}`,
+          ...(location ? [`LOCATION:${location}`] : []),
+          "END:VEVENT",
+          "END:VCALENDAR"
+        ].join('\r\n');
+
+        const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'event'}.ics`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        showAlert("Success", "Calendar file downloaded!");
+      } catch (e: any) {
+        showAlert("Error", "Failed to generate calendar file: " + e.message);
+      }
+      return;
+    }
+    try {
+      const { status } = await Calendar.requestCalendarPermissionsAsync();
+      if (status === 'granted') {
+        const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+        const defaultCalendar = calendars.find(c => c.isPrimary) || calendars[0];
+        
+        if (defaultCalendar) {
+          await Calendar.createEventAsync(defaultCalendar.id, {
+            title,
+            startDate,
+            endDate,
+            location: location || "",
+          });
+          showAlert("Success", "Event added to your calendar!");
+        } else {
+          showAlert("Error", "No calendar found on device.");
+        }
+      } else {
+        showAlert("Permission Denied", "Calendar permission is required to add events.");
+      }
+    } catch (error: any) {
+      showAlert("Error", "Failed to add to calendar: " + error.message);
+    }
+  };
 
   const handleAcceptProposal = async (proposal: any) => {
     if (!selectedMeetup || !user) return;
@@ -846,6 +907,20 @@ export default function ReadMeetup() {
                         <Text style={globalStyles.attributeValue}>
                           {host?.name || "Unknown"}
                         </Text>
+                      </View>
+
+                      <View style={{ marginBottom: 16 }}>
+                        <TouchableOpacity
+                          style={styles.secondaryButton}
+                          onPress={() => handleAddToCalendar(
+                            selectedMeetup.title || "Meetup",
+                            pStartDate,
+                            pEndDate,
+                            location
+                          )}
+                        >
+                          <Text style={styles.secondaryButtonText}>📅 Add to Calendar</Text>
+                        </TouchableOpacity>
                       </View>
                     </>
                   );
@@ -1825,6 +1900,16 @@ const styles = StyleSheet.create({
   },
   primaryButton: globalStyles.primaryButton,
   primaryButtonText: globalStyles.primaryButtonText,
+  secondaryButton: {
+    ...globalStyles.primaryButton as any,
+    backgroundColor: "transparent",
+    borderWidth: 2,
+    borderColor: colors.primary,
+  },
+  secondaryButtonText: {
+    ...globalStyles.primaryButtonText as any,
+    color: colors.primary,
+  },
   tabContainer: {
     flexDirection: "row",
     marginBottom: 16,
