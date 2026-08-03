@@ -13,7 +13,11 @@
       "bundleIdentifier": "com.rayweidner.partyapp",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "LSApplicationQueriesSchemes": [
+          "comgooglemaps",
+          "maps"
+        ]
       }
     },
     "android": {

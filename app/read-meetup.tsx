@@ -57,7 +57,14 @@ import {
 import { Squad } from "../lib/data/Squad";
 import { Tribe } from "../lib/data/Tribe";
 import { TribeMember } from "../lib/data/TribeMember";
-const Calendar = Platform.OS !== 'web' ? require('expo-calendar') : null;
+let Calendar: any = null;
+if (Platform.OS !== 'web') {
+  try {
+    Calendar = require('expo-calendar');
+  } catch (e) {
+    console.warn("expo-calendar native module is not available", e);
+  }
+}
 
 import { useAuth } from "../lib/auth";
 import { DropdownSelect } from "../lib/components/DropdownSelect";
@@ -501,6 +508,10 @@ export default function ReadMeetup() {
       return;
     }
     try {
+      if (!Calendar) {
+        showAlert("Error", "Calendar integration is currently unavailable on this device.");
+        return;
+      }
       const { status } = await Calendar.requestCalendarPermissionsAsync();
       if (status === 'granted') {
         const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
