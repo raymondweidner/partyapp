@@ -213,7 +213,13 @@ export const createMember = async (
     headers: getHeaders(authToken),
     body: JSON.stringify(member),
   });
-  if (!response.ok) throw new Error("Failed to create member");
+  if (!response.ok) {
+    if (response.status === 409) {
+      throw new Error("This person is already in the system! Use 'Find My Fam' to connect with them instead.");
+    }
+    const text = await response.text().catch(() => "");
+    throw new Error(text ? `Failed to create member: ${text}` : "Failed to create member");
+  }
   return response.json();
 };
 
