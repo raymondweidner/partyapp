@@ -854,6 +854,15 @@ export default function Home() {
             memberContacts.invitedSources.some(c => c.subject_id === selectedMemberForModal?.id) ||
             memberContacts.invitedSubjects.some(c => c.source_id === selectedMemberForModal?.id)
           )}
+          hasIncomingFamRequest={!!memberContacts && (
+            memberContacts.invitedSubjects.some(c => c.source_id === selectedMemberForModal?.id)
+          )}
+          onAcceptFamRequest={() => {
+            if (selectedMemberForModal) {
+              handleAcceptInvite(selectedMemberForModal);
+              setIsMemberModalVisible(false);
+            }
+          }}
           onSendEmail={() => {
             if (selectedMemberForModal?.email) {
               openEmailThread([selectedMemberForModal.email], "", currentMember?.email);

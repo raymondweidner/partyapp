@@ -11,9 +11,11 @@ export function MemberModal({
   isMe,
   isFam,
   isPendingFam,
+  hasIncomingFamRequest = false,
   onSendEmail,
   onSendDM,
   onSendFamRequest,
+  onAcceptFamRequest,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -21,9 +23,11 @@ export function MemberModal({
   isMe: boolean;
   isFam: boolean;
   isPendingFam: boolean;
+  hasIncomingFamRequest?: boolean;
   onSendEmail: () => void;
   onSendDM: () => void;
   onSendFamRequest: () => void;
+  onAcceptFamRequest?: () => void;
 }) {
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -95,15 +99,26 @@ export function MemberModal({
                 </TouchableOpacity>
               )}
               {!isFam && (
-                <TouchableOpacity 
-                  style={[styles.actionButton, isPendingFam && { opacity: 0.5 }]} 
-                  onPress={onSendFamRequest}
-                  disabled={isPendingFam}
-                >
-                  <Text style={styles.actionButtonText}>
-                    {isPendingFam ? "⏳ Fam Request Pending" : "🙌 Send Fam Request"}
-                  </Text>
-                </TouchableOpacity>
+                <>
+                  {hasIncomingFamRequest ? (
+                    <TouchableOpacity 
+                      style={styles.actionButton} 
+                      onPress={onAcceptFamRequest}
+                    >
+                      <Text style={styles.actionButtonText}>✅ Accept Invitation</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity 
+                      style={[styles.actionButton, isPendingFam && { opacity: 0.5 }]} 
+                      onPress={onSendFamRequest}
+                      disabled={isPendingFam}
+                    >
+                      <Text style={styles.actionButtonText}>
+                        {isPendingFam ? "⏳ Fam Request Pending" : "🙌 Send Fam Request"}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
               )}
             </View>
           )}
