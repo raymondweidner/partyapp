@@ -1,5 +1,5 @@
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   DeviceEventEmitter,
@@ -16,6 +16,7 @@ import { useAuth } from "../lib/auth";
 import { EmailModal } from "../lib/components/EmailModal";
 import { FloralDivider } from "../lib/components/FloralDivider";
 import { GroupChatModal } from "../lib/components/GroupChatModal";
+import { HintBox } from "../lib/components/HintBox";
 import { MemberModal } from "../lib/components/MemberModal";
 import { Meetup } from "../lib/data/Meetup";
 import { Member } from "../lib/data/Member";
@@ -90,6 +91,7 @@ export default function ReadTribe() {
   const [selectedMemberForModal, setSelectedMemberForModal] = useState<Member | null>(null);
 
   const [activeTab, setActiveTab] = useState<"meetups" | "council" | "members">("meetups");
+  const addMeetupRef = useRef<any>(null);
 
   const openGroupChatModal = () => {
     setIsGroupChatModalVisible(true);
@@ -641,6 +643,8 @@ export default function ReadTribe() {
   if (selectedTribe) {
     const isCreator = member?.id === selectedTribe?.creator_id;
     const isCouncilOrCreator = isCreator || tribalCouncils.some(c => c.member_id === member?.id);
+    const hasFam = !!memberContacts && (memberContacts.acceptedSources.length > 0 || memberContacts.acceptedSubjects.length > 0);
+    const showMeetupHint = hasFam && tribes.length > 0 && meetups.length === 0 && isCouncilOrCreator;
     return (
       <View style={styles.container}>
         <Stack.Screen
@@ -694,6 +698,7 @@ export default function ReadTribe() {
                       {meetupsExpanded ? "▲" : "▼"}
                     </Text>
                   </TouchableOpacity>
+                  <View ref={addMeetupRef} collapsable={false}>
                   <TouchableOpacity
                     style={styles.addButton}
                     onPress={() =>
@@ -705,7 +710,24 @@ export default function ReadTribe() {
                   >
                     <Text style={styles.addButtonText}>+ Add</Text>
                   </TouchableOpacity>
+                  </View>
                 </View>
+
+              {showMeetupHint && (
+                <View style={{ position: 'absolute', top: 90, left: 0, right: 0, alignItems: 'center', zIndex: 1000 }} pointerEvents="box-none">
+                  <HintBox 
+                    title="This tribe needs a meetup, and you're just the person to plan it!"
+                    width={320}
+                    hints={[
+                      { 
+                        text: "Create a meetup .",
+                        targetRef: addMeetupRef,
+                        arrowPosition: 'back'
+                      }
+                    ]}
+                  />
+                </View>
+              )}
               </View>
 
               {(() => {

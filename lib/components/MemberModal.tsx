@@ -3,6 +3,7 @@ import { Animated, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from
 import { BlurView } from "expo-blur";
 import { Member } from "../data/Member";
 import { colors, globalStyles } from "../theme";
+import { HintBox } from "./HintBox";
 
 export function MemberModal({
   visible,
@@ -28,9 +29,13 @@ export function MemberModal({
   onSendDM: () => void;
   onSendFamRequest: () => void;
   onAcceptFamRequest?: () => void;
+  showContactHint?: boolean;
 }) {
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
+  
+  const emailRef = useRef<any>(null);
+  const dmRef = useRef<any>(null);
 
   useEffect(() => {
     if (visible) {
@@ -89,14 +94,18 @@ export function MemberModal({
           {!isMe && (
             <View style={{ width: "100%", marginTop: 10, gap: 10 }}>
               {hasEmail && (
-                <TouchableOpacity style={styles.actionButton} onPress={onSendEmail}>
-                  <Text style={styles.actionButtonText}>📧 Send Email</Text>
-                </TouchableOpacity>
+                <View ref={emailRef} collapsable={false}>
+                  <TouchableOpacity style={styles.actionButton} onPress={onSendEmail}>
+                    <Text style={styles.actionButtonText}>📧 Send Email</Text>
+                  </TouchableOpacity>
+                </View>
               )}
               {hasPhone && (
-                <TouchableOpacity style={styles.actionButton} onPress={onSendDM}>
-                  <Text style={styles.actionButtonText}>💬 Send DM</Text>
-                </TouchableOpacity>
+                <View ref={dmRef} collapsable={false}>
+                  <TouchableOpacity style={styles.actionButton} onPress={onSendDM}>
+                    <Text style={styles.actionButtonText}>💬 Send DM</Text>
+                  </TouchableOpacity>
+                </View>
               )}
               {!isFam && (
                 <>
@@ -128,6 +137,18 @@ export function MemberModal({
           </TouchableOpacity>
         </Animated.View>
       </BlurView>
+      {showContactHint && (
+        <View style={{ position: 'absolute', top: 150, left: 0, right: 0, alignItems: 'center', zIndex: 1000 }} pointerEvents="box-none">
+          <HintBox
+            title="Want to get in touch?"
+            width={280}
+            hints={[
+              ...(hasEmail ? [{ text: "Send them an email here.", targetRef: emailRef, arrowPosition: 'back' as 'back' }] : []),
+              ...(hasPhone ? [{ text: "Whatsapp them here.", targetRef: dmRef, arrowPosition: 'front' as 'front' }] : []),
+            ]}
+          />
+        </View>
+      )}
     </Modal>
   );
 }

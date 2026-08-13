@@ -1,7 +1,7 @@
 import { useFocusEffect, useRouter } from "expo-router";
 import { FloralDivider } from "../lib/components/FloralDivider";
 // removed signOut from firebase/auth
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import {
   ActivityIndicator,
   DeviceEventEmitter,
@@ -19,6 +19,8 @@ import { useAuth } from "../lib/auth";
 import { EmailModal } from "../lib/components/EmailModal";
 import { GroupChatModal } from "../lib/components/GroupChatModal";
 import { MemberModal } from "../lib/components/MemberModal";
+import { HintBox } from "../lib/components/HintBox";
+import Svg, { Path } from "react-native-svg";
 import { Chat } from "../lib/data/Chat";
 import { ChatMember } from "../lib/data/ChatMember";
 import { Meetup } from "../lib/data/Meetup";
@@ -78,6 +80,16 @@ export default function Home() {
 
   const [isMemberModalVisible, setIsMemberModalVisible] = useState(false);
   const [selectedMemberForModal, setSelectedMemberForModal] = useState<Member | null>(null);
+
+  const initialTabSet = useRef(false);
+  const addMeetupRef = useRef<any>(null);
+  const findRef = useRef<any>(null);
+  const inviteRef = useRef<any>(null);
+  const addTribeRef = useRef<any>(null);
+  const bottomNavFamRef = useRef<any>(null);
+  const firstFamMemberRef = useRef<any>(null);
+  const bottomNavTribesRef = useRef<any>(null);
+  const firstTribeRef = useRef<any>(null);
 
   const openGroupChatModal = () => {
     setIsGroupChatModalVisible(true);
@@ -210,6 +222,8 @@ export default function Home() {
       setIncomingInvites(incInvites);
       setOutgoingInvites(outInvites);
 
+
+
       // 2. Fetch user's tribes
       let myTribeIds: string[] = [];
       if (currentMember && currentMember.id) {
@@ -228,6 +242,15 @@ export default function Home() {
         (t) => t.id && myTribeIds.includes(t.id),
       );
       setTribes(myTribes);
+
+      if (!initialTabSet.current) {
+        if (myFam.length === 0) {
+          setActiveRootTab("fam");
+        } else if (myTribes.length === 0) {
+          setActiveRootTab("tribes");
+        }
+        initialTabSet.current = true;
+      }
 
       // 3. Fetch user's meetups (for the tribes they belong to)
       if (myTribeIds.length > 0) {
@@ -403,6 +426,7 @@ export default function Home() {
     statusText: string,
     statusIcon: string,
     tab: string,
+    ref?: any,
   ) => {
     const isPendingAppJoin = f.status?.toLowerCase() === "invited";
     const cleanEmail = f.email ? String(f.email).trim() : "";
@@ -421,10 +445,10 @@ export default function Home() {
     ) : null;
 
     return (
-      <TouchableOpacity
-        key={f.id}
-        style={styles.memberCard}
-        onPress={() => {
+      <View key={f.id} ref={ref} collapsable={false}>
+        <TouchableOpacity
+          style={styles.memberCard}
+          onPress={() => {
           if (f.id === currentMember?.id) {
             router.push(`/read-member?id=${f.id}&profile=true` as any);
           } else {
@@ -449,6 +473,7 @@ export default function Home() {
         </View>
         <Text style={styles.memberCardName} numberOfLines={1}>{f.name || "Unnamed"}</Text>
       </TouchableOpacity>
+      </View>
     );
   };
 
@@ -482,17 +507,65 @@ export default function Home() {
           <>
             {activeRootTab === "tribes" && (
               <View style={globalStyles.sectionPanel}>
-                {renderSectionHeader("🏕️ Tribes", "/write-tribe")}
+                <View style={[styles.sectionHeader, { zIndex: 100 }]}>
+                  <Text style={styles.sectionTitle}>🏕️ Tribes</Text>
+                  <View ref={addTribeRef} collapsable={false}>
+                    <TouchableOpacity
+                      onPress={() => router.push("/write-tribe")}
+                      style={styles.addButton}
+                    >
+                      <Text style={styles.addButtonText}>+ Add</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {tribes.length === 0 && myFamMembers.length > 0 && (
+                  <View style={{ position: 'absolute', top: 120, left: 0, right: 0, alignItems: 'center', zIndex: 1000 }} pointerEvents="box-none">
+                    <HintBox 
+                      title="You've got Fam, so let's find your Tribes!"
+                      width={320}
+                      hints={[
+                        { 
+                          text: "You can create a tribe here.",
+                          targetRef: addTribeRef,
+                          arrowPosition: 'back'
+                        },
+                        { 
+                          text: "Also, you can get in touch with your Fam and ask them to add you to one of their Tribes",
+                          targetRef: bottomNavFamRef,
+                          arrowPosition: 'front'
+                        }
+                      ]}
+                    />
+                  </View>
+                )}
+
+                {myFamMembers.length > 0 && tribes.length > 0 && meetups.length === 0 && (
+                  <View style={{ position: 'absolute', top: 220, left: 0, right: 0, alignItems: 'center', zIndex: 1000 }} pointerEvents="box-none">
+                    <HintBox 
+                      title="Create a meetup for one of your Tribes! Note: You need to belong to the Tribal Council"
+                      width={320}
+                      hints={[
+                        { 
+                          text: "Click on a Tribe here.",
+                          targetRef: firstTribeRef,
+                          arrowPosition: 'front'
+                        }
+                      ]}
+                    />
+                  </View>
+                )}
+
                 <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.listContainer} nestedScrollEnabled>
-                  {tribes.map((t) => {
+                  {tribes.map((t, index) => {
                     const cleanDetails = t.description ? String(t.description).trim() : "";
                     const hasDetails = cleanDetails.length > 0 && cleanDetails !== "undefined" && cleanDetails !== "null";
 
                     return (
-                      <TouchableOpacity
-                        key={t.id}
-                        style={styles.squareCard}
-                        onPress={() =>
+                      <View key={t.id} ref={index === 0 ? firstTribeRef : undefined} collapsable={false}>
+                        <TouchableOpacity
+                          style={styles.squareCard}
+                          onPress={() =>
                           router.push({
                             pathname: "/read-tribe",
                             params: { id: t.id },
@@ -508,6 +581,7 @@ export default function Home() {
                           </Text>
                         </View>
                       </TouchableOpacity>
+                      </View>
                     );
                   })}
                 </ScrollView>
@@ -519,7 +593,7 @@ export default function Home() {
 
             {activeRootTab === "meetups" && (
               <View style={globalStyles.sectionPanel}>
-                <View style={styles.sectionHeader}>
+                <View style={[styles.sectionHeader, { zIndex: 100 }]}>
                   <Text style={styles.sectionTitle}>🎉 Meetups</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <TouchableOpacity
@@ -530,14 +604,37 @@ export default function Home() {
                         {meetupsExpanded ? "▲" : "▼"}
                       </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => router.push("/write-meetup")}
-                      style={styles.addButton}
-                    >
-                      <Text style={styles.addButtonText}>+ Add</Text>
-                    </TouchableOpacity>
+                    <View ref={addMeetupRef} collapsable={false}>
+                      <TouchableOpacity
+                        onPress={() => router.push("/write-meetup")}
+                        style={styles.addButton}
+                      >
+                        <Text style={styles.addButtonText}>+ Add</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
+
+                {myFamMembers.length > 0 && tribes.length > 0 && meetups.length === 0 && (
+                  <View style={{ position: 'absolute', top: 140, left: 0, right: 0, alignItems: 'center', zIndex: 1000 }} pointerEvents="box-none">
+                    <HintBox 
+                      title="You've found your Tribes, now it's time to have fun!"
+                      width={320}
+                      hints={[
+                        { 
+                          text: "You can create a meetup here.",
+                          targetRef: addMeetupRef,
+                          arrowPosition: 'back'
+                        },
+                        {
+                          text: "Or you can create a meetup for your Tribes here (if you have permission!).",
+                          targetRef: bottomNavTribesRef,
+                          arrowPosition: 'front'
+                        }
+                      ]}
+                    />
+                  </View>
+                )}
 
                 {(() => {
                   const ongoingMeetups = meetups.filter(m => m.status && m.status.toLowerCase() === "ongoing");
@@ -674,22 +771,63 @@ export default function Home() {
                 <View style={styles.sectionHeader}>
                   <Text style={styles.sectionTitle}>🙌 Fam</Text>
                   <View style={styles.headerButtonsRow}>
-                    <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={() => router.push("/find-friend" as any)}
-                    >
-                      <Text style={styles.actionButtonText}>🙌 Find</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.actionButton}
-                      onPress={() => router.push("/create-member" as any)}
-                    >
-                      <Text style={styles.actionButtonText}>
-                        🚪 Invite
-                      </Text>
-                    </TouchableOpacity>
+                    <View ref={findRef} collapsable={false}>
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => router.push("/find-friend" as any)}
+                      >
+                        <Text style={styles.actionButtonText}>🙌 Find</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View ref={inviteRef} collapsable={false}>
+                      <TouchableOpacity
+                        style={styles.actionButton}
+                        onPress={() => router.push("/create-member" as any)}
+                      >
+                        <Text style={styles.actionButtonText}>
+                          🚪 Invite
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 </View>
+
+                {myFamMembers.length === 0 && (
+                  <View style={{ position: 'absolute', top: 120, left: 0, right: 0, alignItems: 'center', zIndex: 1000 }} pointerEvents="box-none">
+                    <HintBox 
+                      title="Let's get you started connecting to the important people in your life!"
+                      width={320}
+                      hints={[
+                        { 
+                          text: "If they already have TribalVibe, search for them here.",
+                          targetRef: findRef,
+                          arrowPosition: 'front'
+                        },
+                        { 
+                          text: "Invite new friends and family by email here.",
+                          targetRef: inviteRef,
+                          arrowPosition: 'back'
+                        }
+                      ]}
+                    />
+                  </View>
+                )}
+
+                {myFamMembers.length > 0 && tribes.length === 0 && (
+                  <View style={{ position: 'absolute', top: 220, left: 0, right: 0, alignItems: 'center', zIndex: 1000 }} pointerEvents="box-none">
+                    <HintBox 
+                      title="Reach out and touch someone, and join their Tribe!"
+                      width={320}
+                      hints={[
+                        { 
+                          text: "Click anyone in your Fam to get in touch.",
+                          targetRef: firstFamMemberRef,
+                          arrowPosition: 'front'
+                        }
+                      ]}
+                    />
+                  </View>
+                )}
 
                 <View style={styles.tabContainer}>
                   <TouchableOpacity
@@ -754,8 +892,8 @@ export default function Home() {
 
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'flex-start', paddingBottom: 20 }}>
                   {famTab === "my_fam" &&
-                    myFamMembers.map((f) =>
-                      renderFamItem(f, "Active", "✅", "my_fam"),
+                    myFamMembers.map((f, index) =>
+                      renderFamItem(f, "Active", "✅", "my_fam", index === 0 ? firstFamMemberRef : undefined),
                     )}
                   {famTab === "incoming" &&
                     incomingInvites.map((f) =>
@@ -886,6 +1024,7 @@ export default function Home() {
               showAlert("Error", e.message);
             }
           }}
+          showContactHint={myFamMembers.length > 0 && tribes.length === 0 && activeRootTab === 'fam'}
         />
       </ScrollView>
 
@@ -899,21 +1038,25 @@ export default function Home() {
           <Text style={[styles.bottomNavText, activeRootTab === "meetups" && styles.bottomNavTextActive]}>Meetups</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.bottomNavItem}
-          onPress={() => setActiveRootTab("tribes")}
-        >
-          <Text style={styles.bottomNavIcon}>🏕️</Text>
-          <Text style={[styles.bottomNavText, activeRootTab === "tribes" && styles.bottomNavTextActive]}>Tribes</Text>
-        </TouchableOpacity>
+        <View ref={bottomNavTribesRef} collapsable={false}>
+          <TouchableOpacity
+            style={styles.bottomNavItem}
+            onPress={() => setActiveRootTab("tribes")}
+          >
+            <Text style={styles.bottomNavIcon}>🏕️</Text>
+            <Text style={[styles.bottomNavText, activeRootTab === "tribes" && styles.bottomNavTextActive]}>Tribes</Text>
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity
-          style={styles.bottomNavItem}
-          onPress={() => setActiveRootTab("fam")}
-        >
-          <Text style={styles.bottomNavIcon}>🙌</Text>
-          <Text style={[styles.bottomNavText, activeRootTab === "fam" && styles.bottomNavTextActive]}>Fam</Text>
-        </TouchableOpacity>
+        <View ref={bottomNavFamRef} collapsable={false}>
+          <TouchableOpacity
+            style={styles.bottomNavItem}
+            onPress={() => setActiveRootTab("fam")}
+          >
+            <Text style={styles.bottomNavIcon}>🙌</Text>
+            <Text style={[styles.bottomNavText, activeRootTab === "fam" && styles.bottomNavTextActive]}>Fam</Text>
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity
           style={styles.bottomNavItem}
