@@ -17,6 +17,7 @@ export function MemberModal({
   onSendDM,
   onSendFamRequest,
   onAcceptFamRequest,
+  showContactHint = false,
 }: {
   visible: boolean;
   onClose: () => void;
