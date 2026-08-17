@@ -16,7 +16,7 @@ import {
   getMeetups,
   getProposals,
   updateAvailability,
-} from "../lib/data/service";
+} from "../lib/service";
 import { showAlert, safeBack } from "../lib/util";
 import { colors, globalStyles } from "../lib/theme";
 import { CustomHeaderLeft } from "../lib/components/CustomHeaderLeft";

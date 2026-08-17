@@ -15,7 +15,7 @@ import {
   getNotifications,
   getUserDeviceByToken,
   updateUserDevice,
-} from "./data/service";
+} from "./service";
 import { auth } from "./firebaseConfig";
 
 export const UserDeviceContext = createContext<{

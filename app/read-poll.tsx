@@ -31,7 +31,7 @@ import {
   updatePoll,
   updatePollVote,
   uploadMedia,
-} from "../lib/data/service";
+} from "../lib/service";
 import { colors, globalStyles } from "../lib/theme";
 import { showAlert } from "../lib/util";
 import { CustomHeaderLeft } from "../lib/components/CustomHeaderLeft";

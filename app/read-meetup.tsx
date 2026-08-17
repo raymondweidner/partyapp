@@ -53,7 +53,7 @@ import {
   getTribes,
   updateMeetup,
   updateProposal,
-} from "../lib/data/service";
+} from "../lib/service";
 import { Squad } from "../lib/data/Squad";
 import { Tribe } from "../lib/data/Tribe";
 import { TribeMember } from "../lib/data/TribeMember";

@@ -18,7 +18,7 @@ import {
     getMemberContacts,
     getMembers,
     GroupedMemberContacts,
-} from "../lib/data/service";
+} from "../lib/service";
 import { showAlert } from "../lib/util";
 import { colors, globalStyles } from "../lib/theme";
 import { CustomHeaderLeft } from "../lib/components/CustomHeaderLeft";

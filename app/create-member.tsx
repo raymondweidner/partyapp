@@ -9,7 +9,7 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../lib/auth";
-import { createMember, createMemberContact, createTribeMember } from "../lib/data/service";
+import { createMember, createMemberContact, createTribeMember } from "../lib/service";
 import { showAlert, safeBack, openWhatsApp } from "../lib/util";
 import { colors, globalStyles } from "../lib/theme";
 import PhoneInput from "../lib/components/PhoneInput";

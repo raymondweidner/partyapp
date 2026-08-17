@@ -44,7 +44,7 @@ import {
   getMeetups,
   getPolls,
   uploadMedia
-} from "../lib/data/service";
+} from "../lib/service";
 import { colors, globalStyles } from "../lib/theme";
 import { handleNotificationPress, pendingRedirect, setPendingRedirect, showAlert } from "../lib/util";
 

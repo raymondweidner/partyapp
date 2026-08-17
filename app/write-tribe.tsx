@@ -40,7 +40,7 @@ import {
   getTribes,
   GroupedMemberContacts,
   updateTribe,
-} from "../lib/data/service";
+} from "../lib/service";
 import { colors, globalStyles } from "../lib/theme";
 import { openEmailThread, safeBack, showAlert } from "../lib/util";
 import { CustomHeaderLeft } from "../lib/components/CustomHeaderLeft";

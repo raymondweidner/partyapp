@@ -41,7 +41,7 @@ import {
   getTribes,
   GroupedMemberContacts,
   updateMemberContact,
-} from "../lib/data/service";
+} from "../lib/service";
 
 import { colors, globalStyles } from "../lib/theme";
 import { openEmailThread, showAlert } from "../lib/util";

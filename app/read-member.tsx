@@ -24,7 +24,7 @@ import {
 } from "react-native";
 import { Member } from "../lib/data/Member";
 import { MemberAlertPreference } from "../lib/data/MemberAlertPreference";
-import { createMemberAlertPreference, deleteUserDevice, getMeetups, getMemberAlertPreferences, getMembers, getProposals, updateMeetup, updateMember, updateMemberAlertPreference, updateProposal } from "../lib/data/service";
+import { createMemberAlertPreference, deleteUserDevice, getMeetups, getMemberAlertPreferences, getMembers, getProposals, updateMeetup, updateMember, updateMemberAlertPreference, updateProposal } from "../lib/service";
 
 const ALL_ALERT_TYPES = [
   'meetup_state_changed', 'proposal_selected', 'chat_invite', 'tribe_invite',

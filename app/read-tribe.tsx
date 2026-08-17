@@ -36,7 +36,7 @@ import {
   getTribes,
   GroupedMemberContacts,
   updateTribe,
-} from "../lib/data/service";
+} from "../lib/service";
 import { TribalCouncil } from "../lib/data/TribalCouncil";
 import { Tribe } from "../lib/data/Tribe";
 import { TribeMember } from "../lib/data/TribeMember";

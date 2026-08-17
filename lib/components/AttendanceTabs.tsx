@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
 import { useAuth } from '../auth';
-import { getEventCheckIns } from '../data/service';
+import { getEventCheckIns } from '../service';
 import { EventCheckIn } from '../data/EventCheckIn';
 import { LiveMapModal } from './LiveMapModal';
 import { useCurrentMember } from '../RootContext';

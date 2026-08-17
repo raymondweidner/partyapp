@@ -1,27 +1,27 @@
-import { getResourceEndpoint } from "../util";
 import { Platform } from "react-native";
-import { Availability } from "./Availability";
-import { Chat } from "./Chat";
-import { ChatMember } from "./ChatMember";
-import { Meetup } from "./Meetup";
-import { MeetupEvent } from "./MeetupEvent";
-import { Member } from "./Member";
-import { MemberContact } from "./MemberContact";
-import { Proposal } from "./Proposal";
-import { Tribe } from "./Tribe";
-import { TribeMember } from "./TribeMember";
-import { UserDevice } from "./UserDevice";
-import { Notification } from "./Notification";
-import { MemberAlertPreference } from "./MemberAlertPreference";
-import { Poll } from "./Poll";
-import { PollEntry } from "./PollEntry";
-import { PollVote } from "./PollVote";
-import { PollWinner } from "./PollWinner";
-import { HelpRegistry } from "./HelpRegistry";
-import { RegistryItem } from "./RegistryItem";
-import { TribalCouncil } from "./TribalCouncil";
-import { Squad } from "./Squad";
-import { EventCheckIn } from "./EventCheckIn";
+import { Availability } from "./data/Availability";
+import { Chat } from "./data/Chat";
+import { ChatMember } from "./data/ChatMember";
+import { EventCheckIn } from "./data/EventCheckIn";
+import { HelpRegistry } from "./data/HelpRegistry";
+import { Meetup } from "./data/Meetup";
+import { MeetupEvent } from "./data/MeetupEvent";
+import { Member } from "./data/Member";
+import { MemberAlertPreference } from "./data/MemberAlertPreference";
+import { MemberContact } from "./data/MemberContact";
+import { Notification } from "./data/Notification";
+import { Poll } from "./data/Poll";
+import { PollEntry } from "./data/PollEntry";
+import { PollVote } from "./data/PollVote";
+import { PollWinner } from "./data/PollWinner";
+import { Proposal } from "./data/Proposal";
+import { RegistryItem } from "./data/RegistryItem";
+import { Squad } from "./data/Squad";
+import { TribalCouncil } from "./data/TribalCouncil";
+import { Tribe } from "./data/Tribe";
+import { TribeMember } from "./data/TribeMember";
+import { UserDevice } from "./data/UserDevice";
+import { getResourceEndpoint } from "./util";
 
 const getHeaders = (token: string) => ({
   "Content-Type": "application/json",
@@ -63,7 +63,7 @@ export const updateMemberAlertPreference = async (
   authToken: string,
   pref: MemberAlertPreference & { id?: string }
 ): Promise<MemberAlertPreference> => {
-  const idToUpdate = pref.id; 
+  const idToUpdate = pref.id;
   if (idToUpdate) {
     const response = await fetch(
       `${getResourceEndpoint()}/member_alert_preference/${idToUpdate}`,

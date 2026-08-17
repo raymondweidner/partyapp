@@ -1,6 +1,6 @@
 import * as TaskManager from 'expo-task-manager';
 import * as Location from 'expo-location';
-import { checkInEvent, checkOutEvent } from './data/service';
+import { checkInEvent, checkOutEvent } from './service';
 
 export const GEOFENCE_TASK_NAME = 'GEOFENCE_TASK';
 

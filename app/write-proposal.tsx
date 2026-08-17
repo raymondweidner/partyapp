@@ -32,7 +32,7 @@ import {
   getTribeMembers,
   getSquads,
   createProposal, updateProposal,
-} from "../lib/data/service";
+} from "../lib/service";
 import { Squad } from "../lib/data/Squad";
 import { colors, globalStyles } from "../lib/theme";
 import { openMapUrl, showAlert } from "../lib/util";

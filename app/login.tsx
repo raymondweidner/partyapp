@@ -18,7 +18,7 @@ import {
   getMembers,
   updateMember,
   updateMemberContact,
-} from "../lib/data/service";
+} from "../lib/service";
 import { auth } from "../lib/firebaseConfig";
 import { showAlert } from "../lib/util";
 import { colors, globalStyles } from "../lib/theme";
