@@ -114,6 +114,8 @@ export default function ReadMeetup() {
   const [squadMemberIds, setSquadMemberIds] = useState<string[]>([]);
 
   const [meetups, setMeetups] = useState<Meetup[]>([]);
+  const [isCalendarModalVisible, setIsCalendarModalVisible] = useState(false);
+  const [calendarEventData, setCalendarEventData] = useState<{title: string, startDate: Date, endDate: Date, location?: string} | null>(null);
   const [selectedMeetup, setSelectedMeetup] = useState<Meetup | null>(null);
 
   const [tribes, setTribes] = useState<Tribe[]>([]);
@@ -472,68 +474,99 @@ export default function ReadMeetup() {
       }
     ]);
   };
-  const handleAddToCalendar = async (title: string, startDate: Date, endDate: Date, location?: string) => {
-    if (Platform.OS === 'web') {
-      try {
-        const formatDateICS = (date: Date) => {
-          return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-        };
+  const generateICS = (event: { title: string, startDate: Date, endDate: Date, location?: string }) => {
+    const formatDateICS = (date: Date) => {
+      return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    };
+    return [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//PartyApp//EN",
+      "BEGIN:VEVENT",
+      `DTSTART:${formatDateICS(event.startDate)}`,
+      `DTEND:${formatDateICS(event.endDate)}`,
+      `SUMMARY:${event.title}`,
+      ...(event.location ? [`LOCATION:${event.location}`] : []),
+      "END:VEVENT",
+      "END:VCALENDAR"
+    ].join('\r\n');
+  };
 
-        const icsData = [
-          "BEGIN:VCALENDAR",
-          "VERSION:2.0",
-          "PRODID:-//PartyApp//EN",
-          "BEGIN:VEVENT",
-          `DTSTART:${formatDateICS(startDate)}`,
-          `DTEND:${formatDateICS(endDate)}`,
-          `SUMMARY:${title}`,
-          ...(location ? [`LOCATION:${location}`] : []),
-          "END:VEVENT",
-          "END:VCALENDAR"
-        ].join('\r\n');
+  const handleCalendarOption = async (type: 'google' | 'apple' | 'outlook' | 'file') => {
+    if (!calendarEventData) return;
+    const { title, startDate, endDate, location } = calendarEventData;
+    setIsCalendarModalVisible(false);
 
-        const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'event'}.ics`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        showAlert("Success", "Calendar file downloaded!");
-      } catch (e: any) {
-        showAlert("Error", "Failed to generate calendar file: " + e.message);
-      }
-      return;
-    }
     try {
-      if (!Calendar) {
-        showAlert("Error", "Calendar integration is currently unavailable on this device.");
-        return;
-      }
-      const { status } = await Calendar.requestCalendarPermissionsAsync();
-      if (status === 'granted') {
-        const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
-        const defaultCalendar = calendars.find((c: { isPrimary: any; }) => c.isPrimary) || calendars[0];
-
-        if (defaultCalendar) {
-          await Calendar.createEventAsync(defaultCalendar.id, {
-            title,
-            startDate,
-            endDate,
-            location: location || "",
-          });
-          showAlert("Success", "Event added to your calendar!");
+      if (type === 'google') {
+        const format = (date: Date) => date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/g, '');
+        const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${format(startDate)}/${format(endDate)}&location=${encodeURIComponent(location || '')}`;
+        Linking.openURL(url);
+      } else if (type === 'outlook') {
+        const url = `https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent&subject=${encodeURIComponent(title)}&startdt=${encodeURIComponent(startDate.toISOString())}&enddt=${encodeURIComponent(endDate.toISOString())}&location=${encodeURIComponent(location || '')}`;
+        Linking.openURL(url);
+      } else if (type === 'file') {
+        if (Platform.OS === 'web') {
+          const icsData = generateICS(calendarEventData);
+          const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'event'}.ics`);
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          showAlert("Success", "Calendar file downloaded!");
         } else {
-          showAlert("Error", "No calendar found on device.");
+          showAlert("Info", "File creation is currently available on the web app. Use the Apple or Outlook options.");
         }
-      } else {
-        showAlert("Permission Denied", "Calendar permission is required to add events.");
+      } else if (type === 'apple') {
+        if (Platform.OS === 'web') {
+          // Fallback to downloading file for web
+          const icsData = generateICS(calendarEventData);
+          const blob = new Blob([icsData], { type: 'text/calendar;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', `${title.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'event'}.ics`);
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        } else {
+          if (!Calendar) {
+            showAlert("Error", "Calendar integration is currently unavailable on this device.");
+            return;
+          }
+          const { status } = await Calendar.requestCalendarPermissionsAsync();
+          if (status === 'granted') {
+            const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+            const defaultCalendar = calendars.find((c: { isPrimary: any; }) => c.isPrimary) || calendars[0];
+            if (defaultCalendar) {
+              await Calendar.createEventAsync(defaultCalendar.id, {
+                title,
+                startDate,
+                endDate,
+                location: location || "",
+              });
+              showAlert("Success", "Event added to your calendar!");
+            } else {
+              showAlert("Error", "No calendar found on device.");
+            }
+          } else {
+            showAlert("Permission Denied", "Calendar permission is required to add events.");
+          }
+        }
       }
-    } catch (error: any) {
-      showAlert("Error", "Failed to add to calendar: " + error.message);
+    } catch (e: any) {
+      showAlert("Error", "Failed to add to calendar: " + e.message);
     }
+  };
+
+  const handleAddToCalendar = async (title: string, startDate: Date, endDate: Date, location?: string) => {
+    setCalendarEventData({ title, startDate, endDate, location });
+    setIsCalendarModalVisible(true);
   };
 
   const handleAcceptProposal = async (proposal: any) => {
@@ -1681,6 +1714,39 @@ export default function ReadMeetup() {
                 </View>
               </View>
             </View>
+          </Modal>
+
+          <Modal visible={isCalendarModalVisible} transparent animationType="slide" onRequestClose={() => setIsCalendarModalVisible(false)}>
+            <TouchableOpacity 
+              style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 }} 
+              activeOpacity={1} 
+              onPress={() => setIsCalendarModalVisible(false)}
+            >
+              <TouchableOpacity 
+                activeOpacity={1} 
+                style={{ backgroundColor: colors.background, padding: 20, borderRadius: 12 }}
+              >
+                <Text style={{ fontSize: 20, fontFamily: "Besley_700Bold", color: colors.text, marginBottom: 16, textAlign: 'center' }}>
+                  Add to Calendar
+                </Text>
+                
+                <TouchableOpacity style={[styles.primaryButton, { marginBottom: 8, backgroundColor: '#EA4335' }]} onPress={() => handleCalendarOption('google')}>
+                  <Text style={[styles.primaryButtonText, { color: '#FFFFFF' }]}>Google Calendar</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity style={[styles.primaryButton, { marginBottom: 8, backgroundColor: '#0078D7' }]} onPress={() => handleCalendarOption('outlook')}>
+                  <Text style={[styles.primaryButtonText, { color: '#FFFFFF' }]}>Outlook Calendar</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={[styles.primaryButton, { marginBottom: 8, backgroundColor: '#000000' }]} onPress={() => handleCalendarOption('apple')}>
+                  <Text style={[styles.primaryButtonText, { color: '#FFFFFF' }]}>Apple Calendar</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={[styles.primaryButton, { backgroundColor: colors.glassBackground }]} onPress={() => handleCalendarOption('file')}>
+                  <Text style={[styles.primaryButtonText, { color: colors.textSecondary }]}>Create File (.ics)</Text>
+                </TouchableOpacity>
+              </TouchableOpacity>
+            </TouchableOpacity>
           </Modal>
 
           <GroupChatModal

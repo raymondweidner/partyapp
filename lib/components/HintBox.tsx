@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StyleProp, ViewStyle, DimensionValue } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StyleProp, ViewStyle, DimensionValue, ScrollView } from 'react-native';
 import { BlurView } from 'expo-blur';
 import Svg, { Path } from 'react-native-svg';
+import { Ionicons } from '@expo/vector-icons';
 
 export interface HintItem {
   text: string;
@@ -29,6 +30,9 @@ interface LayoutRect {
 
 export function HintBox({ title, hints, style, width, height, onClose }: HintBoxProps) {
   const [isVisible, setIsVisible] = useState(true);
+  const [currentHintIndex, setCurrentHintIndex] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [listWidth, setListWidth] = useState(0);
   
   const containerRef = useRef<View>(null);
   const hintRefs = useRef<Record<number, View | null>>({});
@@ -36,6 +40,7 @@ export function HintBox({ title, hints, style, width, height, onClose }: HintBox
   const [containerLayout, setContainerLayout] = useState<LayoutRect | null>(null);
   const [hintsLayouts, setHintsLayouts] = useState<Record<number, LayoutRect>>({});
   const [targetsLayouts, setTargetsLayouts] = useState<Record<number, LayoutRect>>({});
+  const [listContainerLayout, setListContainerLayout] = useState<{x: number, y: number, width: number, height: number} | null>(null);
 
   useEffect(() => {
     if (!isVisible) return;
@@ -132,16 +137,23 @@ export function HintBox({ title, hints, style, width, height, onClose }: HintBox
     if (!containerLayout) return null;
     
     return hints.map((hint, index) => {
+      if (index !== currentHintIndex) return null;
       if (!hint.targetRef) return null;
-      const hLayout = hintsLayouts[index];
+      const hLayoutCache = hintsLayouts[index];
       const tLayout = targetsLayouts[index];
-      if (!hLayout || !tLayout) return null;
+      if (!hLayoutCache || !tLayout || !listContainerLayout) return null;
 
       const isFront = hint.arrowPosition === 'front';
       
+      const listAbsoluteX = containerLayout.pageX + listContainerLayout.x;
+      const listAbsoluteY = containerLayout.pageY + listContainerLayout.y;
+
+      const hPageX = listAbsoluteX + (listContainerLayout.width - hLayoutCache.width) / 2;
+      const hPageY = listAbsoluteY + (listContainerLayout.height - hLayoutCache.height) / 2;
+
       // Starting point logic
-      const startX = hLayout.pageX - containerLayout.pageX + (isFront ? 0 : hLayout.width) + 1000;
-      const startY = hLayout.pageY - containerLayout.pageY + (hLayout.height / 2) + 1000;
+      const startX = hPageX - containerLayout.pageX + (isFront ? 0 : hLayoutCache.width) + 1000;
+      const startY = hPageY - containerLayout.pageY + (hLayoutCache.height / 2) + 1000;
       
       // Target bounding box logic
       const tLeft = tLayout.pageX - containerLayout.pageX + 1000;
@@ -172,7 +184,7 @@ export function HintBox({ title, hints, style, width, height, onClose }: HintBox
         // Extend horizontally outside the hintbox by the distance to the edge
         let distToEdge = isFront ? (startX - 1000) : (1000 + containerLayout.width - startX);
         distToEdge = Math.max(distToEdge, 10);
-        const midX = isFront ? (1000 - distToEdge) : (1000 + containerLayout.width + distToEdge);
+        const midX = isFront ? (1000 - distToEdge / 2) : (1000 + containerLayout.width + distToEdge / 2);
 
         // 2 & 3. Horizontal routing (Standard or Wrap-around)
         const isTargetRight = tCenter > startX;
@@ -219,33 +231,93 @@ export function HintBox({ title, hints, style, width, height, onClose }: HintBox
       </Svg>
 
       <BlurView intensity={20} tint="light" style={styles.blurContainer}>
-        <TouchableOpacity 
-          style={styles.closeButton}
-          onPress={() => {
-            setIsVisible(false);
-            onClose?.();
-          }} 
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Text style={styles.closeText}>✕</Text>
-        </TouchableOpacity>
-
         <View style={styles.header}>
           <Text style={styles.title}>{title}</Text>
         </View>
 
-        <View style={styles.hintsList}>
-          {hints.map((hint, index) => (
-            <View key={index} style={styles.hintRow}>
-              <View 
-                style={styles.hintTextWrapper}
-                ref={(el) => { hintRefs.current[index] = el; }}
-                collapsable={false}
-              >
-                <Text style={styles.text}>{hint.text}</Text>
-              </View>
+        <View 
+          style={styles.hintsListContainer}
+          onLayout={(e) => {
+            setListWidth(e.nativeEvent.layout.width);
+            setListContainerLayout(e.nativeEvent.layout);
+          }}
+        >
+          {listWidth > 0 ? (
+            <ScrollView
+              ref={scrollViewRef}
+              horizontal
+              pagingEnabled
+              scrollEnabled={false}
+              showsHorizontalScrollIndicator={false}
+              style={{ width: listWidth }}
+            >
+              {hints.map((hint, index) => (
+                <View key={index} style={[styles.hintRow, { width: listWidth }]}>
+                  <View 
+                    style={styles.hintTextWrapper}
+                    ref={(el) => { hintRefs.current[index] = el; }}
+                    collapsable={false}
+                  >
+                    <Text style={styles.text}>{hint.text}</Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          ) : (
+            <View style={{ opacity: 0 }}>
+               <Text style={styles.text}>{hints[0]?.text || ' '}</Text>
             </View>
-          ))}
+          )}
+        </View>
+
+        {hints.length > 1 && (
+          <Text style={styles.progressText}>
+            {currentHintIndex + 1} of {hints.length}
+          </Text>
+        )}
+
+        <View style={[styles.footer, hints.length > 1 ? { justifyContent: 'space-between' } : { justifyContent: 'center' }]}>
+          {hints.length > 1 && (
+            <TouchableOpacity 
+              onPress={() => {
+                if (currentHintIndex > 0) {
+                  const nextIdx = currentHintIndex - 1;
+                  setCurrentHintIndex(nextIdx);
+                  scrollViewRef.current?.scrollTo({ x: nextIdx * listWidth, animated: true });
+                }
+              }}
+              style={[styles.iconButton, currentHintIndex === 0 && { opacity: 0 }]}
+              disabled={currentHintIndex === 0}
+            >
+              <Ionicons name="play-back" size={24} color="#87CEFA" />
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity 
+            style={styles.gotItButton}
+            onPress={() => {
+              setIsVisible(false);
+              onClose?.();
+            }}
+          >
+            <Text style={styles.gotItText}>Got it!</Text>
+          </TouchableOpacity>
+
+          {hints.length > 1 && (
+            <TouchableOpacity 
+              onPress={() => {
+                if (currentHintIndex < hints.length - 1) {
+                  const nextIdx = currentHintIndex + 1;
+                  setCurrentHintIndex(nextIdx);
+                  scrollViewRef.current?.scrollTo({ x: nextIdx * listWidth, animated: true });
+                }
+              }}
+              style={[styles.iconButton, currentHintIndex === hints.length - 1 && { opacity: 0 }]}
+              disabled={currentHintIndex === hints.length - 1}
+            >
+              <Ionicons name="play-forward" size={24} color="#87CEFA" />
+            </TouchableOpacity>
+          )}
         </View>
       </BlurView>
     </View>
@@ -287,16 +359,39 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     flex: 1,
   },
-  closeButton: {
-    position: 'absolute',
-    right: 8,
-    top: 8,
-    zIndex: 10,
+  hintsListContainer: {
+    minHeight: 40,
+    justifyContent: 'center',
+    marginBottom: 8,
   },
-  closeText: {
+  progressText: {
+    textAlign: 'center',
+    color: '#87CEFA',
+    fontSize: 12,
+    marginBottom: 8,
+    fontFamily: 'Nunito_400Regular',
+  },
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  iconButton: {
+    padding: 8,
+  },
+  gotItButton: {
+    backgroundColor: 'rgba(135, 206, 250, 0.2)',
+    paddingVertical: 8,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#87CEFA',
+  },
+  gotItText: {
+    color: '#a85c69',
     fontSize: 16,
-    color: 'rgba(59, 130, 246, 0.4)',
     fontWeight: 'bold',
+    fontFamily: 'Nunito_600SemiBold',
   },
   hintsList: {
     gap: 12,

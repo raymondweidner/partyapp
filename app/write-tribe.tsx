@@ -296,8 +296,7 @@ export default function EditTribe() {
       const promises: Promise<any>[] = [];
       toAdd.forEach((memberId) => {
         promises.push(
-          createTribeMember(token, { tribe_id: tribeId!, member_id: memberId }
-          ),
+          createTribeMember(token, { tribe_id: tribeId!, member_id: memberId, status: "invited" } as any),
         );
       });
       toRemove.forEach((tm) => {

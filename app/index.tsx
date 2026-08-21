@@ -41,6 +41,8 @@ import {
   getTribes,
   GroupedMemberContacts,
   updateMemberContact,
+  updateTribeMember,
+  deleteTribeMember,
 } from "../lib/service";
 
 import { colors, globalStyles } from "../lib/theme";
@@ -57,6 +59,10 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [tribes, setTribes] = useState<Tribe[]>([]);
+  const [invitedTribes, setInvitedTribes] = useState<Tribe[]>([]);
+  const [pastTribes, setPastTribes] = useState<Tribe[]>([]);
+  const [tribeTab, setTribeTab] = useState<"current" | "invitations" | "past">("current");
+  const [myTribeMembers, setMyTribeMembers] = useState<any[]>([]); // Using any[] here assuming TribeMember is available from lib/data/TribeMember or we can just use any
   const [myFamMembers, setMyFamMembers] = useState<Member[]>([]);
   const [incomingInvites, setIncomingInvites] = useState<Member[]>([]);
   const [outgoingInvites, setOutgoingInvites] = useState<Member[]>([]);
@@ -225,36 +231,55 @@ export default function Home() {
 
 
       // 2. Fetch user's tribes
-      let myTribeIds: string[] = [];
+      let currentTribeIds: string[] = [];
+      let invitedTribeIds: string[] = [];
+      let pastTribeIds: string[] = [];
       if (currentMember && currentMember.id) {
         const tribeMembers = await getTribeMembersByMemberId(token, currentMember.id
         );
+        setMyTribeMembers(tribeMembers);
         console.log(
           `Tribe memberships for member id ${currentMember.id}`,
           tribeMembers,
         );
-        myTribeIds = tribeMembers.map((tm) => tm.tribe_id);
+        tribeMembers.forEach((tm) => {
+          if (!tm.status || tm.status === 'accepted') {
+            currentTribeIds.push(tm.tribe_id);
+          } else if (tm.status === 'invited') {
+            invitedTribeIds.push(tm.tribe_id);
+          } else if (tm.status === 'ejected' || tm.status === 'quit') {
+            pastTribeIds.push(tm.tribe_id);
+          }
+        });
       }
 
       const allTribes = await getTribes(token); // This could be optimized if getTribes can take IDs
       console.log("All tribes", allTribes); // This could be optimized if getTribes can take IDs
-      const myTribes = allTribes.filter(
-        (t) => t.id && myTribeIds.includes(t.id),
+      const myCurrentTribes = allTribes.filter(
+        (t) => t.id && currentTribeIds.includes(t.id),
       );
-      setTribes(myTribes);
+      const myInvitedTribes = allTribes.filter((t) => t.id && invitedTribeIds.includes(t.id));
+      const myPastTribes = allTribes.filter((t) => t.id && pastTribeIds.includes(t.id));
+
+      setTribes(myCurrentTribes);
+      setInvitedTribes(myInvitedTribes);
+      setPastTribes(myPastTribes);
 
       if (!initialTabSet.current) {
         if (myFam.length === 0) {
           setActiveRootTab("fam");
-        } else if (myTribes.length === 0) {
+        } else if (myCurrentTribes.length === 0 && myInvitedTribes.length > 0) {
+          setTribeTab("invitations");
+          setActiveRootTab("tribes");
+        } else if (myCurrentTribes.length === 0) {
           setActiveRootTab("tribes");
         }
         initialTabSet.current = true;
       }
 
       // 3. Fetch user's meetups (for the tribes they belong to)
-      if (myTribeIds.length > 0) {
-        const meetupsPromises = myTribeIds.map((tribeId) =>
+      if (currentTribeIds.length > 0) {
+        const meetupsPromises = currentTribeIds.map((tribeId) =>
           getMeetups(token, tribeId),
         );
         const meetupsResults = await Promise.all(meetupsPromises);
@@ -421,6 +446,64 @@ export default function Home() {
     }
   };
 
+  const handleAcceptTribeInvite = async (tribe: Tribe) => {
+    try {
+      if (!user) return;
+      const token = await user.getIdToken();
+      const tm = myTribeMembers.find((m) => m.tribe_id === tribe.id);
+      if (tm && tm.id) {
+        await updateTribeMember(token, { ...tm, status: "accepted" });
+        showAlert("Success", `You have joined ${tribe.name}!`);
+        fetchData();
+      }
+    } catch (e: any) {
+      showAlert("Error", e.message);
+    }
+  };
+
+  const handleDeclineTribeInvite = async (tribe: Tribe) => {
+    try {
+      if (!user || !currentMember || !currentMember.id) return;
+      const token = await user.getIdToken();
+      const tm = myTribeMembers.find((m) => m.tribe_id === tribe.id);
+      if (tm && tm.id) {
+        await deleteTribeMember(token, tm.id, tribe.id!, currentMember.id);
+        showAlert("Success", `Invitation to ${tribe.name} declined.`);
+        fetchData();
+      }
+    } catch (e: any) {
+      showAlert("Error", e.message);
+    }
+  };
+
+  const handleTribeInvitePress = (tribe: Tribe) => {
+    if (Platform.OS === "web") {
+      const accept = window.confirm(
+        `Accept invitation to ${tribe.name}?\n\nClick OK to accept, or Cancel to ignore/decline.`,
+      );
+      if (accept) {
+        handleAcceptTribeInvite(tribe);
+      } else {
+        const decline = window.confirm(
+          `Do you want to DECLINE and remove the invitation to ${tribe.name}?`,
+        );
+        if (decline) {
+          handleDeclineTribeInvite(tribe);
+        }
+      }
+    } else {
+      showAlert("Respond to Invite", `Accept invitation to ${tribe.name}?`, [
+        { text: "Not Now", style: "cancel" },
+        {
+          text: "Decline",
+          style: "destructive",
+          onPress: () => handleDeclineTribeInvite(tribe),
+        },
+        { text: "Accept", onPress: () => handleAcceptTribeInvite(tribe) },
+      ]);
+    }
+  };
+
   const renderFamItem = (
     f: Member,
     statusText: string,
@@ -556,36 +639,98 @@ export default function Home() {
                   </View>
                 )}
 
-                <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.listContainer} nestedScrollEnabled>
-                  {tribes.map((t, index) => {
-                    const cleanDetails = t.description ? String(t.description).trim() : "";
-                    const hasDetails = cleanDetails.length > 0 && cleanDetails !== "undefined" && cleanDetails !== "null";
+                <View style={styles.tabContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.tab,
+                      tribeTab === "current" && styles.activeTab,
+                    ]}
+                    onPress={() => setTribeTab("current")}
+                  >
+                    <Text
+                      style={[
+                        styles.tabText,
+                        tribeTab === "current" && styles.activeTabText,
+                      ]}
+                    >
+                      Current ({tribes.length})
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.tab,
+                      tribeTab === "invitations" && styles.activeTab,
+                    ]}
+                    onPress={() => setTribeTab("invitations")}
+                  >
+                    <Text
+                      style={[
+                        styles.tabText,
+                        tribeTab === "invitations" && styles.activeTabText,
+                      ]}
+                    >
+                      Invitations ({invitedTribes.length})
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.tab,
+                      tribeTab === "past" && styles.activeTab,
+                    ]}
+                    onPress={() => setTribeTab("past")}
+                  >
+                    <Text
+                      style={[
+                        styles.tabText,
+                        tribeTab === "past" && styles.activeTabText,
+                      ]}
+                    >
+                      Past ({pastTribes.length})
+                    </Text>
+                  </TouchableOpacity>
+                </View>
 
-                    return (
-                      <View key={t.id} ref={index === 0 ? firstTribeRef : undefined} collapsable={false}>
-                        <TouchableOpacity
-                          style={styles.squareCard}
-                          onPress={() =>
-                          router.push({
-                            pathname: "/read-tribe",
-                            params: { id: t.id },
-                          })
-                        }
-                      >
-                        <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-                          <Text style={styles.squareCardIcon}>
-                            {t.icon_type || "😊"}
-                          </Text>
-                          <Text style={styles.squareCardTitle} numberOfLines={2} ellipsizeMode="tail">
-                            {t.name || "Unnamed"}
-                          </Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={true} style={styles.listContainer} nestedScrollEnabled>
+                  {(() => {
+                    let displayedTribes = tribes;
+                    if (tribeTab === "invitations") displayedTribes = invitedTribes;
+                    if (tribeTab === "past") displayedTribes = pastTribes;
+                    return displayedTribes.map((t, index) => {
+                      const cleanDetails = t.description ? String(t.description).trim() : "";
+                      const hasDetails = cleanDetails.length > 0 && cleanDetails !== "undefined" && cleanDetails !== "null";
+
+                      return (
+                        <View key={t.id} ref={index === 0 ? firstTribeRef : undefined} collapsable={false}>
+                          <TouchableOpacity
+                            style={styles.squareCard}
+                            onPress={() => {
+                              if (tribeTab === "invitations") {
+                                handleTribeInvitePress(t);
+                              } else if (tribeTab === "current") {
+                                router.push({
+                                  pathname: "/read-tribe",
+                                  params: { id: t.id },
+                                });
+                              }
+                            }}
+                          >
+                          <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                            <Text style={styles.squareCardIcon}>
+                              {t.icon_type || "😊"}
+                            </Text>
+                            <Text style={styles.squareCardTitle} numberOfLines={2} ellipsizeMode="tail">
+                              {t.name || "Unnamed"}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
                         </View>
-                      </TouchableOpacity>
-                      </View>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                 </ScrollView>
-                {tribes.length === 0 && (
+                {((tribeTab === "current" && tribes.length === 0) || 
+                  (tribeTab === "invitations" && invitedTribes.length === 0) || 
+                  (tribeTab === "past" && pastTribes.length === 0)) && (
                   <Text style={styles.emptyText}>No tribes found.</Text>
                 )}
               </View>

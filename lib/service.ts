@@ -508,6 +508,18 @@ export const createTribeMember = async (
   if (!response.ok) throw new Error("Failed to create tribe member");
   return response.json();
 };
+export const updateTribeMember = async (
+  authToken: string,
+  tribeMember: TribeMember & { id: string }
+): Promise<TribeMember> => {
+  const response = await fetch(`${getResourceEndpoint()}/tribe_member/${tribeMember.id}`, {
+    method: "PUT",
+    headers: getHeaders(authToken),
+    body: JSON.stringify(tribeMember),
+  });
+  if (!response.ok) throw new Error("Failed to update tribe member");
+  return response.json();
+};
 
 export const deleteTribeMember = async (
   authToken: string,

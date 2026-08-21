@@ -253,7 +253,7 @@ function RootLayoutNav() {
     );
   }
 
-  function BottomNotificationBar() {
+  function NotificationBadge() {
     const { notifications } = useNotifications();
     const [modalVisible, setModalVisible] = useState(false);
 
@@ -261,40 +261,31 @@ function RootLayoutNav() {
 
     return (
       <>
-        <View style={{ position: 'absolute', bottom: 40, left: 0, right: 0, alignItems: 'center' }}>
-          <TouchableOpacity
-            onPress={() => setModalVisible(true)}
-            style={{
-              backgroundColor: 'rgba(255,255,255,0.85)',
-              padding: 10,
-              borderRadius: 30,
-              flexDirection: 'row',
-              alignItems: 'center',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: 0.2,
-              shadowRadius: 4,
-              elevation: 4
-            }}
-          >
-            <Text style={{ fontSize: 24 }}>🔔</Text>
-            <View style={{
-              position: 'absolute',
-              top: -2,
-              right: -2,
-              backgroundColor: 'red',
-              borderRadius: 10,
-              paddingHorizontal: 5,
-              paddingVertical: 1,
-              justifyContent: 'center',
-              alignItems: 'center'
-            }}>
-              <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
-                {notifications.length > 99 ? '99+' : notifications.length}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          onPress={() => setModalVisible(true)}
+          style={{
+            padding: 5,
+            flexDirection: 'row',
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ fontSize: 24 }}>🔔</Text>
+          <View style={{
+            position: 'absolute',
+            top: 2,
+            right: -2,
+            backgroundColor: 'red',
+            borderRadius: 10,
+            paddingHorizontal: 5,
+            paddingVertical: 1,
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}>
+            <Text style={{ color: 'white', fontSize: 10, fontWeight: 'bold' }}>
+              {notifications.length > 99 ? '99+' : notifications.length}
+            </Text>
+          </View>
+        </TouchableOpacity>
         <NotificationsModal
           visible={modalVisible}
           onClose={() => setModalVisible(false)}
@@ -308,7 +299,8 @@ function RootLayoutNav() {
       <FCMHandler />
       <Stack
         screenOptions={{
-          headerTitle: "",
+          headerTitle: () => <NotificationBadge />,
+          headerTitleAlign: 'center',
           headerRight: () => (
             <TouchableOpacity 
               onPress={() => {
@@ -350,7 +342,6 @@ function RootLayoutNav() {
           options={{ title: "Forgot Password", headerShown: false }}
         />
       </Stack>
-      <BottomNotificationBar />
     </>
   );
 }

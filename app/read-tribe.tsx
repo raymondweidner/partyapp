@@ -1,6 +1,7 @@
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  Platform,
   ActivityIndicator,
   DeviceEventEmitter,
   FlatList,
@@ -36,6 +37,7 @@ import {
   getTribes,
   GroupedMemberContacts,
   updateTribe,
+  updateTribeMember,
 } from "../lib/service";
 import { TribalCouncil } from "../lib/data/TribalCouncil";
 import { Tribe } from "../lib/data/Tribe";
@@ -188,7 +190,11 @@ export default function ReadTribe() {
           ]);
         setAllMembers(membersData);
         setTribeMembers(tribeMembersData);
-        setSelectedMemberIds(tribeMembersData.map((tm) => tm.member_id));
+        setSelectedMemberIds(
+          tribeMembersData
+            .filter((tm) => !tm.status || tm.status === "accepted" || tm.status === "invited")
+            .map((tm) => tm.member_id)
+        );
         setMeetups(meetupsData);
         setMemberContacts(contactsData);
         setTribalCouncils(councilsData);
@@ -278,6 +284,47 @@ export default function ReadTribe() {
     );
   };
 
+  const handleLeaveTribe = async () => {
+    if (!selectedTribe || !user || !member?.id) return;
+    const tm = tribeMembers.find((m) => m.member_id === member.id);
+    if (!tm || !tm.id) return;
+
+    if (Platform.OS === "web") {
+      const confirm = window.confirm("Are you sure you want to leave this tribe?");
+      if (!confirm) return;
+    } else {
+      const { Alert } = await import("react-native");
+      await new Promise((resolve, reject) => {
+        Alert.alert(
+          "Leave Tribe",
+          "Are you sure you want to leave this tribe?",
+          [
+            { text: "Cancel", style: "cancel", onPress: reject },
+            { text: "Leave", style: "destructive", onPress: resolve },
+          ]
+        );
+      }).catch(() => {
+        throw new Error("Cancelled");
+      });
+    }
+
+    try {
+      const token = await user.getIdToken();
+      await updateTribeMember(token, { ...tm, id: tm.id, status: "quit" });
+      showAlert("Success", "You have left the tribe.", [
+        {
+          text: "OK",
+          onPress: () => {
+            if (paramTribeId) safeBack(router, "/");
+            else setSelectedTribe(null);
+          },
+        },
+      ]);
+    } catch (e: any) {
+      if (e.message !== "Cancelled") showAlert("Error", e.message);
+    }
+  };
+
   const handleUpdate = async () => {
     if (!selectedTribe || !user) return;
 
@@ -303,8 +350,7 @@ export default function ReadTribe() {
       const promises: Promise<any>[] = [];
       toAdd.forEach((memberId) => {
         promises.push(
-          createTribeMember(token, { tribe_id: selectedTribe.id!, member_id: memberId }
-          ),
+          createTribeMember(token, { tribe_id: selectedTribe.id!, member_id: memberId, status: "invited" } as any),
         );
       });
       toRemove.forEach((tm) => {
@@ -490,15 +536,17 @@ export default function ReadTribe() {
       .join("\n");
 
     const isCreator = selectedTribe?.creator_id === item.id;
+    const isCouncil = tribalCouncils.some(c => c.member_id === item.id);
+    const isDisabled = isCreator || isCouncil;
 
     return (
       <TouchableOpacity
-        style={[styles.memberItem, isSelected && styles.memberItemSelected, isCreator && { opacity: 0.7 }]}
+        style={[styles.memberItem, isSelected && styles.memberItemSelected, isDisabled && { opacity: 0.7 }]}
         onPress={() => {
-          if (isCreator) return;
+          if (isDisabled) return;
           item.id && toggleMemberSelection(item.id);
         }}
-        disabled={isCreator}
+        disabled={isDisabled}
       >
         <View style={styles.memberCardImageContainer}>
           {item.profile_pic_data ? (
@@ -529,21 +577,36 @@ export default function ReadTribe() {
     setMembersLoading(true);
     try {
       const token = await user.getIdToken();
-      const currentIds = tribeMembers.map(tm => tm.member_id);
-      const toAdd = selectedMemberIds.filter(id => !currentIds.includes(id));
-      const toRemove = tribeMembers.filter(tm => !selectedMemberIds.includes(tm.member_id));
+      
+      const originalSelectedIds = tribeMembers
+        .filter((tm) => !tm.status || tm.status === "accepted" || tm.status === "invited")
+        .map((tm) => tm.member_id);
 
       const promises: Promise<any>[] = [];
 
-      for (const id of toAdd) {
-        promises.push(createTribeMember(token, {
-          tribe_id: selectedTribe.id!,
-          member_id: id
-        }));
+      for (const memberId of selectedMemberIds) {
+        if (!originalSelectedIds.includes(memberId)) {
+          // This is a new selection (to invite)
+          const existingTm = tribeMembers.find(tm => tm.member_id === memberId);
+          if (existingTm && existingTm.id) {
+            promises.push(updateTribeMember(token, { ...existingTm, id: existingTm.id, status: 'invited' }));
+          } else {
+            promises.push(createTribeMember(token, {
+              tribe_id: selectedTribe.id!,
+              member_id: memberId,
+              status: 'invited'
+            } as any));
+          }
+        }
       }
-      for (const tm of toRemove) {
-        if (tm.id) {
-          promises.push(deleteTribeMember(token, tm.id, selectedTribe.id!, tm.member_id));
+
+      for (const memberId of originalSelectedIds) {
+        if (!selectedMemberIds.includes(memberId)) {
+          // This member was unselected (to remove / eject)
+          const existingTm = tribeMembers.find(tm => tm.member_id === memberId);
+          if (existingTm && existingTm.id) {
+            promises.push(updateTribeMember(token, { ...existingTm, id: existingTm.id, status: 'ejected' }));
+          }
         }
       }
 
@@ -1176,6 +1239,15 @@ export default function ReadTribe() {
               }
             }}
           />
+
+          {tribeMembers.some(tm => tm.member_id === member?.id && (!tm.status || tm.status === "accepted")) && (
+            <TouchableOpacity
+              style={[styles.primaryButton, { backgroundColor: "#FFE5E5", marginTop: 40, marginBottom: 80 }]}
+              onPress={handleLeaveTribe}
+            >
+              <Text style={[styles.primaryButtonText, { color: "#D32F2F" }]}>Leave the Tribe</Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
 
         {/* Fixed Bottom Navigation */}
