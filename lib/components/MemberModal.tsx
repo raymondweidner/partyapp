@@ -18,6 +18,8 @@ export function MemberModal({
   onSendFamRequest,
   onAcceptFamRequest,
   showContactHint = false,
+  showEjectButton = false,
+  onEject,
 }: {
   visible: boolean;
   onClose: () => void;
@@ -31,6 +33,8 @@ export function MemberModal({
   onSendFamRequest: () => void;
   onAcceptFamRequest?: () => void;
   showContactHint?: boolean;
+  showEjectButton?: boolean;
+  onEject?: () => void;
 }) {
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -130,6 +134,25 @@ export function MemberModal({
                   )}
                 </>
               )}
+              {showEjectButton && onEject && (
+                <TouchableOpacity 
+                  style={[styles.actionButton, { backgroundColor: "#FFE5E5" }]} 
+                  onPress={() => {
+                    import("react-native").then(({ Alert }) => {
+                      Alert.alert(
+                        "Eject from Tribe",
+                        `Are you sure you want to eject ${member.name || "this member"} from the tribe?`,
+                        [
+                          { text: "Cancel", style: "cancel" },
+                          { text: "Eject", style: "destructive", onPress: onEject },
+                        ]
+                      );
+                    });
+                  }}
+                >
+                  <Text style={[styles.actionButtonText, { color: "#D32F2F" }]}>🚫 Eject from Tribe</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
 
@@ -144,8 +167,8 @@ export function MemberModal({
             title="Want to get in touch?"
             width={280}
             hints={[
-              ...(hasEmail ? [{ text: "Send them an email here.", targetRef: emailRef, arrowPosition: 'back' as 'back' }] : []),
-              ...(hasPhone ? [{ text: "Whatsapp them here.", targetRef: dmRef, arrowPosition: 'front' as 'front' }] : []),
+              ...(hasEmail ? [{ text: "Send them an email here.", targetRef: emailRef }] : []),
+              ...(hasPhone ? [{ text: "Whatsapp them here.", targetRef: dmRef }] : []),
             ]}
           />
         </View>

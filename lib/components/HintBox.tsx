@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, StyleProp, ViewStyle, DimensionValue, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, StyleProp, ViewStyle, DimensionValue, ScrollView, Dimensions } from 'react-native';
 import { BlurView } from 'expo-blur';
 import Svg, { Path } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +7,6 @@ import { Ionicons } from '@expo/vector-icons';
 export interface HintItem {
   text: string;
   targetRef?: React.RefObject<any>;
-  arrowPosition?: 'front' | 'back';
 }
 
 export interface HintBoxProps {
@@ -29,6 +28,7 @@ interface LayoutRect {
 }
 
 export function HintBox({ title, hints, style, width, height, onClose }: HintBoxProps) {
+  const [isAnimating, setIsAnimating] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [currentHintIndex, setCurrentHintIndex] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -134,7 +134,7 @@ export function HintBox({ title, hints, style, width, height, onClose }: HintBox
   };
 
   const renderArrows = () => {
-    if (!containerLayout) return null;
+    if (!containerLayout || isAnimating) return null;
     
     return hints.map((hint, index) => {
       if (index !== currentHintIndex) return null;
@@ -143,18 +143,15 @@ export function HintBox({ title, hints, style, width, height, onClose }: HintBox
       const tLayout = targetsLayouts[index];
       if (!hLayoutCache || !tLayout || !listContainerLayout) return null;
 
-      const isFront = hint.arrowPosition === 'front';
-      
-      const listAbsoluteX = containerLayout.pageX + listContainerLayout.x;
-      const listAbsoluteY = containerLayout.pageY + listContainerLayout.y;
+      const hLeft = hLayoutCache.pageX - containerLayout.pageX + 1000;
+      const hRight = hLeft + hLayoutCache.width;
+      const hCenter = hLeft + hLayoutCache.width / 2;
+      const hCenterY = hLayoutCache.pageY - containerLayout.pageY + (hLayoutCache.height / 2) + 1000;
 
-      const hPageX = listAbsoluteX + (listContainerLayout.width - hLayoutCache.width) / 2;
-      const hPageY = listAbsoluteY + (listContainerLayout.height - hLayoutCache.height) / 2;
+      // Hintbox bounds
+      const boxLeft = 1000;
+      const boxRight = 1000 + containerLayout.width;
 
-      // Starting point logic
-      const startX = hPageX - containerLayout.pageX + (isFront ? 0 : hLayoutCache.width) + 1000;
-      const startY = hPageY - containerLayout.pageY + (hLayoutCache.height / 2) + 1000;
-      
       // Target bounding box logic
       const tLeft = tLayout.pageX - containerLayout.pageX + 1000;
       const tRight = tLeft + tLayout.width;
@@ -163,39 +160,76 @@ export function HintBox({ title, hints, style, width, height, onClose }: HintBox
       const tBottom = tTop + tLayout.height;
       const tCenterY = tTop + tLayout.height / 2;
 
-      let waypoints: {x: number, y: number}[] = [{x: startX, y: startY}];
-
+      let waypoints: {x: number, y: number}[] = [];
       let destX = 0, destY = 0;
       let finalDirX = 0, finalDirY = 0;
 
-      // 1. If component is vertically aligned (close to the same x-dimension)
-      if (Math.abs(tCenter - startX) < (tLayout.width / 2 + 40)) {
-        const isTargetAbove = tCenterY < startY;
-        destX = tCenter;
-        destY = isTargetAbove ? tBottom + 8 : tTop - 8;
-        finalDirX = 0;
-        finalDirY = isTargetAbove ? -1 : 1;
-        
-        // Go horizontally straight to tCenter, then vertically to the target.
-        // This ensures the vertical line perfectly aligns with the arrowhead.
-        waypoints.push({ x: destX, y: startY });
-        waypoints.push({ x: destX, y: destY });
+      const PADDING = 24;
+
+      if (tCenter > hCenter) {
+        // Target is to the right
+        if (tCenter > boxRight + PADDING) {
+          // Far enough to the right to clear hintbox edge
+          const startX = hRight;
+          const startY = hCenterY;
+          const isTargetAbove = tCenterY < startY;
+          destX = tCenter;
+          destY = isTargetAbove ? tBottom + 8 : tTop - 8;
+          finalDirX = 0;
+          finalDirY = isTargetAbove ? -1 : 1;
+          waypoints = [
+            { x: startX, y: startY },
+            { x: tCenter, y: startY },
+            { x: tCenter, y: destY }
+          ];
+        } else {
+          // Not far enough right, route around the left
+          const startX = hLeft;
+          const startY = hCenterY;
+          const midX = boxLeft - PADDING;
+          destX = tLeft - 8;
+          destY = tCenterY;
+          finalDirX = 1;
+          finalDirY = 0;
+          waypoints = [
+            { x: startX, y: startY },
+            { x: midX, y: startY },
+            { x: midX, y: tCenterY },
+            { x: destX, y: destY }
+          ];
+        }
       } else {
-        // Extend horizontally outside the hintbox by the distance to the edge
-        let distToEdge = isFront ? (startX - 1000) : (1000 + containerLayout.width - startX);
-        distToEdge = Math.max(distToEdge, 10);
-        const midX = isFront ? (1000 - distToEdge / 2) : (1000 + containerLayout.width + distToEdge / 2);
-
-        // 2 & 3. Horizontal routing (Standard or Wrap-around)
-        const isTargetRight = tCenter > startX;
-        destX = isTargetRight ? tLeft - 8 : tRight + 8;
-        destY = tCenterY;
-        finalDirX = isTargetRight ? 1 : -1;
-        finalDirY = 0;
-
-        waypoints.push({ x: midX, y: startY });
-        waypoints.push({ x: midX, y: destY });
-        waypoints.push({ x: destX, y: destY });
+        // Target is to the left
+        if (tCenter < boxLeft - PADDING) {
+          // Far enough to the left to clear hintbox edge
+          const startX = hLeft;
+          const startY = hCenterY;
+          const isTargetAbove = tCenterY < startY;
+          destX = tCenter;
+          destY = isTargetAbove ? tBottom + 8 : tTop - 8;
+          finalDirX = 0;
+          finalDirY = isTargetAbove ? -1 : 1;
+          waypoints = [
+            { x: startX, y: startY },
+            { x: tCenter, y: startY },
+            { x: tCenter, y: destY }
+          ];
+        } else {
+          // Not far enough left, route around the right
+          const startX = hRight;
+          const startY = hCenterY;
+          const midX = boxRight + PADDING;
+          destX = tRight + 8;
+          destY = tCenterY;
+          finalDirX = -1;
+          finalDirY = 0;
+          waypoints = [
+            { x: startX, y: startY },
+            { x: midX, y: startY },
+            { x: midX, y: tCenterY },
+            { x: destX, y: destY }
+          ];
+        }
       }
 
       let pathStr = buildRoundedPath(waypoints, 15);
@@ -224,14 +258,31 @@ export function HintBox({ title, hints, style, width, height, onClose }: HintBox
     });
   };
 
+  const scrollToHint = (nextIdx: number) => {
+    setIsAnimating(true);
+    setCurrentHintIndex(nextIdx);
+    scrollViewRef.current?.scrollTo({ x: nextIdx * listWidth, animated: true });
+    
+    setTimeout(() => {
+      const ref = hintRefs.current[nextIdx];
+      if (ref) {
+        ref.measure((x, y, w, h, pageX, pageY) => {
+          if (pageX !== undefined && pageY !== undefined) {
+            setHintsLayouts(prev => ({
+              ...prev,
+              [nextIdx]: { x, y, width: w, height: h, pageX, pageY }
+            }));
+          }
+          setIsAnimating(false);
+        });
+      } else {
+        setIsAnimating(false);
+      }
+    }, 350);
+  };
+
   return (
     <View ref={containerRef} style={[styles.container, style, { width, height }]} pointerEvents="box-none">
-      <View style={styles.svgOverlay} pointerEvents="none">
-        <Svg width="100%" height="100%" viewBox="0 0 3000 3000">
-          {renderArrows()}
-        </Svg>
-      </View>
-
       <BlurView intensity={20} tint="light" style={styles.blurContainer}>
         <View style={styles.header}>
           <Text style={styles.title}>{title}</Text>
@@ -283,9 +334,7 @@ export function HintBox({ title, hints, style, width, height, onClose }: HintBox
             <TouchableOpacity 
               onPress={() => {
                 if (currentHintIndex > 0) {
-                  const nextIdx = currentHintIndex - 1;
-                  setCurrentHintIndex(nextIdx);
-                  scrollViewRef.current?.scrollTo({ x: nextIdx * listWidth, animated: true });
+                  scrollToHint(currentHintIndex - 1);
                 }
               }}
               style={[styles.iconButton, currentHintIndex === 0 && { opacity: 0 }]}
@@ -309,9 +358,7 @@ export function HintBox({ title, hints, style, width, height, onClose }: HintBox
             <TouchableOpacity 
               onPress={() => {
                 if (currentHintIndex < hints.length - 1) {
-                  const nextIdx = currentHintIndex + 1;
-                  setCurrentHintIndex(nextIdx);
-                  scrollViewRef.current?.scrollTo({ x: nextIdx * listWidth, animated: true });
+                  scrollToHint(currentHintIndex + 1);
                 }
               }}
               style={[styles.iconButton, currentHintIndex === hints.length - 1 && { opacity: 0 }]}
@@ -322,6 +369,12 @@ export function HintBox({ title, hints, style, width, height, onClose }: HintBox
           )}
         </View>
       </BlurView>
+      
+      <View style={styles.svgOverlay} pointerEvents="none">
+        <Svg width="100%" height="100%" viewBox="0 0 3000 3000">
+          {renderArrows()}
+        </Svg>
+      </View>
     </View>
   );
 }

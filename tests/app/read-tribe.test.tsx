@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react-native";
+import { render, screen, waitFor, act } from "@testing-library/react-native";
 import ReadTribe from "../../app/read-tribe";
 import * as service from "../../lib/service";
 
@@ -81,7 +81,9 @@ describe("Read Tribe Integration Test", () => {
     
     // Simulate useFocusEffect and initial mount
     const { DeviceEventEmitter } = require("react-native");
-    DeviceEventEmitter.emit("refreshView");
+    await act(async () => {
+      DeviceEventEmitter.emit("refreshView");
+    });
 
     // Assert
     await waitFor(() => {

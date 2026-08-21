@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react-native";
+import { render, screen, waitFor, act } from "@testing-library/react-native";
 import ReadMeetup from "../../app/read-meetup";
 import * as service from "../../lib/service";
 
@@ -101,7 +101,9 @@ describe("Read Meetup Integration Test", () => {
     
     // Trigger the mock useFocusEffect or just emit the event
     const { DeviceEventEmitter } = require("react-native");
-    DeviceEventEmitter.emit("refreshView");
+    await act(async () => {
+      DeviceEventEmitter.emit("refreshView");
+    });
 
     // Assert
     await waitFor(() => {

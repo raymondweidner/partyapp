@@ -36,3 +36,10 @@ jest.mock('firebase/messaging', () => ({
   getToken: jest.fn(),
   isSupported: jest.fn(() => Promise.resolve(true)),
 }));
+
+jest.mock('expo-task-manager', () => ({
+  defineTask: jest.fn(),
+  isTaskRegisteredAsync: jest.fn(() => Promise.resolve(false)),
+  unregisterTaskAsync: jest.fn(),
+  unregisterAllTasksAsync: jest.fn(),
+}));

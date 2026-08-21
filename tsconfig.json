@@ -8,6 +8,7 @@
     "jsx": "react-native",
     "lib": ["es2017", "dom"],
     "moduleResolution": "bundler",
+    "module": "esnext",
     "noEmit": true,
     "strict": true,
     "target": "esnext",

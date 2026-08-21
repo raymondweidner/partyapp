@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, userEvent, waitFor } from "@testing-library/react-native";
+import { render, screen, userEvent, waitFor, act } from "@testing-library/react-native";
 import WriteMeetup from "../../app/write-meetup";
 import * as service from "../../lib/service";
 import { DeviceEventEmitter } from "react-native";
@@ -90,7 +90,9 @@ describe("Write Meetup Integration Test", () => {
 
     // Since useFocusEffect is mocked to do nothing to avoid React Navigation context issues,
     // we'll manually trigger the initial load by emitting the refresh event which WriteMeetup listens to
-    DeviceEventEmitter.emit("refreshView");
+    await act(async () => {
+      DeviceEventEmitter.emit("refreshView");
+    });
 
     // Wait for data to load
     await waitFor(() => {

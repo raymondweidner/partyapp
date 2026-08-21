@@ -610,13 +610,11 @@ export default function Home() {
                       hints={[
                         { 
                           text: "You can create a tribe here.",
-                          targetRef: addTribeRef,
-                          arrowPosition: 'back'
+                          targetRef: addTribeRef
                         },
                         { 
                           text: "Also, you can get in touch with your Fam and ask them to add you to one of their Tribes",
-                          targetRef: bottomNavFamRef,
-                          arrowPosition: 'front'
+                          targetRef: bottomNavFamRef
                         }
                       ]}
                     />
@@ -631,8 +629,7 @@ export default function Home() {
                       hints={[
                         { 
                           text: "Click on a Tribe here.",
-                          targetRef: firstTribeRef,
-                          arrowPosition: 'front'
+                          targetRef: firstTribeRef
                         }
                       ]}
                     />
@@ -783,13 +780,11 @@ export default function Home() {
                       hints={[
                         { 
                           text: "You can create a meetup here.",
-                          targetRef: addMeetupRef,
-                          arrowPosition: 'back'
+                          targetRef: addMeetupRef
                         },
                         {
                           text: "Or you can create a meetup for your Tribes here (if you have permission!).",
-                          targetRef: bottomNavTribesRef,
-                          arrowPosition: 'front'
+                          targetRef: bottomNavTribesRef
                         }
                       ]}
                     />
@@ -960,13 +955,11 @@ export default function Home() {
                       hints={[
                         { 
                           text: "If they already have TribalVibe, search for them here.",
-                          targetRef: findRef,
-                          arrowPosition: 'front'
+                          targetRef: findRef
                         },
                         { 
                           text: "Invite new friends and family by email here.",
-                          targetRef: inviteRef,
-                          arrowPosition: 'back'
+                          targetRef: inviteRef
                         }
                       ]}
                     />
@@ -981,8 +974,7 @@ export default function Home() {
                       hints={[
                         { 
                           text: "Click anyone in your Fam to get in touch.",
-                          targetRef: firstFamMemberRef,
-                          arrowPosition: 'front'
+                          targetRef: firstFamMemberRef
                         }
                       ]}
                     />

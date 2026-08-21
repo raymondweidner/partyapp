@@ -537,7 +537,8 @@ export default function ReadTribe() {
 
     const isCreator = selectedTribe?.creator_id === item.id;
     const isCouncil = tribalCouncils.some(c => c.member_id === item.id);
-    const isDisabled = isCreator || isCouncil;
+    const isAlreadyMember = tribeMembers.some(tm => tm.member_id === item.id && (!tm.status || tm.status === 'accepted' || tm.status === 'invited'));
+    const isDisabled = isCreator || isCouncil || isAlreadyMember;
 
     return (
       <TouchableOpacity
@@ -784,8 +785,7 @@ export default function ReadTribe() {
                     hints={[
                       { 
                         text: "Create a meetup .",
-                        targetRef: addMeetupRef,
-                        arrowPosition: 'back'
+                        targetRef: addMeetupRef
                       }
                     ]}
                   />
