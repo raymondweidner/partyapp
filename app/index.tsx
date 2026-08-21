@@ -653,8 +653,13 @@ export default function Home() {
                         tribeTab === "current" && styles.activeTabText,
                       ]}
                     >
-                      Current ({tribes.length})
+                      Current
                     </Text>
+                    <View style={styles.tabBadge}>
+                      <Text style={styles.tabBadgeText}>
+                        {tribes.length > 99 ? "99+" : tribes.length}
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
@@ -669,8 +674,13 @@ export default function Home() {
                         tribeTab === "invitations" && styles.activeTabText,
                       ]}
                     >
-                      Invitations ({invitedTribes.length})
+                      Invitations
                     </Text>
+                    <View style={styles.tabBadge}>
+                      <Text style={styles.tabBadgeText}>
+                        {invitedTribes.length > 99 ? "99+" : invitedTribes.length}
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[
@@ -685,8 +695,13 @@ export default function Home() {
                         tribeTab === "past" && styles.activeTabText,
                       ]}
                     >
-                      Past ({pastTribes.length})
+                      Past
                     </Text>
+                    <View style={styles.tabBadge}>
+                      <Text style={styles.tabBadgeText}>
+                        {pastTribes.length > 99 ? "99+" : pastTribes.length}
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                 </View>
 
