@@ -226,9 +226,11 @@ export function HintBox({ title, hints, style, width, height, onClose }: HintBox
 
   return (
     <View ref={containerRef} style={[styles.container, style, { width, height }]} pointerEvents="box-none">
-      <Svg style={styles.svgOverlay} pointerEvents="none" viewBox="0 0 3000 3000">
-        {renderArrows()}
-      </Svg>
+      <View style={styles.svgOverlay} pointerEvents="none">
+        <Svg width="100%" height="100%" viewBox="0 0 3000 3000">
+          {renderArrows()}
+        </Svg>
+      </View>
 
       <BlurView intensity={20} tint="light" style={styles.blurContainer}>
         <View style={styles.header}>
@@ -335,7 +337,6 @@ const styles = StyleSheet.create({
     left: -1000,
     width: 3000,
     height: 3000,
-    zIndex: 1001,
   },
   blurContainer: {
     borderRadius: 16,
