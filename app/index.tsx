@@ -1060,11 +1060,7 @@ export default function Home() {
                   <Text style={styles.emptyText}>No outgoing invites.</Text>
                 )}
 
-                <View style={{ alignItems: 'center', marginTop: 10, marginBottom: 20 }}>
-                  <TouchableOpacity onPress={openEmailModal}>
-                    <Text style={{ color: colors.primary, fontStyle: "italic", fontSize: 16, textDecorationLine: "underline" }}>Email Fam</Text>
-                  </TouchableOpacity>
-                </View>
+
               </View>
             )}
 
