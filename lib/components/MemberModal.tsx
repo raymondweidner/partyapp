@@ -137,18 +137,7 @@ export function MemberModal({
               {showEjectButton && onEject && (
                 <TouchableOpacity 
                   style={[styles.actionButton, { backgroundColor: "#FFE5E5" }]} 
-                  onPress={() => {
-                    import("react-native").then(({ Alert }) => {
-                      Alert.alert(
-                        "Eject from Tribe",
-                        `Are you sure you want to eject ${member.name || "this member"} from the tribe?`,
-                        [
-                          { text: "Cancel", style: "cancel" },
-                          { text: "Eject", style: "destructive", onPress: onEject },
-                        ]
-                      );
-                    });
-                  }}
+                  onPress={onEject}
                 >
                   <Text style={[styles.actionButtonText, { color: "#D32F2F" }]}>🚫 Eject from Tribe</Text>
                 </TouchableOpacity>

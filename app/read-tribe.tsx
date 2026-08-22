@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Platform,
   ActivityIndicator,
+  Alert,
   DeviceEventEmitter,
   FlatList,
   Image,
@@ -1015,21 +1016,9 @@ export default function ReadTribe() {
                       }}
                       style={styles.editButton}
                     >
-                      <Text style={styles.editButtonText}>Edit</Text>
+                      <Text style={styles.editButtonText}>Invite</Text>
                     </TouchableOpacity>
                   )}
-                  <TouchableOpacity
-                    onPress={openGroupChatModal}
-                    style={styles.editButton}
-                  >
-                    <Text style={styles.editButtonText}>💬 Chat</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={openEmailModal}
-                    style={styles.editButton}
-                  >
-                    <Text style={styles.editButtonText}>📧 Email</Text>
-                  </TouchableOpacity>
                 </View>
               </View>
               {membersLoading && <ActivityIndicator size="small" />}
@@ -1037,13 +1026,23 @@ export default function ReadTribe() {
               {!membersLoading && currentMembers.length === 0 ? (
                 <Text style={styles.emptyText}>No members in this tribe.</Text>
               ) : (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
-                  {currentMembers.map((item) => (
-                    <React.Fragment key={item.id}>
-                      {renderCurrentMemberItem({ item })}
-                    </React.Fragment>
-                  ))}
-                </ScrollView>
+                <View>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 10 }}>
+                    {currentMembers.map((item) => (
+                      <React.Fragment key={item.id}>
+                        {renderCurrentMemberItem({ item })}
+                      </React.Fragment>
+                    ))}
+                  </ScrollView>
+                  <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 12, gap: 24, paddingBottom: 8 }}>
+                    <TouchableOpacity onPress={openGroupChatModal}>
+                      <Text style={{ color: colors.accent, fontWeight: 'bold' }}>💬 Start Group Chat</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={openEmailModal}>
+                      <Text style={{ color: colors.accent, fontWeight: 'bold' }}>📧 Send Email</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
               )}
             </View>
           )}
@@ -1214,6 +1213,43 @@ export default function ReadTribe() {
               memberContacts.invitedSources.some(c => c.subject_id === selectedMemberForModal?.id) ||
               memberContacts.invitedSubjects.some(c => c.source_id === selectedMemberForModal?.id)
             )}
+            showEjectButton={isCouncilOrCreator && !(tribalCouncils.some(c => c.member_id === selectedMemberForModal?.id) || selectedMemberForModal?.id === selectedTribe?.creator_id) && member?.id !== selectedMemberForModal?.id}
+            onEject={async () => {
+              try {
+                if (Platform.OS === "web") {
+                  const confirm = window.confirm(`Are you sure you want to eject ${selectedMemberForModal?.name} from the tribe?`);
+                  if (!confirm) return;
+                } else {
+                  await new Promise((resolve, reject) => {
+                    Alert.alert(
+                      "Eject Member",
+                      `Are you sure you want to eject ${selectedMemberForModal?.name} from the tribe?`,
+                      [
+                        { text: "Cancel", style: "cancel", onPress: () => reject(new Error("Cancelled")) },
+                        { text: "Eject", style: "destructive", onPress: resolve },
+                      ]
+                    );
+                  });
+                }
+
+                if (!user || !selectedMemberForModal?.id || !selectedTribe?.id) return;
+                const token = await user.getIdToken();
+                const existingTm = tribeMembers.find(tm => tm.member_id === selectedMemberForModal.id);
+                if (existingTm && existingTm.id) {
+                  await updateTribeMember(token, { ...existingTm, id: existingTm.id, status: 'ejected' });
+                  showAlert("Success", `${selectedMemberForModal.name} has been ejected from the tribe.`);
+                  const updated = await getTribeMembers(token, selectedTribe.id!);
+                  setTribeMembers(updated);
+                  setSelectedMemberIds(prev => prev.filter(id => id !== selectedMemberForModal.id));
+                  setIsMemberModalVisible(false);
+                }
+              } catch (e: any) {
+                if (e.message !== "Cancelled") {
+                  showAlert("Error", e.message);
+                }
+              }
+            }}
+
             onSendEmail={() => {
               if (selectedMemberForModal?.email) {
                 openEmailThread([selectedMemberForModal.email], "", member?.email);
