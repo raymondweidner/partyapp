@@ -99,7 +99,8 @@
           "organization": "kith-and-kin-technologies",
           "project": "tribal-vibe"
         }
-      ]
+      ],
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,
