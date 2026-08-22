@@ -133,7 +133,7 @@ export function HintBox({ title, hints, style, width, height, onClose }: HintBox
     return d;
   };
 
-  const renderArrows = () => {
+  const renderArrows = (offsetX: number, offsetY: number) => {
     if (!containerLayout || isAnimating) return null;
     
     return hints.map((hint, index) => {
@@ -143,20 +143,20 @@ export function HintBox({ title, hints, style, width, height, onClose }: HintBox
       const tLayout = targetsLayouts[index];
       if (!hLayoutCache || !tLayout || !listContainerLayout) return null;
 
-      const hLeft = hLayoutCache.pageX - containerLayout.pageX + 1000;
+      const hLeft = hLayoutCache.pageX - containerLayout.pageX + offsetX;
       const hRight = hLeft + hLayoutCache.width;
       const hCenter = hLeft + hLayoutCache.width / 2;
-      const hCenterY = hLayoutCache.pageY - containerLayout.pageY + (hLayoutCache.height / 2) + 1000;
+      const hCenterY = hLayoutCache.pageY - containerLayout.pageY + (hLayoutCache.height / 2) + offsetY;
 
       // Hintbox bounds
-      const boxLeft = 1000;
-      const boxRight = 1000 + containerLayout.width;
+      const boxLeft = offsetX;
+      const boxRight = offsetX + containerLayout.width;
 
       // Target bounding box logic
-      const tLeft = tLayout.pageX - containerLayout.pageX + 1000;
+      const tLeft = tLayout.pageX - containerLayout.pageX + offsetX;
       const tRight = tLeft + tLayout.width;
       const tCenter = tLeft + tLayout.width / 2;
-      const tTop = tLayout.pageY - containerLayout.pageY + 1000;
+      const tTop = tLayout.pageY - containerLayout.pageY + offsetY;
       const tBottom = tTop + tLayout.height;
       const tCenterY = tTop + tLayout.height / 2;
 
@@ -370,11 +370,19 @@ export function HintBox({ title, hints, style, width, height, onClose }: HintBox
         </View>
       </BlurView>
       
-      <View style={styles.svgOverlay} pointerEvents="none">
-        <Svg width="100%" height="100%" viewBox="0 0 3000 3000">
-          {renderArrows()}
-        </Svg>
-      </View>
+      {(() => {
+        const offsetX = 100;
+        const offsetY = 500;
+        const svgWidth = (containerLayout?.width || 0) + 200;
+        const svgHeight = (containerLayout?.height || 0) + 600;
+        return (
+          <View style={[styles.svgOverlay, { top: -offsetY, left: -offsetX, width: svgWidth, height: svgHeight }]} pointerEvents="none">
+            <Svg width={svgWidth} height={svgHeight} viewBox={`0 0 ${svgWidth} ${svgHeight}`}>
+              {renderArrows(offsetX, offsetY)}
+            </Svg>
+          </View>
+        );
+      })()}
     </View>
   );
 }
@@ -386,10 +394,6 @@ const styles = StyleSheet.create({
   },
   svgOverlay: {
     position: 'absolute',
-    top: -1000,
-    left: -1000,
-    width: 3000,
-    height: 3000,
   },
   blurContainer: {
     borderRadius: 16,

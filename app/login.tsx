@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
   StyleSheet,
   Text,
   TextInput,
@@ -204,13 +205,11 @@ export default function Login() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.formCard}>
-          <View style={styles.headerContainer}>
-            <Text style={styles.logoText}>
-              Tribal
-              <Text style={{ color: colors.accent, opacity: 0.85, textShadowColor: colors.accent, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 6 }}>
-                Vibe
-              </Text>
-            </Text>
+          <View style={[styles.headerContainer, { alignItems: 'center' }]}>
+            <Image 
+              source={require('../assets/images/logo_with_title.jpg')} 
+              style={{ width: 330, height: 234, resizeMode: 'contain', marginTop: -30, marginBottom: -30 }} 
+            />
             <Text style={styles.subtitle}>
               {invitedMember
                 ? "You've been invited to join the Fam!"

@@ -568,15 +568,12 @@ export default function Home() {
   return (
     <View style={styles.container}>
       {/* Fixed Header */}
-      <View style={styles.fixedHeader}>
-        <Text style={styles.header}>
-          Tribal
-          <Text style={{ color: colors.accent, opacity: 0.85, textShadowColor: colors.accent, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 6 }}>
-            Vibe
-          </Text>
-        </Text>
+      <View style={[styles.fixedHeader, { alignItems: 'center', justifyContent: 'center', marginTop: -30, marginBottom: -30 }]}>
+        <Image 
+          source={require('../assets/images/logo_with_title.jpg')} 
+          style={{ width: 330, height: 234, resizeMode: 'contain' }} 
+        />
       </View>
-      <FloralDivider color={colors.accent} />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -948,7 +945,7 @@ export default function Home() {
                 </View>
 
                 {myFamMembers.length === 0 && (
-                  <View style={{ position: 'absolute', top: 120, left: 0, right: 0, alignItems: 'center', zIndex: 1000 }} pointerEvents="box-none">
+                  <View style={{ position: 'absolute', top: 60, left: 0, right: 0, alignItems: 'center', zIndex: 1000 }} pointerEvents="box-none">
                     <HintBox 
                       title="Let's get you started connecting to the important people in your life!"
                       width={320}
@@ -967,7 +964,7 @@ export default function Home() {
                 )}
 
                 {myFamMembers.length > 0 && tribes.length === 0 && (
-                  <View style={{ position: 'absolute', top: 220, left: 0, right: 0, alignItems: 'center', zIndex: 1000 }} pointerEvents="box-none">
+                  <View style={{ position: 'absolute', top: 260, left: 0, right: 0, alignItems: 'center', zIndex: 1000 }} pointerEvents="box-none">
                     <HintBox 
                       title="Reach out and touch someone, and join their Tribe!"
                       width={320}
@@ -1175,6 +1172,7 @@ export default function Home() {
           showContactHint={myFamMembers.length > 0 && tribes.length === 0 && activeRootTab === 'fam'}
         />
       </ScrollView>
+
 
       {/* Fixed Bottom Navigation */}
       <View style={styles.bottomNav}>
